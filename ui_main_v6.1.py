@@ -23,7 +23,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, \
      QMessageBox, QAction, QComboBox, QGraphicsScene, QGraphicsView, \
      QGraphicsPixmapItem, QLineEdit, QTextEdit, QSpinBox, QDoubleSpinBox, QStatusBar, \
      QGroupBox, QGridLayout, QVBoxLayout, QHBoxLayout, QWidget, QSizePolicy, \
-     QDialog, QListWidget
+     QDialog, QListWidget,QTabWidget
 from PyQt5.QtChart import QChart, QScatterSeries
 from tkinter import messagebox, Tk
 import pandas as pd
@@ -39,7 +39,7 @@ import gc
 class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.frame everywhere
     def __init__(self):
         super().__init__()
-        self.setGeometry(0, 0, 1500, 1100)
+        self.setGeometry(0, 0, 1200, 800)
         self.appVersion = "V-Scope v6.1"
         self.setWindowTitle(self.appVersion)
         self.layout = QGridLayout()
@@ -161,6 +161,7 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
         self.rawPixmapItem = QGraphicsPixmapItem(self.blankPixmap)
         self.rawScene.addItem(self.rawPixmapItem)
         self.rawView = MyQGraphicsView(self.rawScene)
+        # self.rawView.setMinimumSize(600,300)
 ##        self.rawView.setGeometry(QRect(50, 120, 480, 360))
         self.rawView.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.rawView.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -172,6 +173,7 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
         self.effectPixmapItem = QGraphicsPixmapItem(self.blankPixmap)
         self.effectScene.addItem(self.effectPixmapItem)
         self.effectView = MyQGraphicsView(self.effectScene)
+        # self.effectView.setMinimumSize(600,300)
 ##        self.effectView.setGeometry(QRect(560, 120, 480, 360))
         self.effectView.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.effectView.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -241,7 +243,7 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
 ##        self.pixelValue.move(375, 550)
 ##        self.pixelValue.resize(50, 20)
 
-        self.pixelLabel = QLabel("px\t=\t", self) #pixel
+        self.pixelLabel = QLabel("px\tequals\t", self) #pixel
 ##        self.pixelLabel.move(430, 545)
         
         self.lengthValue = QDoubleSpinBox(self)
@@ -303,7 +305,8 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
 ##        self.bgSubtract = QCheckBox('Subtract Background', self) #background subtract
 ##        self.bgSubtract.move(300, 80)
 ##        self.bgSubtract.stateChanged.connect(self.bg_change)
-
+        
+        self.backgroundCorrectionLabel = QLabel("Type:", self) #background blur
         self.backgroundCorrection =  QComboBox(self) #Background correction type
         self.backgroundCorrection.addItem("Average Correction")
         self.backgroundCorrection.addItem("Proper Correction")
@@ -311,7 +314,8 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
         self.backgroundCorrection.addItem("Rolling Ball")
         self.backgroundCorrection.addItem("Rolling Paraboloid")
         self.backgroundCorrection.currentIndexChanged.connect(self.bg_change)        
-
+        
+        self.bgBlurLabel = QLabel("Blur Size:", self) #background blur
         self.bgSlider = QSlider(Qt.Horizontal, self) #background blur
         self.bgSlider.setMinimum(3)
         self.bgSlider.setMaximum(1001)
@@ -326,7 +330,7 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
         self.bgSpinBox.setSingleStep(1)
         self.bgSpinBox.valueChanged.connect(self.bg_change)
 
-        self.bgAlphaLabel = QLabel("\tBlend:", self) #background alpha
+        self.bgAlphaLabel = QLabel("Blend:", self) #background alpha
         self.bgAlphaSpinBox = QDoubleSpinBox(self) 
         self.bgAlphaSpinBox.setRange(0, 1)
         self.bgAlphaSpinBox.setValue(0.45)
@@ -696,11 +700,12 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
         
         self.effectContrast = QCheckBox('Enhance Contrast', self) #enhance effect contrast
         self.effectContrast.stateChanged.connect(self.video_analysis)
+        self.effectContrast.setStyleSheet("QCheckBox { font-weight: bold; font-size: 14px;} ")
 
         self.showPlot = QPushButton("Live Plot", self) #Show Plot
         self.showPlot.clicked.connect(self.plot_data)
 ##        self.showPlot.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
-        self.showPlot.setStyleSheet("QPushButton { font-weight: bold; font-size: 20px;} ")
+        self.showPlot.setStyleSheet("QPushButton { font-weight: bold; font-size: 14px;} ")
 ##        self.showPlot.resize(self.showPlot.minimumSizeHint())
 ##        self.showPlot.move(800,600)
 
@@ -760,14 +765,17 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
         # toprightGroupBox.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
         toprightGroupBox.setStyleSheet("QGroupBox { font-weight: bold; } ")
         toprightVbox = QGridLayout(self)
-        toprightVbox.setColumnStretch(0, 1.5)
+        # toprightVbox.setColumnStretch(0, 1.5)
         toprightGroupBox.setLayout(toprightVbox)
         toprightVbox.addWidget(self.analyzeVideo, 0, 0, 1, 1)
-        toprightVbox.addWidget(self.videoEffect, 0, 1, 1, 1)
+        toprightVbox.addWidget(self.effectContrast, 0, 1, 1, 1)
+        toprightVbox.addWidget(self.videoEffect, 0, 2, 1, 1)
+        toprightVbox.addWidget(self.showPlot, 0, 3, 1, 1)
+        
 
         displayGroupBox = QGroupBox()
-        # displayGroupBox.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
-        displayGroupBox.setStyleSheet("QGroupBox { font-weight: bold; } ")
+        # displayGroupBox.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+        # displayGroupBox.setStyleSheet("QGroupBox { font-weight: bold; } ")
         displayVbox = QGridLayout(self)
         displayGroupBox.setLayout(displayVbox)
         displayVbox.addWidget(self.rawView, 0, 0, 1, 1)
@@ -786,7 +794,7 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
         playbackVbox.addWidget(self.nextBtn, 1, 3, 1, 1)
         playbackVbox.addWidget(self.recordBtn, 1, 4, 1, 1)        
 
-        self.bgGroupBox = QGroupBox("Background Correction")
+        self.bgGroupBox = QGroupBox("Enable")
         # self.bgGroupBox.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
         self.bgGroupBox.setStyleSheet("QGroupBox { font-weight: bold; } ")
         self.bgGroupBox.setCheckable(True)
@@ -795,12 +803,14 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
         bgVbox = QGridLayout(self)
         self.bgGroupBox.setLayout(bgVbox)
 ##        bgVbox.addWidget(self.bgSubtract, 0, 0, 1, 1)
-        bgVbox.addWidget(self.bgButton, 1, 0, 1, 1)
-        bgVbox.addWidget(self.backgroundCorrection, 0, 0, 1, 1)
-        bgVbox.addWidget(self.bgSlider, 0, 1, 1, 1)
-        bgVbox.addWidget(self.bgSpinBox, 0, 2, 1, 1)
-        bgVbox.addWidget(self.bgAlphaLabel, 1, 1, 1, 1)
-        bgVbox.addWidget(self.bgAlphaSpinBox, 1, 2, 1, 1)
+        bgVbox.addWidget(self.bgButton, 0, 1, 1, 2)
+        bgVbox.addWidget(self.backgroundCorrectionLabel, 1, 0, 1, 1)
+        bgVbox.addWidget(self.backgroundCorrection, 1, 1, 1, 1)
+        bgVbox.addWidget(self.bgBlurLabel, 2, 0, 1, 1)
+        bgVbox.addWidget(self.bgSlider, 2, 1, 1, 2)
+        bgVbox.addWidget(self.bgSpinBox, 2, 3, 1, 1)
+        bgVbox.addWidget(self.bgAlphaLabel, 1, 2, 1, 1,alignment=Qt.AlignRight)
+        bgVbox.addWidget(self.bgAlphaSpinBox, 1, 3, 1, 1)
         
         
         measureGroupBox = QGroupBox("Length Calibration")
@@ -823,17 +833,9 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
         fpsVbox.addWidget(self.fpsSpinBox, 0, 1, 1, 1)
         fpsVbox.addWidget(self.correctZeroForce, 1, 0, 1, 2)
 
-        self.middleleftGroupBox = QGroupBox()
-        # self.middleleftGroupBox.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
-        middleleftVbox = QGridLayout(self)
-        self.middleleftGroupBox.setLayout(middleleftVbox)
-        middleleftVbox.addWidget(self.bgGroupBox, 0, 0, 1, 2)
-        middleleftVbox.addWidget(measureGroupBox, 0, 2, 1, 2)
-        middleleftVbox.addWidget(fpsGroupBox, 0, 4, 1, 1)
-
-        self.bcGroupBox = QGroupBox("Brightness/Contrast")
+        self.bcGroupBox = QGroupBox()
         # self.bcGroupBox.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
-        self.bcGroupBox.setStyleSheet("QGroupBox { font-weight: bold; } ")
+        # self.bcGroupBox.setStyleSheet("QGroupBox { font-weight: bold; } ")
         bcVbox = QGridLayout(self)
         self.bcGroupBox.setLayout(bcVbox)
         bcVbox.addWidget(self.brightnessLabel, 0, 0, 1, 1)
@@ -843,9 +845,9 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
         bcVbox.addWidget(self.contrastSlider, 1, 1, 1, 1)
         bcVbox.addWidget(self.contrastSpinBox, 1, 3, 1, 1)
 
-        self.dftGroupBox = QGroupBox("Image Filtering")
+        self.dftGroupBox = QGroupBox("Enable")
         # self.dftGroupBox.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
-        self.dftGroupBox.setStyleSheet("QGroupBox { font-weight: bold; } ")
+        # self.dftGroupBox.setStyleSheet("QGroupBox { font-weight: bold; } ")
         self.dftGroupBox.setCheckable(True)
         self.dftGroupBox.setChecked(False)        
         self.dftGroupBox.toggled.connect(self.dft_change)
@@ -873,18 +875,18 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
         fileVbox.addWidget(self.forceFileNameLabel, 1, 0, 1, 1)
         fileVbox.addWidget(self.zeroForceFileNameLabel, 2, 0, 1, 1)
 
-        middlerightGroupBox = QGroupBox()
+        # middlerightGroupBox = QGroupBox()
         # middlerightGroupBox.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
-        middlerightVbox = QGridLayout(self)
-        middlerightVbox.setColumnStretch(0, 1)
-        middlerightVbox.setColumnStretch(2, 1.5)
-        middlerightGroupBox.setLayout(middlerightVbox)
-        middlerightVbox.addWidget(self.showPlot, 0, 1, 1, 1)
-        middlerightVbox.addWidget(self.effectContrast, 0, 0, 1, 1)
+        # middlerightVbox = QGridLayout(self)
+        # middlerightVbox.setColumnStretch(0, 1)
+        # middlerightVbox.setColumnStretch(2, 1.5)
+        # middlerightGroupBox.setLayout(middlerightVbox)
+        # middlerightVbox.addWidget(self.showPlot, 0, 1, 1, 1)
+        # middlerightVbox.addWidget(self.effectContrast, 0, 0, 1, 1)
         
-        self.threshGroupBox = QGroupBox("Threshold")
+        self.threshGroupBox = QGroupBox()
         # self.threshGroupBox.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
-        self.threshGroupBox.setStyleSheet("QGroupBox { font-weight: bold; } ")
+        # self.threshGroupBox.setStyleSheet("QGroupBox { font-weight: bold; } ")
         threshVbox = QGridLayout(self)
         self.threshGroupBox.setLayout(threshVbox)
         threshVbox.addWidget(self.applySegment, 0, 0, 1, 1)
@@ -897,15 +899,15 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
         threshVbox.addWidget(self.threshSlider2, 2, 1, 1, 8)
         threshVbox.addWidget(self.threshSpinBox2, 2, 9, 1, 1)
         threshVbox.addWidget(self.segmentFGButton, 3, 0, 1, 1)
-        threshVbox.addWidget(self.segmentFGSlider, 3, 1, 1, 3)
-        threshVbox.addWidget(self.segmentFGSpinBox, 3, 4, 1, 1)
-        threshVbox.addWidget(self.segmentBGButton, 3, 5, 1, 1)
-        threshVbox.addWidget(self.segmentBGSlider, 3, 6, 1, 3)
-        threshVbox.addWidget(self.segmentBGSpinBox, 3, 9, 1, 1)
+        threshVbox.addWidget(self.segmentFGSlider, 3, 1, 1, 8)
+        threshVbox.addWidget(self.segmentFGSpinBox, 3, 9, 1, 1)
+        threshVbox.addWidget(self.segmentBGButton, 4, 0, 1, 1)
+        threshVbox.addWidget(self.segmentBGSlider, 4, 1, 1, 8)
+        threshVbox.addWidget(self.segmentBGSpinBox, 4, 9, 1, 1)
 
-        self.threshROIGroupBox = QGroupBox("Auto ROI Detect")
+        self.threshROIGroupBox = QGroupBox("Enable")
         # self.threshROIGroupBox.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
-        self.threshROIGroupBox.setStyleSheet("QGroupBox { font-weight: bold; } ")
+        # self.threshROIGroupBox.setStyleSheet("QGroupBox { font-weight: bold; } ")
         self.threshROIGroupBox.setCheckable(True)
         self.threshROIGroupBox.setChecked(False)        
         self.threshROIGroupBox.toggled.connect(self.auto_roi_change)
@@ -953,26 +955,49 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
         dataVbox.addWidget(self.saveBtn, 0, 0, 1, 1)
         dataVbox.addWidget(self.clearData, 0, 1, 1, 1)
 
+        effectsTab = QTabWidget() #B&C and flitering tabs
+        effectsTab.addTab(self.bgGroupBox,"Background Correct")
+        effectsTab.addTab(self.bcGroupBox,"Brightness/Contrast")
+        effectsTab.addTab(self.dftGroupBox,"Filtering")
+        effectsTab.setStyleSheet("QTabWidget { font-weight: bold; } ")
+        
+        thresholdTab = QTabWidget() #manual and auto threshold function tabs
+        thresholdTab.addTab(self.threshGroupBox,"Threshold")
+        thresholdTab.addTab(self.threshROIGroupBox,"Auto ROI detect")
+        thresholdTab.setStyleSheet("QTabWidget { font-weight: bold; } ")
 
+        self.middleleftGroupBox = QGroupBox()
+        # self.middleleftGroupBox.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+        middleleftVbox = QGridLayout(self)
+        self.middleleftGroupBox.setLayout(middleleftVbox)
+        # middleleftVbox.addWidget(self.bgGroupBox, 0, 0, 1, 2)
+        middleleftVbox.addWidget(effectsTab, 0, 0, 2, 2)
+        middleleftVbox.addWidget(measureGroupBox, 0, 2, 1, 1)
+        middleleftVbox.addWidget(fpsGroupBox, 1, 2, 1, 1)
+        
+        
         self.layout.addWidget(topleftGroupBox, 0, 0, 1, 1)
         self.layout.addWidget(toprightGroupBox, 0, 1, 1, 1)
         
         self.layout.addWidget(self.rawView, 1, 0, 1, 1)
         self.layout.addWidget(self.effectView, 1, 1, 1, 1)
+        # self.layout.addWidget(displayGroupBox, 1, 0, 4, 2)
         
         self.layout.addWidget(playbackGroupBox, 5, 0, 1, 1)
-        self.layout.addWidget(middlerightGroupBox, 5, 1, 1, 1)
+        # self.layout.addWidget(middlerightGroupBox, 5, 1, 1, 1)
         
-        self.layout.addWidget(self.middleleftGroupBox, 6, 0, 1, 1)
-        self.layout.addWidget(self.bcGroupBox, 8, 0, 2, 1)
-        self.layout.addWidget(self.dftGroupBox, 10, 0, 3, 1)
+        self.layout.addWidget(self.middleleftGroupBox, 6, 0, 2, 1)
+        # self.layout.addWidget(effectsTab, 7, 0, 1, 1)
+        # self.layout.addWidget(self.bcGroupBox, 8, 0, 2, 1)
+        # self.layout.addWidget(self.dftGroupBox, 10, 0, 3, 1)
 
-        self.layout.addWidget(fileGroupBox, 13, 0, 4, 1)
+        self.layout.addWidget(fileGroupBox, 8, 0, 1, 1)
 
-        self.layout.addWidget(self.threshGroupBox, 6, 1, 3, 1)
-        self.layout.addWidget(self.threshROIGroupBox, 9, 1, 5, 1)
+        # self.layout.addWidget(self.threshGroupBox, 6, 1, 3, 1)
+        # self.layout.addWidget(self.threshROIGroupBox, 9, 1, 5, 1)
+        self.layout.addWidget(thresholdTab, 6, 1, 3, 1)
 
-        self.layout.addWidget(self.dataGroupBox, 14, 1, 3, 1)
+        self.layout.addWidget(self.dataGroupBox, 5, 1, 1, 1)
 
         wid.setLayout(self.layout)
 

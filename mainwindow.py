@@ -46,7 +46,7 @@ import gc
 class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.frame everywhere
     def __init__(self):
         super().__init__()
-        self.setGeometry(0, 0, 1200, 800)
+        self.setGeometry(0, 0, 1300, 730)
         self.appVersion = "V-Scope v6.1"
         self.setWindowTitle(self.appVersion)
         self.layout = QGridLayout()
@@ -167,7 +167,7 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
         self.rawScene = QGraphicsScene(self) #raw video feed
         self.rawPixmapItem = QGraphicsPixmapItem(self.blankPixmap)
         self.rawScene.addItem(self.rawPixmapItem)
-        self.rawView = MyQGraphicsView(self.rawScene) #REMOVE!!!!
+        # self.rawView = MyQGraphicsView(self.rawScene) #REMOVE!!!!
         # self.rawView.setMinimumSize(600,300)
 ##        self.rawView.setGeometry(QRect(50, 120, 480, 360))
         #original view
@@ -195,12 +195,44 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
 ##        self.effectPixmap = QPixmap('images/blank.png')
         self.effectPixmapItem = QGraphicsPixmapItem(self.blankPixmap)
         self.effectScene.addItem(self.effectPixmapItem)
-        self.effectView = MyQGraphicsView(self.effectScene)
+        # self.effectView = MyQGraphicsView(self.effectScene) #REMOVE
         # self.effectView.setMinimumSize(600,300)
 ##        self.effectView.setGeometry(QRect(560, 120, 480, 360))
-        self.effectView.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.effectView.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.effectView.setBackgroundBrush(QBrush(Qt.black,
+        
+        self.effectView1 = MyQGraphicsView(self.effectScene)
+        self.effectView1.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.effectView1.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.effectView1.setBackgroundBrush(QBrush(Qt.black,
+                                                          Qt.SolidPattern))
+
+        self.effectView2 = MyQGraphicsView(self.effectScene)
+        self.effectView2.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.effectView2.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.effectView2.setBackgroundBrush(QBrush(Qt.black,
+                                                          Qt.SolidPattern))
+
+        self.effectView3 = MyQGraphicsView(self.effectScene)
+        self.effectView3.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.effectView3.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.effectView3.setBackgroundBrush(QBrush(Qt.black,
+                                                          Qt.SolidPattern))
+
+        self.effectView4 = MyQGraphicsView(self.effectScene)
+        self.effectView4.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.effectView4.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.effectView4.setBackgroundBrush(QBrush(Qt.black,
+                                                          Qt.SolidPattern))
+
+        self.effectView5 = MyQGraphicsView(self.effectScene)
+        self.effectView5.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.effectView5.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.effectView5.setBackgroundBrush(QBrush(Qt.black,
+                                                          Qt.SolidPattern))
+
+        self.effectView6 = MyQGraphicsView(self.effectScene)
+        self.effectView6.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.effectView6.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.effectView6.setBackgroundBrush(QBrush(Qt.black,
                                                           Qt.SolidPattern))
         
         self.playBtn = QPushButton("", self) #Play/Pause action
@@ -246,7 +278,7 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
         
         self.roiBtn = QPushButton("Draw ROI", self) #Draw ROI Manually
         self.roiBtn.clicked.connect(self.configROIWindow.showWindow)
-        self.roiBtn.setStyleSheet("QPushButton { font-weight: bold; font-size: 16px;} ")
+        self.roiBtn.setStyleSheet("QPushButton { font-weight: bold; font-size: 14px;} ")
         self.configROIWindow.roiDrawBtn.clicked.connect(self.roiMerge)
         self.configROIWindow.okBtn.clicked.connect(self.closeROIWindow)
 ##        self.roiBtn.resize(self.roiBtn.minimumSizeHint())
@@ -284,45 +316,51 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
         self.lengthUnit.setCurrentIndex(3)
         self.lengthUnit.currentIndexChanged.connect(self.update_calib)
         
-        self.videoEffect = QComboBox(self) #video effect dropdown
-        self.videoEffect.addItem("Binary")
-        self.videoEffect.addItem("Masked")
-        self.videoEffect.addItem("Contours")
-        self.videoEffect.addItem("Transformed")
-        self.videoEffect.addItem("Background")
-        self.videoEffect.addItem("Auto ROI")
-        self.videoEffect.addItem("Force/Area Plot")
-        self.videoEffect.setStyleSheet("QComboBox { font-weight: bold; font-size: 14px;} ")
-##        self.videoEffect.move(650, 85)
-##        self.videoEffect.resize(self.videoEffect.minimumSizeHint())
-        self.videoEffect.currentIndexChanged.connect(self.effect_change)
-        self.videoEffect.model().item(5).setEnabled(False)
-        self.videoEffect.model().item(6).setEnabled(False)
+#         self.videoEffect = QComboBox(self) #video effect dropdown
+#         self.videoEffect.addItem("Binary")
+#         self.videoEffect.addItem("Masked")
+#         self.videoEffect.addItem("Contours")
+#         self.videoEffect.addItem("Transformed")
+#         self.videoEffect.addItem("Background")
+#         self.videoEffect.addItem("Auto ROI")
+#         self.videoEffect.addItem("Force/Area Plot")
+#         self.videoEffect.setStyleSheet("QComboBox { font-weight: bold; font-size: 14px;} ")
+# ##        self.videoEffect.move(650, 85)
+# ##        self.videoEffect.resize(self.videoEffect.minimumSizeHint())
+#         # self.videoEffect.currentIndexChanged.connect(self.effect_change)
+#         self.videoEffect.model().item(5).setEnabled(False)
+#         self.videoEffect.model().item(6).setEnabled(False)
 
         self.analyzeVideo = QCheckBox('Analyze Video', self) #Perform Analysis
 ##        self.analyzeVideo.move(500, 30)
         self.analyzeVideo.stateChanged.connect(self.anal_change)
-        self.analyzeVideo.setStyleSheet("QCheckBox { font-weight: bold; font-size: 16px;} ")
+        self.analyzeVideo.setStyleSheet("QCheckBox { font-weight: bold; font-size: 14px;} ")
 
         self.correctZeroForce = QCheckBox('Zero-force correct', self) #Perform Analysis
         self.correctZeroForce.stateChanged.connect(self.plotSequence)
         self.correctZeroForce.setEnabled(False)
 
-        self.showContours = QCheckBox('Show Contours', self) #show contours
-##        self.showContours.move(300, 60)
-        self.showContours.stateChanged.connect(self.anal_change)
-        self.showContours.setStyleSheet("QCheckBox { font-weight: bold; font-size: 16px;} ")
+#         self.showContours = QCheckBox('Show Contours', self) #show contours
+# ##        self.showContours.move(300, 60)
+#         self.showContours.stateChanged.connect(self.anal_change)
+#         self.showContours.setStyleSheet("QCheckBox { font-weight: bold; font-size: 16px;} ")
 
-        self.showEffect = QCheckBox('Show Effect', self) #show contours
-##        self.showContours.move(300, 60)
-        self.showEffect.stateChanged.connect(self.anal_change)
-        self.showEffect.setStyleSheet("QCheckBox { font-weight: bold; font-size: 16px;} ")
+#         self.showEffect = QCheckBox('Show Effect', self) #show contours
+# ##        self.showContours.move(300, 60)
+#         self.showEffect.stateChanged.connect(self.anal_change)
+#         self.showEffect.setStyleSheet("QCheckBox { font-weight: bold; font-size: 16px;} ")
         
         self.bgButton = QPushButton("Set Background", self) #Set background
         self.bgButton.clicked.connect(self.bgFrame)
         self.bgButton.setStyleSheet("QPushButton { font-weight: bold; font-size: 14px;} ")
-        self.bgButton.clicked.connect(self.bg_change)
-##        self.bgButton.resize(self.bgButton.minimumSizeHint())
+        # self.bgButton.resize(self.bgButton.minimumSizeHint())
+        # self.bgButton.clicked.connect(self.bg_change)
+        
+        self.bgShowButton = QPushButton("Show", self) #Set background
+        self.bgShowButton.setStyleSheet("QPushButton { font-weight: bold; font-size: 14px;} ")
+        self.bgShowButton.setCheckable(True)
+        self.bgShowButton.clicked.connect(self.bgShow)
+        # self.bgShowButton.resize(self.bgShowButton.minimumSizeHint())
 ##        self.bgButton.move(420,80)
 
 ##        self.bgSubtract = QCheckBox('Subtract Background', self) #background subtract
@@ -735,14 +773,14 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
         self.saveBtn = QPushButton("Save Data", self) #Save area data
         self.saveBtn.clicked.connect(self.save_data)
         # self.saveBtn.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
-        self.saveBtn.setStyleSheet("QPushButton { font-weight: bold; font-size: 24px;} ")
+        self.saveBtn.setStyleSheet("QPushButton { font-weight: bold; font-size: 14px;} ")
 ##        self.saveBtn.resize(self.saveBtn.minimumSizeHint())
 ##        self.saveBtn.move(900,600)
 
         self.clearData = QPushButton("Clear Data", self) #Clear area data
         self.clearData.clicked.connect(self.clear_data)
         # self.clearData.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
-        self.clearData.setStyleSheet("QPushButton { font-weight: bold; font-size: 24px;} ")
+        self.clearData.setStyleSheet("QPushButton { font-weight: bold; font-size: 14px;} ")
 ##        self.clearData.resize(self.clearData.minimumSizeHint())
 ##        self.clearData.move(900,650)
         self.clearData.setEnabled(False)
@@ -774,35 +812,35 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
         wid = QWidget(self)
         self.setCentralWidget(wid)
 
-        topleftGroupBox = QGroupBox()
-        # topleftGroupBox.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
-        topleftGroupBox.setStyleSheet("QGroupBox { font-weight: bold; } ")
-        topleftVbox = QGridLayout(self)
-        topleftVbox.setColumnStretch(0, 1.5)
-        topleftGroupBox.setLayout(topleftVbox)
-        topleftVbox.addWidget(self.showContours, 0, 0, 1, 1)
-        topleftVbox.addWidget(self.showEffect, 0, 1, 1, 1)
-        topleftVbox.addWidget(self.roiBtn, 0, 2, 1, 1)
+        # topleftGroupBox = QGroupBox()
+        # # topleftGroupBox.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+        # topleftGroupBox.setStyleSheet("QGroupBox { font-weight: bold; } ")
+        # topleftVbox = QGridLayout(self)
+        # topleftVbox.setColumnStretch(0, 1.5)
+        # topleftGroupBox.setLayout(topleftVbox)
+        # topleftVbox.addWidget(self.showContours, 0, 0, 1, 1)
+        # topleftVbox.addWidget(self.showEffect, 0, 1, 1, 1)
+        # topleftVbox.addWidget(self.roiBtn, 0, 2, 1, 1)
 
-        toprightGroupBox = QGroupBox()
-        # toprightGroupBox.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
-        toprightGroupBox.setStyleSheet("QGroupBox { font-weight: bold; } ")
-        toprightVbox = QGridLayout(self)
-        # toprightVbox.setColumnStretch(0, 1.5)
-        toprightGroupBox.setLayout(toprightVbox)
-        toprightVbox.addWidget(self.analyzeVideo, 0, 0, 1, 1)
-        toprightVbox.addWidget(self.effectContrast, 0, 1, 1, 1)
-        toprightVbox.addWidget(self.videoEffect, 0, 2, 1, 1)
-        toprightVbox.addWidget(self.showPlot, 0, 3, 1, 1)
+        # toprightGroupBox = QGroupBox()
+        # # toprightGroupBox.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+        # toprightGroupBox.setStyleSheet("QGroupBox { font-weight: bold; } ")
+        # toprightVbox = QGridLayout(self)
+        # # toprightVbox.setColumnStretch(0, 1.5)
+        # toprightGroupBox.setLayout(toprightVbox)
+        # toprightVbox.addWidget(self.analyzeVideo, 0, 0, 1, 1)
+        # toprightVbox.addWidget(self.effectContrast, 0, 1, 1, 1)
+        # toprightVbox.addWidget(self.videoEffect, 0, 2, 1, 1)
+        # toprightVbox.addWidget(self.showPlot, 0, 3, 1, 1)
         
 
-        displayGroupBox = QGroupBox()
+        # displayGroupBox = QGroupBox()
         # displayGroupBox.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
         # displayGroupBox.setStyleSheet("QGroupBox { font-weight: bold; } ")
-        displayVbox = QGridLayout(self)
-        displayGroupBox.setLayout(displayVbox)
-        displayVbox.addWidget(self.rawView, 0, 0, 1, 1)
-        displayVbox.addWidget(self.effectView, 0, 1, 1, 1)
+        # displayVbox = QGridLayout(self)
+        # displayGroupBox.setLayout(displayVbox)
+        # displayVbox.addWidget(self.rawView, 0, 0, 1, 1)
+        # displayVbox.addWidget(self.effectView, 0, 1, 1, 1)
         
         playbackGroupBox = QGroupBox()
         # playbackGroupBox.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
@@ -826,7 +864,8 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
         bgVbox = QGridLayout(self)
         self.bgGroupBox.setLayout(bgVbox)
 ##        bgVbox.addWidget(self.bgSubtract, 0, 0, 1, 1)
-        bgVbox.addWidget(self.bgButton, 0, 1, 1, 2)
+        bgVbox.addWidget(self.bgButton, 0, 0, 1, 2)
+        bgVbox.addWidget(self.bgShowButton, 0, 2, 1, 2)
         bgVbox.addWidget(self.backgroundCorrectionLabel, 1, 0, 1, 1)
         bgVbox.addWidget(self.backgroundCorrection, 1, 1, 1, 1)
         bgVbox.addWidget(self.bgBlurLabel, 2, 0, 1, 1)
@@ -975,9 +1014,13 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
         self.dataGroupBox.setStyleSheet("QGroupBox { font-weight: bold; } ")
         dataVbox = QGridLayout(self)
         self.dataGroupBox.setLayout(dataVbox)
-        dataVbox.addWidget(self.saveBtn, 0, 0, 1, 1)
-        dataVbox.addWidget(self.clearData, 0, 1, 1, 1)
-
+        dataVbox.addWidget(self.analyzeVideo, 0, 0, 1, 1)
+        dataVbox.addWidget(self.roiBtn, 0, 1, 1, 1)
+        dataVbox.addWidget(self.saveBtn, 0, 2, 1, 1)
+        dataVbox.addWidget(self.effectContrast, 1, 0, 1, 1)
+        dataVbox.addWidget(self.showPlot, 1, 1, 1, 1)
+        dataVbox.addWidget(self.clearData, 1, 2, 1, 1)
+        
         effectsTab = QTabWidget() #B&C and flitering tabs
         effectsTab.addTab(self.bgGroupBox,"Background Correct")
         effectsTab.addTab(self.bcGroupBox,"Brightness/Contrast")
@@ -999,20 +1042,32 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
         middleleftVbox.addWidget(fpsGroupBox, 1, 2, 1, 1)
         
         
-        self.layout.addWidget(topleftGroupBox, 0, 0, 1, 1)
-        self.layout.addWidget(toprightGroupBox, 0, 1, 1, 1)
+        # self.layout.addWidget(topleftGroupBox, 0, 0, 1, 1)
+        # self.layout.addWidget(toprightGroupBox, 0, 1, 1, 1)
         
         self.rawViewDict = {"Original":self.rawView1, 
                             "Contours":self.rawView2,
-                            "Effect":self.rawView3}
+                            "Transformed":self.rawView3}
         self.rawViewTab = QTabWidget() #B&C and flitering tabs
-        self.rawViewTab.addTab(self.rawViewDict["Original"],"Original")
-        self.rawViewTab.addTab(self.rawViewDict["Contours"],"Contours")
-        self.rawViewTab.addTab(self.rawViewDict["Effect"],"Effect")
+        for key in self.rawViewDict.keys():
+            self.rawViewTab.addTab(self.rawViewDict[key],key)
         self.rawViewTab.currentChanged.connect(self.rawViewTabChanged)
+        self.rawViewTab.setStyleSheet("QTabWidget { font-weight: bold; } ")
+
+        self.effectViewDict = {"Binary":self.effectView1, 
+                            "Masked":self.effectView2,
+                            "Contours":self.effectView3,
+                            "Transformed":self.effectView4,
+                            "Auto ROI":self.effectView5,
+                            "Plot":self.effectView6}
+        self.effectViewTab = QTabWidget() #B&C and flitering tabs
+        for key in self.effectViewDict.keys():
+            self.effectViewTab.addTab(self.effectViewDict[key],key)
+        self.effectViewTab.currentChanged.connect(self.effectViewTabChanged)
+        self.effectViewTab.setStyleSheet("QTabWidget { font-weight: bold; } ")
         
-        self.layout.addWidget(self.rawViewTab, 1, 0, 1, 1)
-        self.layout.addWidget(self.effectView, 1, 1, 1, 1)
+        self.layout.addWidget(self.rawViewTab, 0, 0, 1, 1)
+        self.layout.addWidget(self.effectViewTab, 0, 1, 1, 1)
         # self.layout.addWidget(displayGroupBox, 1, 0, 4, 2)
         
         self.layout.addWidget(playbackGroupBox, 5, 0, 1, 1)
@@ -1037,10 +1092,6 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
         
         self.show()
         
-        #scale fit graphic view
-        self.rawView.fitInView(self.rawPixmapItem, 0)
-        self.effectView.fitInView(self.effectPixmapItem, 0)
-        
         #initialize parameters
         self.frame = []
         self.frameAction = "Stop"
@@ -1048,10 +1099,16 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
         self.msrListMode = False
         self.msrmnt_num = None
         self.comb = False
+        self.bgframeNumber = 0
         
         #initialization routines
         self.definePaths()
         self.rawViewTabChanged()
+        self.effectViewTabChanged()
+        
+        #scale fit graphic view
+        self.rawView.fitInView(self.rawPixmapItem, 0)
+        self.effectView.fitInView(self.effectPixmapItem, 0)        
 
     def rawViewTabChanged(self): #raw view tab changed
         tabname = self.rawViewTab.tabText(self.rawViewTab.currentIndex())
@@ -1059,6 +1116,12 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
         if len(self.frame) != 0:
             self.video_analysis()        
 
+    def effectViewTabChanged(self): #effect view tab changed
+        tabname = self.effectViewTab.tabText(self.effectViewTab.currentIndex())
+        self.effectView = self.effectViewDict[tabname]
+        if len(self.frame) != 0:
+            self.video_analysis() 
+            
     def load_image(self): #load image file
         self.videoPath, _ = QFileDialog.getOpenFileName(self, "Open Image File")
         if self.videoPath != "":
@@ -1123,9 +1186,9 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
             self.bgGroupBox.setChecked(False)
             self.bgGroupBox.blockSignals(False)
 
-            self.showContours.blockSignals(True)
-            self.showContours.setChecked(False)
-            self.showContours.blockSignals(False)
+            # self.showContours.blockSignals(True)
+            # self.showContours.setChecked(False)
+            # self.showContours.blockSignals(False)
 
             self.threshROIGroupBox.blockSignals(True)
             self.threshROIGroupBox.setChecked(False)
@@ -1155,9 +1218,10 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
             self.zeroForceData = ForceAnal() #initalise
             self.correctZeroForce.setEnabled(False)
             self.clearData.setEnabled(True)
-            self.videoEffect.setCurrentIndex(0)
-            self.videoEffect.model().item(5).setEnabled(False)
-            self.videoEffect.model().item(6).setEnabled(True)
+            # self.videoEffect.setCurrentIndex(0) CHECK TAB DISABLE!
+            # self.videoEffect.model().item(5).setEnabled(False)
+            # self.videoEffect.model().item(6).setEnabled(True)
+
             
             self.videoFileNameLabel.setText("<b>Video file:</b>\n" + self.videoPath) #video path
             self.forceFileNameLabel.setText("Select force data from file menu")
@@ -1167,6 +1231,7 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
             self.frame_bin_roi_full = None
             self.setWindowTitle(self.appVersion)
             self.msrmnt_num = None
+            self.bgframeNumber = 0
            
     def load_video(self): #load video
         if self.msrListMode == False:
@@ -1291,17 +1356,17 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
             
 
 
-            self.showContours.setEnabled(False)
-            self.showEffect.setEnabled(False)
+            # self.showContours.setEnabled(False)
+            # self.showEffect.setEnabled(False)
             
             
             self.forceData = ForceAnal()
             self.zeroForceData = ForceAnal() #initalise
             self.correctZeroForce.setEnabled(False)
             self.clearData.setEnabled(True)
-            self.videoEffect.setCurrentIndex(0)
-            self.videoEffect.model().item(5).setEnabled(False)
-            self.videoEffect.model().item(6).setEnabled(True)
+            # self.videoEffect.setCurrentIndex(0) CHECK TAB DISABLE!
+            # self.videoEffect.model().item(5).setEnabled(False)
+            # self.videoEffect.model().item(6).setEnabled(True)
 
             self.videoFileNameLabel.setText("<b>Video file:</b>\n" + self.videoPath) #video path
             self.forceFileNameLabel.setText("Select force data from file menu")
@@ -1536,10 +1601,11 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
 
     def video_analysis(self):
         if self.videoPath != "":
+            self.bgShow()
             if self.analyzeVideo.isChecked() == True:
                 print("video analysis")
                 rawtabname = self.rawViewTab.tabText(self.rawViewTab.currentIndex())
-                
+                effecttabname = self.effectViewTab.tabText(self.effectViewTab.currentIndex())
                 roi = self.roiBound
                 self.frame_transformed = self.frame[roi[1]:roi[3], roi[0]:roi[2]].copy()
                 if rawtabname == "Effect":
@@ -1643,16 +1709,18 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
                     #     cv2.drawContours(self.frame_contour, [self.roiDict[k][4]],
                     #                      -1, (255,0,0), 2)#auto roi
                 
-                self.effectChoices = {'Binary': self.frame_bin,
+                self.effectChoices = {'Original': self.frame_current[roi[1]:roi[3], 
+                                                                     roi[0]:roi[2]].copy(),
+                                      'Binary': self.frame_bin,
                                       'Masked': self.frame_masked,
                                       'Contours': self.frame_contour,
                                       'Transformed': self.frame_transformed,
-                                      'Background': self.frameBackground,
                                       'Auto ROI': self.frame_bin_roi_full}
+
                 print("effect choice")
 
-                
-                if self.videoEffect.currentText() == "Force/Area Plot":
+                if effecttabname == "Plot":
+                # if self.videoEffect.currentText() == "Force/Area Plot":
                     self.forceData.getArea(self.frameTime, self.dataDict)
                     self.forceData.plotData(self.lengthUnit.currentText()) #prepare plot
                     self.w = self.roiBound[2] - self.roiBound[0]
@@ -1662,38 +1730,39 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
                     self.frameEffect = cv2.resize(cv2.cvtColor(self.forceData.convertPlot(), cv2.COLOR_RGB2BGR),
                                                   dim, interpolation = cv2.INTER_AREA) 
                 else:
-                    self.frameEffect = self.effectChoices.get(self.videoEffect. \
-                                                    currentText())
+                    self.frameEffect = self.effectChoices.get(effecttabname)
+                    # self.frameEffect = self.effectChoices.get(self.videoEffect. \
+                    #                                 currentText())
                     if self.effectContrast.isChecked() == True: #enhance effect contrast
                         frame_inv = 255 - self.frameEffect
                         max_intensity = np.max(frame_inv)
                         gain = int(255/max_intensity) if max_intensity != 0 else 1
                         self.frameEffect = 255 - (gain * frame_inv) #increase effect contrast
     ##            roi = self.roiBound
-                
-                if rawtabname == "Contours":
-                #if self.showContours.isChecked() == True:
-    ##                if self.showEffect.isChecked() == True:
-    ##                    frame_disp = self.frame[roi[1]:roi[3], roi[0]:roi[2]].copy()
-    ##                else:
-    ##                    frame_disp = self.frame_current[roi[1]:roi[3], roi[0]:roi[2]].copy()
-    ##                
-    ##                for k in self.roiDict.keys():
-    ##                    if len(self.roiDict.keys()) > 1 and k == "Default":
-    ##                        continue
-    ##                    cv2.drawContours(frame_disp, [self.roiDict[k][3]],
-    ##                                     -1, (0,0,255), 2)
-    ##                    cv2.drawContours(frame_disp, self.roiDict[k][2], -1, (0,255,0), 1)
-    ####                frame_disp = frame_disp[roi[1]:roi[3], roi[0]:roi[2]]
-                    frame_disp = self.frame_contour.copy()
-    ##                self.renderVideo("Raw", self.ret, frame_disp)
-    ##                self.recordVideo(frame_disp, self.frameEffect)
-                else:
-                    if rawtabname == "Effect":
-                    #if self.showEffect.isChecked() == True:
-                        frame_disp = self.frame[roi[1]:roi[3], roi[0]:roi[2]].copy()
-                    else:
-                        frame_disp = self.frame_current[roi[1]:roi[3], roi[0]:roi[2]].copy()
+                frame_disp = self.effectChoices.get(rawtabname)
+    #             if rawtabname == "Contours":
+    #             #if self.showContours.isChecked() == True:
+    # ##                if self.showEffect.isChecked() == True:
+    # ##                    frame_disp = self.frame[roi[1]:roi[3], roi[0]:roi[2]].copy()
+    # ##                else:
+    # ##                    frame_disp = self.frame_current[roi[1]:roi[3], roi[0]:roi[2]].copy()
+    # ##                
+    # ##                for k in self.roiDict.keys():
+    # ##                    if len(self.roiDict.keys()) > 1 and k == "Default":
+    # ##                        continue
+    # ##                    cv2.drawContours(frame_disp, [self.roiDict[k][3]],
+    # ##                                     -1, (0,0,255), 2)
+    # ##                    cv2.drawContours(frame_disp, self.roiDict[k][2], -1, (0,255,0), 1)
+    # ####                frame_disp = frame_disp[roi[1]:roi[3], roi[0]:roi[2]]
+    #                 frame_disp = self.frame_contour.copy()
+    # ##                self.renderVideo("Raw", self.ret, frame_disp)
+    # ##                self.recordVideo(frame_disp, self.frameEffect)
+    #             else:
+    #                 if rawtabname == "Effect":
+    #                 #if self.showEffect.isChecked() == True:
+    #                     frame_disp = self.frame[roi[1]:roi[3], roi[0]:roi[2]].copy()
+    #                 else:
+    #                     frame_disp = self.frame_current[roi[1]:roi[3], roi[0]:roi[2]].copy()
 
                 self.renderVideo("Raw", self.ret, frame_disp)
                 self.renderVideo("Effect", self.ret, self.frameEffect)
@@ -1714,7 +1783,7 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
                 self.effectScene.removeItem(self.effectPixmapItem)
                 self.effectPixmapItem = self.effectScene.addPixmap(self.blankPixmap)
                 self.effectView.fitInView(self.rawPixmapItem, 1)
-                self.showContours.setEnabled(False)
+                # self.showContours.setEnabled(False)
 
 
     def stop_video(self):
@@ -2184,13 +2253,20 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
             self.video_analysis()        
         
 
-    def bgFrame(self):
+    def bgFrame(self): #set background frame
         if len(self.frame) != 0:
             self.frameBackground = self.frame.copy()
             self.bgframeNumber = self.framePos
             self.statusBar.showMessage("Frame number " + str(self.bgframeNumber) + \
                                        " set as background frame")
-
+            self.bg_change()
+            
+    def bgShow(self): #show background frame
+        if self.bgShowButton.isChecked() == True:
+            cv2.imshow("Background", self.frameBackground)
+        else:
+            cv2.destroyWindow("Background")
+        
     def bg_change(self): #background subtract change
         print("bg change")
 
@@ -2231,11 +2307,13 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
         print("anal change")
         if len(self.frame) != 0:
             if self.analyzeVideo.isChecked() == False:
-                self.showContours.setEnabled(False)
-                self.showEffect.setEnabled(False)
+                pass
+                # self.showContours.setEnabled(False)
+                # self.showEffect.setEnabled(False)
             else:
-                self.showContours.setEnabled(True)
-                self.showEffect.setEnabled(True)
+                pass
+                # self.showContours.setEnabled(True)
+                # self.showEffect.setEnabled(True)
 
             if self.playStatus == False:
                 self.effectChain = [1, 1, 1, 0] #order: b/c, bg sub, filter, tresh
@@ -2244,23 +2322,23 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
         else:
             self.analyzeVideo.setChecked(False)
     
-    def effect_change(self): #effect dropdown change
-        print("effect change")
-        if len(self.frame) != 0:
-            if self.playStatus == False and self.analyzeVideo.isChecked() == True:
-                if self.videoEffect.currentText() == "Force/Area Plot":
-                    self.forceData.getArea(self.frameTime, self.dataDict)
-                    self.forceData.plotData(self.lengthUnit.currentText()) #prepare plot
-                    self.w = self.roiBound[2] - self.roiBound[0]
-                    self.h = self.roiBound[3] - self.roiBound[1]
-                    dim = (1280, 1024) #CHECK!
-                    self.frameEffect = cv2.resize(cv2.cvtColor(self.forceData.convertPlot(), cv2.COLOR_RGB2BGR),
-                                                  dim, interpolation = cv2.INTER_AREA)
+    # def effect_change(self): #effect dropdown change
+    #     print("effect change")
+    #     if len(self.frame) != 0:
+    #         if self.playStatus == False and self.analyzeVideo.isChecked() == True:
+    #             if self.videoEffect.currentText() == "Force/Area Plot":
+    #                 self.forceData.getArea(self.frameTime, self.dataDict)
+    #                 self.forceData.plotData(self.lengthUnit.currentText()) #prepare plot
+    #                 self.w = self.roiBound[2] - self.roiBound[0]
+    #                 self.h = self.roiBound[3] - self.roiBound[1]
+    #                 dim = (1280, 1024) #CHECK!
+    #                 self.frameEffect = cv2.resize(cv2.cvtColor(self.forceData.convertPlot(), cv2.COLOR_RGB2BGR),
+    #                                               dim, interpolation = cv2.INTER_AREA)
 
-                else:
-                    self.frameEffect = self.effectChoices.get(self.videoEffect. \
-                                                    currentText())
-                self.renderVideo("Effect", self.ret, self.frameEffect)
+    #             else:
+    #                 self.frameEffect = self.effectChoices.get(self.videoEffect. \
+    #                                                 currentText())
+    #             self.renderVideo("Effect", self.ret, self.frameEffect)
 
     def fps_change(self):#fps value change
         print("fps change", self.frameCount)
@@ -2272,10 +2350,12 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
     def auto_roi_change(self): #auto roi checkbox change
         self.roi_auto = self.threshROIGroupBox.isChecked()
         if self.roi_auto == True:
-            self.videoEffect.model().item(5).setEnabled(True)
+            pass
+            # self.videoEffect.model().item(5).setEnabled(True) CHECK TAB DISABLE!
 ##            self.distinctAutoROI.setEnabled(True)
         else:
-            self.videoEffect.model().item(5).setEnabled(False)
+            pass
+            # self.videoEffect.model().item(5).setEnabled(False) CHECK TAB DISABLE!
 ##            self.distinctAutoROI.blockSignals(True)
 ##            self.distinctAutoROI.setChecked(False)
 ##            self.distinct_roi = False
@@ -2579,7 +2659,7 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
             self.cap2 = cv2.VideoCapture(videofile2)
         self.configRecWindow.close()
         self.seekSlider.setValue(0) #reset to beginning
-        self.showContours.setChecked(False) #uncheck show contours
+        # self.showContours.setChecked(False) #uncheck show contours
         self.clear_data() #clear data
         
     def configurePlot(self): #set plot design flags
@@ -2592,7 +2672,8 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
                 self.init_plotconfig()
                 if self.forceData.ptsnumber != 0: #when no force file loaded
                     self.forceData.calcData()
-                self.effect_change()
+                #self.effect_change()
+                self.video_analysis()
             self.plot_live_data()
 
     def plotSequence(self): #sequence of plot calculations

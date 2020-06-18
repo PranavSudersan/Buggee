@@ -50,6 +50,9 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
         self.appVersion = "V-Scope v6.1"
         self.setWindowTitle(self.appVersion)
         self.layout = QGridLayout()
+        self.layout.setColumnMinimumWidth(0,650)
+        self.layout.setColumnMinimumWidth(1,650)
+        self.layout.setRowMinimumHeight(0,285)
         
         self.configROIWindow = ConfigROIWindow() #ROI config
         self.configPathWindow = ConfigPathWindow() #path window
@@ -298,7 +301,7 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
 ##        self.pixelValue.move(375, 550)
 ##        self.pixelValue.resize(50, 20)
 
-        self.pixelLabel = QLabel("px\tequals\t", self) #pixel
+        self.pixelLabel = QLabel("px equals ", self) #pixel
 ##        self.pixelLabel.move(430, 545)
         
         self.lengthValue = QDoubleSpinBox(self)
@@ -1189,6 +1192,7 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
             # self.showContours.blockSignals(True)
             # self.showContours.setChecked(False)
             # self.showContours.blockSignals(False)
+            self.rawViewTab.setTabEnabled(1,False)
 
             self.threshROIGroupBox.blockSignals(True)
             self.threshROIGroupBox.setChecked(False)
@@ -1221,7 +1225,8 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
             # self.videoEffect.setCurrentIndex(0) CHECK TAB DISABLE!
             # self.videoEffect.model().item(5).setEnabled(False)
             # self.videoEffect.model().item(6).setEnabled(True)
-
+            self.effectViewTab.setTabEnabled(4,False)
+            # self.effectViewTab.setTabEnabled(6,True)
             
             self.videoFileNameLabel.setText("<b>Video file:</b>\n" + self.videoPath) #video path
             self.forceFileNameLabel.setText("Select force data from file menu")
@@ -1273,7 +1278,7 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
 
             self.effectScene.removeItem(self.effectPixmapItem)
             self.effectPixmapItem = self.effectScene.addPixmap(self.blankPixmap)
-            self.effectView.fitInView(self.rawPixmapItem, 1)
+            self.effectView.fitInView(self.effectPixmapItem, 1)
                 
             self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
             self.frame_current = self.frame.copy()
@@ -1355,7 +1360,7 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
             self.correctZeroForce.blockSignals(False)
             
 
-
+            self.rawViewTab.setTabEnabled(1,False)
             # self.showContours.setEnabled(False)
             # self.showEffect.setEnabled(False)
             
@@ -1367,6 +1372,8 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
             # self.videoEffect.setCurrentIndex(0) CHECK TAB DISABLE!
             # self.videoEffect.model().item(5).setEnabled(False)
             # self.videoEffect.model().item(6).setEnabled(True)
+            self.effectViewTab.setTabEnabled(4,False)
+            # self.effectViewTab.setTabEnabled(6,True)
 
             self.videoFileNameLabel.setText("<b>Video file:</b>\n" + self.videoPath) #video path
             self.forceFileNameLabel.setText("Select force data from file menu")
@@ -1599,20 +1606,96 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
 
                 self.frame = None
 
+    def stop_video(self):
+        if self.videoPath != "":
+            self.frameAction = "Stop"
+            roiCorners = np.array([[0, 0],[self.frameWidth, 0], 
+                                        [self.frameWidth, self.frameHeight], 
+                                        [0, self.frameHeight]],np.int32)
+            self.roiBound = [0, 0, self.frameWidth, self.frameHeight]
+            self.roiDict = {"Default": [roiCorners, self.roiBound, [],
+                                        roiCorners, roiCorners]}
+            self.init_dict() #initialise dictionaries
+        
+    def next_frame(self):
+        if self.videoPath != "":
+            self.frameAction = "Next"
+
+    def previous_frame(self):
+        if self.videoPath != "":
+            self.frameAction = "Previous"
+
+    def seek_video(self):
+        if self.videoPath != "":
+            self.cap.set(cv2.CAP_PROP_POS_FRAMES, self.seekSlider.value())
+##            self.framePos = self.seekSlider.value()
+##            if self.framePos == self.frameCount-1: #REMOVE -1 and CHECK
+##                self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+
+            self.ret, self.frame = self.cap.read()
+            if self.seekSlider.value() == 0:
+                self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+
+            if self.ret == False: #CHECK
+                print("if")
+                self.cap.release()
+                self.cap = cv2.VideoCapture(self.videoPath)
+                self.ret, self.frame = self.cap.read()
+##                self.framePos = self.cap.get(cv2.CAP_PROP_POS_FRAMES)
+##            else:
+            self.framePos = self.cap.get(cv2.CAP_PROP_POS_FRAMES)
+            print("else", self.framePos)
+
+            self.seekSlider.blockSignals(True)
+            self.seekSlider.setValue(self.framePos)
+            self.seekSlider.blockSignals(False)
+
+            self.statusBar.showMessage("Frame number: " + str(int(self.framePos)) + "\t("
+                                           + str(int((self.framePos)*100/self.frameCount)) +
+                                           "%)" + "\tTime: " +
+                                           "{0:.2f}".format(self.frameTime[int(self.framePos-1)]) + " s")
+##            self.framePos = 1 if self.framePos == 0 else self.framePos #avoid array indexing issue
+                
+##            self.statusBar.showMessage("Frame number: " + str(int(self.framePos)) + "\t("
+##                                       + str(int((self.framePos)*100/self.frameCount)) +
+##                                       "%)")
+            
+                    
+            
+            self.frame_current = self.frame.copy()
+            self.video_effect(self.frame_current) #apply filter, b/c, bg subtract effects
+            self.roi_auto = self.threshROIGroupBox.isChecked()
+            self.roi_hull = self.applyHullROI.isChecked()
+            self.combine_roi = self.combineROI.isChecked()
+
+            if self.framePos == 0:
+##                self.blankPixmap = QPixmap('images/blank.png')
+                self.statusBar.showMessage("Press play to begin")
+                self.rawScene.removeItem(self.rawPixmapItem)
+                self.rawPixmapItem = self.rawScene.addPixmap(self.blankPixmap)
+                self.rawView.fitInView(self.rawPixmapItem, 1)
+                self.effectScene.removeItem(self.effectPixmapItem)
+                self.effectPixmapItem = self.effectScene.addPixmap(self.blankPixmap)
+                self.effectView.fitInView(self.effectPixmapItem, 1)
+            else:
+                self.video_analysis() #tresholding and analysis
+
     def video_analysis(self):
         if self.videoPath != "":
             self.bgShow()
+            rawtabname = self.rawViewTab.tabText(self.rawViewTab.currentIndex())
+            effecttabname = self.effectViewTab.tabText(self.effectViewTab.currentIndex())
+            roi = self.roiBound
+            self.frame_transformed = self.frame[roi[1]:roi[3], roi[0]:roi[2]].copy()            
+            
             if self.analyzeVideo.isChecked() == True:
                 print("video analysis")
-                rawtabname = self.rawViewTab.tabText(self.rawViewTab.currentIndex())
-                effecttabname = self.effectViewTab.tabText(self.effectViewTab.currentIndex())
-                roi = self.roiBound
-                self.frame_transformed = self.frame[roi[1]:roi[3], roi[0]:roi[2]].copy()
-                if rawtabname == "Effect":
+
+                # if rawtabname == "Transformed":
                 #if self.showEffect.isChecked() == True:
-                    self.frame_contour = self.frame[roi[1]:roi[3], roi[0]:roi[2]].copy()
-                else:
-                    self.frame_contour = self.frame_current[roi[1]:roi[3], roi[0]:roi[2]].copy()
+                    # self.frame_contour = self.frame[roi[1]:roi[3], roi[0]:roi[2]].copy()
+                # else:
+                self.frame_contour = self.frame_current[roi[1]:roi[3], roi[0]:roi[2]].copy()
                     
                 self.frame_bin, self.frame_masked, self.frame_contour, cpt, elp = \
                           self.getContours(self.threshType.currentText(),
@@ -1777,89 +1860,17 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
                                            "{0:.2f}".format(self.frameTime[int(self.framePos-1)]) + " s")
                 self.plot_live_data()
             else:
-                roi = self.roiBound
-                frame_disp = self.frame[roi[1]:roi[3], roi[0]:roi[2]].copy()
+                # roi = self.roiBound
+                # frame_disp = self.frame[roi[1]:roi[3], roi[0]:roi[2]].copy()
+                rawChoices = {'Original': self.frame_current[roi[1]:roi[3], 
+                                                             roi[0]:roi[2]].copy(),
+                              'Transformed': self.frame_transformed}
+                frame_disp = rawChoices.get(rawtabname)                
                 self.renderVideo("Raw", self.ret, frame_disp)
                 self.effectScene.removeItem(self.effectPixmapItem)
                 self.effectPixmapItem = self.effectScene.addPixmap(self.blankPixmap)
-                self.effectView.fitInView(self.rawPixmapItem, 1)
+                self.effectView.fitInView(self.effectPixmapItem, 1)
                 # self.showContours.setEnabled(False)
-
-
-    def stop_video(self):
-        if self.videoPath != "":
-            self.frameAction = "Stop"
-            roiCorners = np.array([[0, 0],[self.frameWidth, 0], 
-                                        [self.frameWidth, self.frameHeight], 
-                                        [0, self.frameHeight]],np.int32)
-            self.roiBound = [0, 0, self.frameWidth, self.frameHeight]
-            self.roiDict = {"Default": [roiCorners, self.roiBound, [],
-                                        roiCorners, roiCorners]}
-            self.init_dict() #initialise dictionaries
-        
-    def next_frame(self):
-        if self.videoPath != "":
-            self.frameAction = "Next"
-
-    def previous_frame(self):
-        if self.videoPath != "":
-            self.frameAction = "Previous"
-
-    def seek_video(self):
-        if self.videoPath != "":
-            self.cap.set(cv2.CAP_PROP_POS_FRAMES, self.seekSlider.value())
-##            self.framePos = self.seekSlider.value()
-##            if self.framePos == self.frameCount-1: #REMOVE -1 and CHECK
-##                self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-
-            self.ret, self.frame = self.cap.read()
-            if self.seekSlider.value() == 0:
-                self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-
-            if self.ret == False: #CHECK
-                print("if")
-                self.cap.release()
-                self.cap = cv2.VideoCapture(self.videoPath)
-                self.ret, self.frame = self.cap.read()
-##                self.framePos = self.cap.get(cv2.CAP_PROP_POS_FRAMES)
-##            else:
-            self.framePos = self.cap.get(cv2.CAP_PROP_POS_FRAMES)
-            print("else", self.framePos)
-
-            self.seekSlider.blockSignals(True)
-            self.seekSlider.setValue(self.framePos)
-            self.seekSlider.blockSignals(False)
-
-            self.statusBar.showMessage("Frame number: " + str(int(self.framePos)) + "\t("
-                                           + str(int((self.framePos)*100/self.frameCount)) +
-                                           "%)" + "\tTime: " +
-                                           "{0:.2f}".format(self.frameTime[int(self.framePos-1)]) + " s")
-##            self.framePos = 1 if self.framePos == 0 else self.framePos #avoid array indexing issue
-                
-##            self.statusBar.showMessage("Frame number: " + str(int(self.framePos)) + "\t("
-##                                       + str(int((self.framePos)*100/self.frameCount)) +
-##                                       "%)")
-            
-                    
-            
-            self.frame_current = self.frame.copy()
-            self.video_effect(self.frame_current) #apply filter, b/c, bg subtract effects
-            self.roi_auto = self.threshROIGroupBox.isChecked()
-            self.roi_hull = self.applyHullROI.isChecked()
-            self.combine_roi = self.combineROI.isChecked()
-
-            if self.framePos == 0:
-##                self.blankPixmap = QPixmap('images/blank.png')
-                self.statusBar.showMessage("Press play to begin")
-                self.rawScene.removeItem(self.rawPixmapItem)
-                self.rawPixmapItem = self.rawScene.addPixmap(self.blankPixmap)
-                self.rawView.fitInView(self.rawPixmapItem, 1)
-                self.effectScene.removeItem(self.effectPixmapItem)
-                self.effectPixmapItem = self.effectScene.addPixmap(self.blankPixmap)
-                self.effectView.fitInView(self.rawPixmapItem, 1)
-            else:
-                self.video_analysis() #tresholding and analysis
-
 
     def video_effect(self, frame): #apply effects in effects chain on self.frame
         print("video effect", self.effectChain)
@@ -2307,11 +2318,11 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
         print("anal change")
         if len(self.frame) != 0:
             if self.analyzeVideo.isChecked() == False:
-                pass
+                self.rawViewTab.setTabEnabled(1,False)
                 # self.showContours.setEnabled(False)
                 # self.showEffect.setEnabled(False)
             else:
-                pass
+                self.rawViewTab.setTabEnabled(1,True)
                 # self.showContours.setEnabled(True)
                 # self.showEffect.setEnabled(True)
 
@@ -2350,11 +2361,11 @@ class MainWindow(QMainWindow, Effects): #also try inherit Effect, unify self.fra
     def auto_roi_change(self): #auto roi checkbox change
         self.roi_auto = self.threshROIGroupBox.isChecked()
         if self.roi_auto == True:
-            pass
+            self.effectViewTab.setTabEnabled(4,True)
             # self.videoEffect.model().item(5).setEnabled(True) CHECK TAB DISABLE!
 ##            self.distinctAutoROI.setEnabled(True)
         else:
-            pass
+            self.effectViewTab.setTabEnabled(4,False)
             # self.videoEffect.model().item(5).setEnabled(False) CHECK TAB DISABLE!
 ##            self.distinctAutoROI.blockSignals(True)
 ##            self.distinctAutoROI.setChecked(False)

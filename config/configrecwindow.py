@@ -7,6 +7,7 @@ Created on Sat Jun  6 22:28:19 2020
 from PyQt5.QtWidgets import QFileDialog, QCheckBox, QLabel, QPushButton, \
      QComboBox, QTextEdit, QSpinBox, \
      QGroupBox, QGridLayout, QWidget, QSizePolicy
+import time
      
 # %% Recording Window
 class ConfigRecWindow(QWidget):

@@ -7,6 +7,8 @@ Created on Fri Jun 19 12:10:12 2020
 
 import numpy as np
 import cv2
+import openpyxl
+import os.path
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QFileDialog
 from PyQt5.QtChart import QScatterSeries

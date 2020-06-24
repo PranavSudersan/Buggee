@@ -4,7 +4,7 @@ Created on Fri Jun 19 11:49:58 2020
 
 @author: adwait
 """
-from PyQt5.QtGui import QPixmap, QIcon
+from PyQt5.QtGui import QIcon
 import cv2
 import numpy as np
 import time

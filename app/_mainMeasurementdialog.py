@@ -6,7 +6,7 @@ Created on Wed Jun 24 23:15:06 2020
 """
 from PyQt5.QtWidgets import QPushButton, \
      QGridLayout, QDialog, QListWidget
-from current.analyze_force import ForceAnal
+from source.analyze_force import ForceAnal
      
 class MainMeasurementDialog:
 

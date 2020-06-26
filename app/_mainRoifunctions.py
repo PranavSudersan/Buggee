@@ -5,7 +5,7 @@ Created on Wed Jun 24 23:24:56 2020
 @author: adwait
 """
 import numpy as np
-import current.draw_roi as drawroi
+import source.draw_roi as drawroi
 
 class MainRoiFunctions:
 

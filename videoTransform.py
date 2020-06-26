@@ -8,7 +8,7 @@ Created on Sat May  4 11:56:24 2019
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
-import draw_roi
+import source.draw_roi as drawroi
 import time
 import statistics
 
@@ -262,7 +262,7 @@ class Effects:
             if self.distinct_roi == True:
                 mask_inv = cv2.bitwise_not(mask)
                 frame_bin_roi_masked = cv2.bitwise_and(mask_inv, frame_bin_roi)                
-                frame_roi_wet, roiCornersAuto = draw_roi.roi_wet(frame_bin_roi_masked,
+                frame_roi_wet, roiCornersAuto = drawroi.roi_wet(frame_bin_roi_masked,
                                                       self.epsilon_fraction,
                                                       self.roi_min_area,
                                                       self.roi_hull,
@@ -270,7 +270,7 @@ class Effects:
                                                         self.roi_morph, self.x_roi_morph,
                                                                       self.y_roi_morph)
             else:
-                frame_roi_wet, roiCornersAuto = draw_roi.roi_wet(frame_bin_roi,
+                frame_roi_wet, roiCornersAuto = drawroi.roi_wet(frame_bin_roi,
                                                       self.epsilon_fraction,
                                                       self.roi_min_area,
                                                       self.roi_hull,

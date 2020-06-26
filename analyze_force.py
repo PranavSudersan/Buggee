@@ -6,14 +6,14 @@ Created on Fri Jun 21 19:42:45 2019
 """
 import matplotlib.pyplot as plt
 import numpy as np
-import glob
+# import glob
 import os.path
 from tkinter import filedialog
 import tkinter as tk
 from statistics import mean, stdev
 from scipy.signal import savgol_filter, medfilt
 from tkinter import messagebox
-import ast
+# import ast
 from scipy import integrate
 
 class ForceAnal:

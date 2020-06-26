@@ -28,28 +28,28 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, \
 ##from style import breeze_resources
 
 # import local modules
-# import current.draw_roi as drawroi
-from current.videoTransform import Effects
-# from current.analyze_force import ForceAnal
-# from current.summary.summaryanalyze import SummaryAnal
-from current.summary.summarydialog import SummaryDialog
-from current.config.configroiwindow import ConfigROIWindow
-from current.config.configpathwindow import ConfigPathWindow
-from current.config.configrecwindow import ConfigRecWindow
-from current.config.configplotwindow import ConfigPlotWindow
-from current.app.plotwindow import PlotWindow
-# from current.app.myqgraphicsview import MyQGraphicsView
-# from current.threads.countframethread import CountFrameThread
-from current.threads.contourdatathread import ContourDataThread
-# from current.threads.summplotthread import SummPlotThread
-from current.app._mainWidgets import MainWidgets
-from current.app._mainParameterchanged import MainParameterChanged
-from current.app._mainPlaybackfunctions import MainPlaybackFunctions
-from current.app._mainRecordfunctions import MainRecordFunctions
-from current.app._mainImportfile import MainImportFile
-from current.app._mainMeasurementdialog import MainMeasurementDialog
-from current.app._mainRoifunctions import MainRoiFunctions
-from current.app._mainLiveplot import MainLivePlot
+# import source.draw_roi as drawroi
+from source.videoTransform import Effects
+# from source.analyze_force import ForceAnal
+# from source.summary.summaryanalyze import SummaryAnal
+from source.summary.summarydialog import SummaryDialog
+from source.config.configroiwindow import ConfigROIWindow
+from source.config.configpathwindow import ConfigPathWindow
+from source.config.configrecwindow import ConfigRecWindow
+from source.config.configplotwindow import ConfigPlotWindow
+from source.app.plotwindow import PlotWindow
+# from source.app.myqgraphicsview import MyQGraphicsView
+# from source.threads.countframethread import CountFrameThread
+from source.threads.contourdatathread import ContourDataThread
+# from source.threads.summplotthread import SummPlotThread
+from source.app._mainWidgets import MainWidgets
+from source.app._mainParameterchanged import MainParameterChanged
+from source.app._mainPlaybackfunctions import MainPlaybackFunctions
+from source.app._mainRecordfunctions import MainRecordFunctions
+from source.app._mainImportfile import MainImportFile
+from source.app._mainMeasurementdialog import MainMeasurementDialog
+from source.app._mainRoifunctions import MainRoiFunctions
+from source.app._mainLiveplot import MainLivePlot
 
 
 # %% Main Application Window

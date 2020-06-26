@@ -9,7 +9,7 @@ import openpyxl
 import pandas as pd
 from pandas.io.json import json_normalize
 import numpy as np
-import random
+# import random
 
 class SummaryAnal:
 

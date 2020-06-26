@@ -7,10 +7,10 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QApplication
 from tkinter import messagebox, Tk
 
-#include root dirctory into module search path
+#include source dirctory into module search path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from current.app.mainwindow import MainWindow
+from source.app.mainwindow import MainWindow
 
 # if __name__ == "__main__":
 def except_hook(cls, exception, traceback): #display error message/print traceback

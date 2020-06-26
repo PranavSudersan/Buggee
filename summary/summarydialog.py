@@ -9,8 +9,8 @@ import gc
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QCheckBox, QLabel, QPushButton, \
      QComboBox, QSpinBox, QGridLayout, QDialog, QLineEdit
-from current.summary.summaryanalyze import SummaryAnal
-from current.threads.summplotthread import SummPlotThread
+from source.summary.summaryanalyze import SummaryAnal
+from source.threads.summplotthread import SummPlotThread
      
 class SummaryDialog:
 

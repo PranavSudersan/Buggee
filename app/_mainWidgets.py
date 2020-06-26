@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import QSlider, QCheckBox, QLabel, QPushButton, \
      QGraphicsPixmapItem, QSpinBox, QDoubleSpinBox, \
      QGroupBox, QGridLayout, QWidget, \
      QTabWidget
-from current.app.myqgraphicsview import MyQGraphicsView
+from source.app.myqgraphicsview import MyQGraphicsView
 
 class MainWidgets:
     

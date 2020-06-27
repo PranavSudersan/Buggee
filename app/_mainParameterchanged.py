@@ -131,12 +131,13 @@ class MainParameterChanged:
         if len(self.frame) != 0:
             print(self.frame_current.size)
             if self.playStatus == False:
+                roi = self.roiBound
                 if self.dftGroupBox.isChecked() == True:
                     self.effectChain = [1, 1, 1, 0] #order: b/c, bg sub, filter, tresh
-                    self.video_effect(self.frame_current)
+                    self.video_effect(self.frame_current[roi[1]:roi[3], roi[0]:roi[2]])
                     self.video_analysis()
                 elif changed_object.__class__.__name__ == "QGroupBox":
-                    self.frame = self.frame_current.copy()
+                    self.frame = self.frame_current[roi[1]:roi[3], roi[0]:roi[2]].copy()
                     self.effectChain = [1, 1, 0, 0]
                     self.video_effect(self.frame)
                     self.video_analysis()
@@ -209,8 +210,9 @@ class MainParameterChanged:
         if len(self.frame) != 0:
             if self.playStatus == False:
                 print("bc anal")
+                roi = self.roiBound
                 self.effectChain = [1, 1, 1, 1]
-                self.video_effect(self.frame_current)
+                self.video_effect(self.frame_current[roi[1]:roi[3], roi[0]:roi[2]])
                 self.video_analysis()
 
     def epsilon_change(self): #epsilon (roi hull) change
@@ -376,12 +378,13 @@ class MainParameterChanged:
             
         if len(self.frame) != 0:
             if self.playStatus == False:
+                roi = self.roiBound
                 if self.bgGroupBox.isChecked() == True:
                     self.effectChain = [1, 1, 1, 0] #order: b/c, bg sub, filter, tresh
-                    self.video_effect(self.frame_current)
+                    self.video_effect(self.frame_current[roi[1]:roi[3], roi[0]:roi[2]])
                     self.video_analysis()
                 elif changed_object.__class__.__name__ == "QGroupBox":
-                    self.frame = self.frame_current.copy()
+                    self.frame = self.frame_current[roi[1]:roi[3], roi[0]:roi[2]].copy()
                     self.effectChain = [1, 0, 1, 0]
                     self.video_effect(self.frame)
                     self.video_analysis()
@@ -397,10 +400,10 @@ class MainParameterChanged:
                 self.rawViewTab.setTabEnabled(1,True)
                 # self.showContours.setEnabled(True)
                 # self.showEffect.setEnabled(True)
-
+            roi = self.roiBound
             if self.playStatus == False:
                 self.effectChain = [1, 1, 1, 0] #order: b/c, bg sub, filter, tresh
-                self.video_effect(self.frame_current)
+                self.video_effect(self.frame_current[roi[1]:roi[3], roi[0]:roi[2]])
                 self.video_analysis()
         else:
             self.analyzeVideo.setChecked(False)

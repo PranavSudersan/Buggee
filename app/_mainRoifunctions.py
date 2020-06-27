@@ -45,6 +45,7 @@ class MainRoiFunctions:
         self.roiDict[label] = [rc, rb, [], [], []]
         
         self.getRoiBound()
+        roi = self.roiBound
         for k in self.roiDict.keys():
             if len(self.roiDict.keys()) > 1 and k == "Default":
                 continue
@@ -53,7 +54,7 @@ class MainRoiFunctions:
             self.dataDict[k] = 6 * [np.zeros(int(self.frameCount), np.float64)] + \
                                [[[(0,0),(0,0),0,1]]*int(self.frameCount)]
         self.contour_data = [[], [], [], [], [], [], [], []]
-        self.video_effect(self.frame_current)
+        self.video_effect(self.frame_current[roi[1]:roi[3], roi[0]:roi[2]])
         self.video_analysis() #CHECK
 
     def getRoiBound(self): #get roiBound
@@ -98,6 +99,7 @@ class MainRoiFunctions:
         self.configPlotWindow.roiChoice.blockSignals(False)
 
         self.getRoiBound() #update roi bounds
+        roi = self.roiBound
         for k in self.roiDict.keys():
             if len(self.roiDict.keys()) > 1 and k == "Default":
                 continue
@@ -107,7 +109,7 @@ class MainRoiFunctions:
                                [[[(0,0),(0,0),0,1]]*int(self.frameCount)]
 
         self.plotSequence()
-        self.video_effect(self.frame_current)
+        self.video_effect(self.frame_current[roi[1]:roi[3], roi[0]:roi[2]])
         self.video_analysis()
         self.configROIWindow.close()
 

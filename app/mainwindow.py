@@ -29,7 +29,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, \
 
 # import local modules
 # import source.draw_roi as drawroi
-from source.videoTransform import Effects
+# from source.videoTransform import Effects
 # from source.analyze_force import ForceAnal
 # from source.summary.summaryanalyze import SummaryAnal
 from source.summary.summarydialog import SummaryDialog
@@ -51,16 +51,20 @@ from source.app._mainMeasurementdialog import MainMeasurementDialog
 from source.app._mainRoifunctions import MainRoiFunctions
 from source.app._mainLiveplot import MainLivePlot
 
+from source.process.imagesegment import ImageSegment
+from source.process import imagetransform
+
+
 
 # %% Main Application Window
-class MainWindow(QMainWindow, Effects, MainWidgets, MainPlaybackFunctions, 
+class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions, 
                  MainImportFile, MainParameterChanged, MainRecordFunctions,
                  MainLivePlot, SummaryDialog, MainMeasurementDialog,
-                 MainRoiFunctions): #also try inherit Effect, unify self.frame everywhere
+                 MainRoiFunctions, ImageSegment): #also try inherit Effect, unify self.frame everywhere
     def __init__(self):
         super().__init__()
         self.setGeometry(0, 0, 1300, 730)
-        self.appVersion = "V-Scope v6.1"
+        self.appVersion = "AdheSee v1.0"
         self.setWindowTitle(self.appVersion)
         self.layout = QGridLayout()
         self.layout.setColumnMinimumWidth(0,650)
@@ -1700,13 +1704,93 @@ class MainWindow(QMainWindow, Effects, MainWidgets, MainPlaybackFunctions,
     def loading_indicate(self, framenum): #loading
         self.statusBar.showMessage("Loading... Frame " + str(int(framenum)))
         
+    def bgFrame(self): #set background frame
+        if len(self.frame) != 0:
+            roi = self.roiBound
+            self.frameBackground = self.frame_current[roi[1]:roi[3], roi[0]:roi[2]].copy()
+            self.bgframeNumber = self.framePos
+            self.statusBar.showMessage("Frame number " + str(self.bgframeNumber) + \
+                                       " set as background frame")
+            self.bg_change()
+            
+    def bgShow(self): #show background frame
+        if self.bgShowButton.isChecked() == True:
+            cv2.imshow("Background", self.frameBackground)
+        else:
+            cv2.destroyWindow("Background")
+
+    def video_effect(self, frame): #apply effects in effects chain on self.frame
+        print("video effect", self.effectChain)
+        if self.effectChain[0] == 1: #1: brightness/contrast
+            self.frame = imagetransform.applyBrightnessContrast(
+                            self.brightnessSlider.value(),
+                            self.contrastSlider.value(), frame)
+            frame = self.frame
+                
+        if self.bgGroupBox.isChecked() == True and \
+           self.effectChain[1] == 1: #2: background subtraction
+##                self.subtract = True #CHECK
+##                self.frameBackground = self.frameBackground #CHECK
+            print(frame.shape, self.frameBackground.shape)
+            if self.backgroundCorrection.currentText()== "Rolling Ball":
+                frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                frame_corr, self.frameBackground = subtract_background_rolling_ball(frame_gray,
+                                                                          self.bgSlider.value(),
+                                                                     light_background=True,
+                                                                     use_paraboloid=False,
+                                                                     do_presmooth=True)
+                self.frame = cv2.cvtColor(frame_corr, cv2.COLOR_GRAY2BGR)
+            elif self.backgroundCorrection.currentText()== "Rolling Paraboloid":
+                frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                frame_corr, self.frameBackground = subtract_background_rolling_ball(frame_gray,
+                                                                          self.bgSlider.value(),
+                                                                     light_background=True,
+                                                                     use_paraboloid=True,
+                                                                     do_presmooth=True)
+                self.frame = cv2.cvtColor(frame_corr, cv2.COLOR_GRAY2BGR)
+            elif self.backgroundCorrection.currentText()== "Direct Subtract":
+                frameBackground2 = imagetransform.applyBrightnessContrast(
+                                        self.brightnessSlider.value(),
+                                        self.contrastSlider.value(), 
+                                        self.frameBackground)
+                self.frame = imagetransform.backgroundSubtract(frame,
+                                                     frameBackground2,
+                                                     self.bgAlphaSpinBox.value())
+            elif self.backgroundCorrection.currentText()== "Gaussian Correction":
+                kernal = (self.bgSlider.value(), self.bgSlider.value())
+                self.frameBackground = cv2.GaussianBlur(frame, kernal,0)
+                self.frame = imagetransform.backgroundSubtract(frame, self.frameBackground,
+                                                     self.bgAlphaSpinBox.value())
+            elif self.backgroundCorrection.currentText()== "Average Correction":
+                kernal = (self.bgSlider.value(), self.bgSlider.value())
+                self.frameBackground = cv2.blur(frame, kernal)
+                self.frame = imagetransform.backgroundSubtract(frame, self.frameBackground,
+                                                     self.bgAlphaSpinBox.value())
+
+            frame = self.frame
+            
+        if self.dftGroupBox.isChecked() == True and \
+           self.effectChain[2] == 1: #3: dft filter
+            if self.filterType.currentText() == "Fourier Filter":
+                self.frame, _ = imagetransform.dftFilter(self.lowPassSlider.value(),
+                                               self.highPassSlider.value(),
+                                               frame)
+            else:
+                print("filter start", self.filterType.currentText())
+                self.frame = imagetransform.imageFilter(self.filterType.currentText(),
+                                              self.lowPassSlider.value(),
+                                              self.highPassSlider.value(),
+                                              frame)
+            print("filtered", self.frame.shape)
+##            frame = self.frame
+        
     def video_analysis(self):
         if self.videoPath != "":
             self.bgShow()
             rawtabname = self.rawViewTab.tabText(self.rawViewTab.currentIndex())
             effecttabname = self.effectViewTab.tabText(self.effectViewTab.currentIndex())
             roi = self.roiBound
-            self.frame_transformed = self.frame[roi[1]:roi[3], roi[0]:roi[2]].copy()            
+            # self.frame_transformed = self.frame[roi[1]:roi[3], roi[0]:roi[2]].copy()            
             
             if self.analyzeVideo.isChecked() == True:
                 print("video analysis")
@@ -1817,7 +1901,7 @@ class MainWindow(QMainWindow, Effects, MainWidgets, MainPlaybackFunctions,
                                       'Binary': self.frame_bin,
                                       'Masked': self.frame_masked,
                                       'Contours': self.frame_contour,
-                                      'Transformed': self.frame_transformed,
+                                      'Transformed': self.frame,
                                       'Auto ROI': self.frame_bin_roi_full}
 
                 print("effect choice")
@@ -1884,7 +1968,7 @@ class MainWindow(QMainWindow, Effects, MainWidgets, MainPlaybackFunctions,
                 # frame_disp = self.frame[roi[1]:roi[3], roi[0]:roi[2]].copy()
                 rawChoices = {'Original': self.frame_current[roi[1]:roi[3], 
                                                              roi[0]:roi[2]].copy(),
-                              'Transformed': self.frame_transformed}
+                              'Transformed': self.frame}
                 frame_disp = rawChoices.get(rawtabname)                
                 self.renderVideo("Raw", self.ret, frame_disp)
                 self.effectScene.removeItem(self.effectPixmapItem)
@@ -1892,66 +1976,6 @@ class MainWindow(QMainWindow, Effects, MainWidgets, MainPlaybackFunctions,
                 self.effectView.fitInView(self.effectPixmapItem, 1)
                 # self.showContours.setEnabled(False)
 
-    def video_effect(self, frame): #apply effects in effects chain on self.frame
-        print("video effect", self.effectChain)
-        if self.effectChain[0] == 1: #1: brightness/contrast
-            self.frame = self.applyBrightnessContrast(
-                self.brightnessSlider.value(),self.contrastSlider.value(),
-                frame)
-            frame = self.frame
-                
-        if self.bgGroupBox.isChecked() == True and \
-           self.effectChain[1] == 1: #2: background subtraction
-##                self.subtract = True #CHECK
-##                self.frameBackground = self.frameBackground #CHECK
-            print(frame.shape, self.frameBackground.shape)
-            if self.backgroundCorrection.currentText()== "Rolling Ball":
-                frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                frame_corr, self.frameBackground = subtract_background_rolling_ball(frame_gray,
-                                                                          self.bgSlider.value(),
-                                                                     light_background=True,
-                                                                     use_paraboloid=False,
-                                                                     do_presmooth=True)
-                self.frame = cv2.cvtColor(frame_corr, cv2.COLOR_GRAY2BGR)
-            elif self.backgroundCorrection.currentText()== "Rolling Paraboloid":
-                frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                frame_corr, self.frameBackground = subtract_background_rolling_ball(frame_gray,
-                                                                          self.bgSlider.value(),
-                                                                     light_background=True,
-                                                                     use_paraboloid=True,
-                                                                     do_presmooth=True)
-                self.frame = cv2.cvtColor(frame_corr, cv2.COLOR_GRAY2BGR)
-            elif self.backgroundCorrection.currentText()== "Proper Correction":
-                self.frame = self.backgroundSubtract(frame,
-                                                     self.frameBackground,
-                                                     1)
-            elif self.backgroundCorrection.currentText()== "Gaussian Correction":
-                kernal = (self.bgSlider.value(), self.bgSlider.value())
-                self.frameBackground = cv2.GaussianBlur(frame, kernal,0)
-                self.frame = self.backgroundSubtract(frame, self.frameBackground,
-                                                     self.bgAlphaSpinBox.value())
-            elif self.backgroundCorrection.currentText()== "Average Correction":
-                kernal = (self.bgSlider.value(), self.bgSlider.value())
-                self.frameBackground = cv2.blur(frame, kernal)
-                self.frame = self.backgroundSubtract(frame, self.frameBackground,
-                                                     self.bgAlphaSpinBox.value())
-
-            frame = self.frame
-            
-        if self.dftGroupBox.isChecked() == True and \
-           self.effectChain[2] == 1: #3: dft filter
-            if self.filterType.currentText() == "Fourier Filter":
-                self.frame, _ = self.dftFilter(self.lowPassSlider.value(),
-                                               self.highPassSlider.value(),
-                                               frame)
-            else:
-                print("filter start", self.filterType.currentText())
-                self.frame = self.imageFilter(self.filterType.currentText(),
-                                              self.lowPassSlider.value(),
-                                              self.highPassSlider.value(),
-                                              frame)
-            print("filtered", self.frame.shape)
-##            frame = self.frame
 
 #     def rawViewTabChanged(self): #raw view tab changed
 #         tabname = self.rawViewTab.tabText(self.rawViewTab.currentIndex())
@@ -2398,19 +2422,6 @@ class MainWindow(QMainWindow, Effects, MainWidgets, MainPlaybackFunctions,
 #         if len(self.frame) != 0 and self.roi_auto == True:
 #             self.video_analysis()
 
-    def bgFrame(self): #set background frame
-        if len(self.frame) != 0:
-            self.frameBackground = self.frame.copy()
-            self.bgframeNumber = self.framePos
-            self.statusBar.showMessage("Frame number " + str(self.bgframeNumber) + \
-                                       " set as background frame")
-            self.bg_change()
-            
-    def bgShow(self): #show background frame
-        if self.bgShowButton.isChecked() == True:
-            cv2.imshow("Background", self.frameBackground)
-        else:
-            cv2.destroyWindow("Background")
 
     def definePaths(self): #define filepaths
         if self.videoPath == "":

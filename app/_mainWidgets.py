@@ -228,7 +228,7 @@ class MainWidgets:
         self.backgroundCorrectionLabel = QLabel("Type:", self) #background blur
         self.backgroundCorrection =  QComboBox(self) #Background correction type
         self.backgroundCorrection.addItem("Average Correction")
-        self.backgroundCorrection.addItem("Proper Correction")
+        self.backgroundCorrection.addItem("Direct Subtract")
         self.backgroundCorrection.addItem("Gaussian Correction")
         self.backgroundCorrection.addItem("Rolling Ball")
         self.backgroundCorrection.addItem("Rolling Paraboloid")
@@ -413,7 +413,7 @@ class MainWidgets:
         self.filterType.addItem("Morph Close")
         self.filterType.currentIndexChanged.connect(self.dft_change)
 
-        self.lowPassLabel = QLabel("Low Pass:\t", self) #low pass filter
+        self.lowPassLabel = QLabel("Parameter 1:\t", self) #low pass filter
         self.lowPassSlider = QSlider(Qt.Horizontal, self) 
 ##        self.lowPassSlider.setGeometry(800, 500, 200, 30)
         self.lowPassSlider.setMinimum(0)
@@ -431,7 +431,7 @@ class MainWidgets:
 ##        self.lowPassSpinBox.move(1020, 500)
 ##        self.lowPassSpinBox.resize(45, 20)
 
-        self.highPassLabel = QLabel("High Pass:\t", self) #high pass filter
+        self.highPassLabel = QLabel("Parameter 2:\t", self) #high pass filter
         self.highPassSlider = QSlider(Qt.Horizontal, self) 
 ##        self.highPassSlider.setGeometry(800, 550, 200, 30)
         self.highPassSlider.setMinimum(0)

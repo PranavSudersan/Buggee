@@ -12,7 +12,7 @@ import source.draw_roi as drawroi
 import time
 import statistics
 
-class Effects:
+class ImageSegment:
     
 ##    def __init__(self, frame, roi_corners): #constructor
 ##        self.frame = frame
@@ -44,14 +44,14 @@ class Effects:
 ##            roi = self.roiBoundingRectangle() #(xmin, ymin, xmax, ymax)
         roi = self.roiBound
         print("roi", roi)
-        frame_cropped = self.frame[roi[1]:roi[3], roi[0]:roi[2]].copy()
+        # frame_cropped = self.frame[roi[1]:roi[3], roi[0]:roi[2]].copy()
         frame_current = self.frame_current[roi[1]:roi[3], roi[0]:roi[2]].copy()
         frame_contour = self.frame_contour.copy()
         
-        print(self.frame.shape, frame_cropped.shape)
+        print(self.frame.shape)
 
            
-        frame_gray = cv2.cvtColor(frame_cropped, cv2.COLOR_BGR2GRAY)
+        frame_gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
         print("gray", time.time() * 1000)
 
         if tresh_type == "Global":
@@ -189,15 +189,15 @@ class Effects:
             
             if self.segment == True:  #get segmented contours boundary by watershed algorithm
                 frame_contour, cpt[k], contours, fg, bg, sg = \
-                    self.imageSegment(k, frame_current, frame_contour, frame_masked, 
+                    self.segmentWatershed(k, frame_current, frame_contour, frame_masked, 
                                       min_area, max_area, seg_bg, seg_fg)
                 sure_fg = cv2.bitwise_or(sure_fg, fg)
                 sure_bg = cv2.bitwise_or(sure_bg, bg)
                 segm = cv2.bitwise_or(segm, sg)          
-            else: #get contours by finContours function
+            else: #get contours by findContours function
                 contours, hierarchy = cv2.findContours(frame_masked, cv2.RETR_TREE,
                                                         cv2.CHAIN_APPROX_SIMPLE)
-                frame_contour, cpt[k], contours = self.contourProperty(k, frame_contour,
+                frame_contour, cpt[k], contours = self.segmentContour(k, frame_contour,
                                                                        frame_masked, contours,
                                                                        min_area, max_area)
             # cv2.imshow("Masked", frame_masked)
@@ -315,7 +315,7 @@ class Effects:
         return contour_resized
 
     #image segmentation by watershed algorithm and contour analysis
-    def imageSegment(self, key, frame, frame_contour, frame_bin, 
+    def segmentWatershed(self, key, frame, frame_contour, frame_bin, 
                      min_area, max_area, k_size=3, dist_fr=0.7):
         frame_seg = frame.copy()
         kernel = np.ones((k_size,k_size),np.uint8)
@@ -455,7 +455,7 @@ class Effects:
         return frame_contour, cpt, contours, sure_fg, sure_bg, markers.astype(np.uint8)     
 
     #Contour analysis from inbuilt contour property functions
-    def contourProperty(self, key, frame, frame_masked, contours, min_area, max_area): 
+    def segmentContour(self, key, frame, frame_masked, contours, min_area, max_area): 
     #    contours, frame_bin, frame_masked, frame_contour = img_contour(tresh, frame, ms_type, roi_corners)
         #cv2.createTrackbar( "Treshold box size", "Frame", 415, 500, img_contour)
     #    cv2.waitKey(0)
@@ -536,171 +536,171 @@ class Effects:
         
         return frame_contour, cpt, contours
    
-    def backgroundSubtract(self, frame, frame_bg, alpha, inv = False): #subtract background
-        print(frame.shape)
-        if alpha == 1: #direct subtraction if alpha is one
-            frame_fg = cv2.subtract(255-frame,255-frame_bg)
-            frame_fg_scaled = 255 - frame_fg
-        else: #blend
-##            alpha = 0.5
-            frame_fg_scaled  = cv2.addWeighted(frame, 1 - alpha, 255 - frame_bg,
-                                              alpha, 0.0)
-        frame_subtracted = 255 - frame_fg_scaled if inv == True else frame_fg_scaled
-        print("bgSubtract")
-        return frame_subtracted
+#     def backgroundSubtract(self, frame, frame_bg, alpha, inv = False): #subtract background
+#         print(frame.shape)
+#         if alpha == 1: #direct subtraction if alpha is one
+#             frame_fg = cv2.subtract(255-frame,255-frame_bg)
+#             frame_fg_scaled = 255 - frame_fg
+#         else: #blend
+# ##            alpha = 0.5
+#             frame_fg_scaled  = cv2.addWeighted(frame, 1 - alpha, 255 - frame_bg,
+#                                               alpha, 0.0)
+#         frame_subtracted = 255 - frame_fg_scaled if inv == True else frame_fg_scaled
+#         print("bgSubtract")
+#         return frame_subtracted
 
-    def applyBrightnessContrast(self, brightness = 0, contrast = 0, frame = None):
+#     def applyBrightnessContrast(self, brightness = 0, contrast = 0, frame = None):
         
-        if brightness != 0:
-            if brightness > 0:
-                shadow = brightness
-                highlight = 255
-            else:
-                shadow = 0
-                highlight = 255 + brightness
-            alpha_b = (highlight - shadow)/255
-            gamma_b = shadow
+#         if brightness != 0:
+#             if brightness > 0:
+#                 shadow = brightness
+#                 highlight = 255
+#             else:
+#                 shadow = 0
+#                 highlight = 255 + brightness
+#             alpha_b = (highlight - shadow)/255
+#             gamma_b = shadow
 
-            buf = cv2.addWeighted(frame, alpha_b, frame, 0, gamma_b)
-        else:
-            buf = frame.copy()
+#             buf = cv2.addWeighted(frame, alpha_b, frame, 0, gamma_b)
+#         else:
+#             buf = frame.copy()
 
-        if contrast != 0:
-            f = 131*(contrast + 127)/(127*(131-contrast))
-            alpha_c = f
-            gamma_c = 127*(1-f)
+#         if contrast != 0:
+#             f = 131*(contrast + 127)/(127*(131-contrast))
+#             alpha_c = f
+#             gamma_c = 127*(1-f)
 
-            buf = cv2.addWeighted(buf, alpha_c, buf, 0, gamma_c)
+#             buf = cv2.addWeighted(buf, alpha_c, buf, 0, gamma_c)
 
-##        self.frame = buf #CHECK
-        print("brightness")
-        return buf
+# ##        self.frame = buf #CHECK
+#         print("brightness")
+#         return buf
 
-##    def window_show(window_name, frame, posx, posy, resize_fraction):
-##        cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
-##    #    sc = 0.5 #window resize scale factor
-##        h, w = tuple(int(resize_fraction*x) for x in frame.shape[:2])    
-##        cv2.moveWindow(window_name, posx, posy)
-##        cv2.resizeWindow(window_name, w, h)
-##        cv2.imshow(window_name, frame)
+# ##    def window_show(window_name, frame, posx, posy, resize_fraction):
+# ##        cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+# ##    #    sc = 0.5 #window resize scale factor
+# ##        h, w = tuple(int(resize_fraction*x) for x in frame.shape[:2])    
+# ##        cv2.moveWindow(window_name, posx, posy)
+# ##        cv2.resizeWindow(window_name, w, h)
+# ##        cv2.imshow(window_name, frame)
    
 
-    def imageFilter(self, ftype, param1, param2, frame): #image filtering
-        roi = self.roiBound
-        frame1 = frame[roi[1]:roi[3], roi[0]:roi[2]].copy() #filter inside roi
-##        frame_gray = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
-##        del frame1
-        if ftype == "Average Filter":
-            frame_filtered = cv2.blur(frame1,(param1,param1))
-        elif ftype == "Gaussian Filter":
-            frame_filtered = cv2.GaussianBlur(frame1,(param1,param1),param2)
-        elif ftype == "Median Filter":
-            frame_filtered = cv2.medianBlur(frame1,param1)
-        elif ftype == "Bilateral Filter":
-            frame_filtered = cv2.bilateralFilter(frame1,0,param1,param2)
-        elif ftype == "Morph Open":
-            rect_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (param1,param2))
-            frame_filtered = cv2.morphologyEx(frame1, cv2.MORPH_OPEN, rect_kernel)
-        elif ftype == "Morph Close":
-            rect_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (param1,param2))
-            frame_filtered = cv2.morphologyEx(frame1, cv2.MORPH_CLOSE, rect_kernel)
-        else:
-            frame_filtered = frame1.copy()
+#     def imageFilter(self, ftype, param1, param2, frame): #image filtering
+#         roi = self.roiBound
+#         frame1 = frame[roi[1]:roi[3], roi[0]:roi[2]].copy() #filter inside roi
+# ##        frame_gray = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
+# ##        del frame1
+#         if ftype == "Average Filter":
+#             frame_filtered = cv2.blur(frame1,(param1,param1))
+#         elif ftype == "Gaussian Filter":
+#             frame_filtered = cv2.GaussianBlur(frame1,(param1,param1),param2)
+#         elif ftype == "Median Filter":
+#             frame_filtered = cv2.medianBlur(frame1,param1)
+#         elif ftype == "Bilateral Filter":
+#             frame_filtered = cv2.bilateralFilter(frame1,0,param1,param2)
+#         elif ftype == "Morph Open":
+#             rect_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (param1,param2))
+#             frame_filtered = cv2.morphologyEx(frame1, cv2.MORPH_OPEN, rect_kernel)
+#         elif ftype == "Morph Close":
+#             rect_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (param1,param2))
+#             frame_filtered = cv2.morphologyEx(frame1, cv2.MORPH_CLOSE, rect_kernel)
+#         else:
+#             frame_filtered = frame1.copy()
 
-##        frame_filtered2 = cv2.cvtColor(frame_filtered.astype(np.uint8),
-##                                    cv2.COLOR_GRAY2BGR)
-        h, w, s  = frame.shape
-        l, r, t, d = roi[0], w - roi[2], roi[1], h - roi[3]
-        print(h, w, s, t, d, l, r)
-        #fill border with zero to equalize frame size
-        frame_filtered2 = cv2.copyMakeBorder(frame_filtered, t, d, l, r,
-                                               cv2.BORDER_CONSTANT, 0)
+# ##        frame_filtered2 = cv2.cvtColor(frame_filtered.astype(np.uint8),
+# ##                                    cv2.COLOR_GRAY2BGR)
+#         h, w, s  = frame.shape
+#         l, r, t, d = roi[0], w - roi[2], roi[1], h - roi[3]
+#         print(h, w, s, t, d, l, r)
+#         #fill border with zero to equalize frame size
+#         frame_filtered2 = cv2.copyMakeBorder(frame_filtered, t, d, l, r,
+#                                                cv2.BORDER_CONSTANT, 0)
         
-        return frame_filtered2
+#         return frame_filtered2
             
 
-    def dftFilter(self, r_lp, r_hp, frame): #DFT Filter (Gaussian Bandpass)
-        mask_gauss, img_back, img_back_gauss, img_back_scaled, \
-            img_filtered, magnitude_spectrum, spectrum_masked = (None,)*7
-        #DFT
-        #if frame == None:
-        #   frame = self.frame
-        print("dft init", self.roiBound)
-        roi = self.roiBound
-        print("roi")
-        frame1 = frame[roi[1]:roi[3], roi[0]:roi[2]].copy()
-        print("dft")
-        frame_gray = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
-        del frame1
-        print(frame_gray.shape)
+#     def dftFilter(self, r_lp, r_hp, frame): #DFT Filter (Gaussian Bandpass)
+#         mask_gauss, img_back, img_back_gauss, img_back_scaled, \
+#             img_filtered, magnitude_spectrum, spectrum_masked = (None,)*7
+#         #DFT
+#         #if frame == None:
+#         #   frame = self.frame
+#         print("dft init", self.roiBound)
+#         roi = self.roiBound
+#         print("roi")
+#         frame1 = frame[roi[1]:roi[3], roi[0]:roi[2]].copy()
+#         print("dft")
+#         frame_gray = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
+#         del frame1
+#         print(frame_gray.shape)
 
-        dft = cv2.dft(np.float32(frame_gray),flags = cv2.DFT_COMPLEX_OUTPUT)
-        dft_shift = np.fft.fftshift(dft)
+#         dft = cv2.dft(np.float32(frame_gray),flags = cv2.DFT_COMPLEX_OUTPUT)
+#         dft_shift = np.fft.fftshift(dft)
 
 
-        magnitude_spectrum = 20*np.log(cv2.magnitude(dft_shift[:,:,0],
-                                                     dft_shift[:,:,1]))
-        rows, cols = frame_gray.shape
-        crow,ccol = int(rows/2) , int(cols/2)
-        print("low pass")
-        #Low Pass
-        kernal = cv2.getGaussianKernel(max(rows, cols), r_lp)
-        kernal2d = kernal * kernal.transpose()
-        kernal2d = kernal2d / kernal2d.max()
-##        kernal2d_inverse = 1 - kernal2d
+#         magnitude_spectrum = 20*np.log(cv2.magnitude(dft_shift[:,:,0],
+#                                                      dft_shift[:,:,1]))
+#         rows, cols = frame_gray.shape
+#         crow,ccol = int(rows/2) , int(cols/2)
+#         print("low pass")
+#         #Low Pass
+#         kernal = cv2.getGaussianKernel(max(rows, cols), r_lp)
+#         kernal2d = kernal * kernal.transpose()
+#         kernal2d = kernal2d / kernal2d.max()
+# ##        kernal2d_inverse = 1 - kernal2d
 
-        mask_lowpass = np.zeros((rows,cols),np.float64)
-        if r_lp > 0:
-            mask_lowpass = kernal2d[int((max(rows, cols)-rows)/2):
-            int((max(rows, cols)+rows)/2),int((max(rows, cols)-cols)/2):
-                int((max(rows, cols)+cols)/2)] #image sizes must be even integer
-        else:
-            mask_lowpass = np.zeros((rows,cols),np.float64)
-        print("high pass")
-        #High Pass
-        kernal = cv2.getGaussianKernel(max(rows, cols), r_hp)
-        kernal2d = kernal * kernal.transpose()
-        kernal2d = kernal2d / kernal2d.max()
-        kernal2d_inverse = 1 - kernal2d
+#         mask_lowpass = np.zeros((rows,cols),np.float64)
+#         if r_lp > 0:
+#             mask_lowpass = kernal2d[int((max(rows, cols)-rows)/2):
+#             int((max(rows, cols)+rows)/2),int((max(rows, cols)-cols)/2):
+#                 int((max(rows, cols)+cols)/2)] #image sizes must be even integer
+#         else:
+#             mask_lowpass = np.zeros((rows,cols),np.float64)
+#         print("high pass")
+#         #High Pass
+#         kernal = cv2.getGaussianKernel(max(rows, cols), r_hp)
+#         kernal2d = kernal * kernal.transpose()
+#         kernal2d = kernal2d / kernal2d.max()
+#         kernal2d_inverse = 1 - kernal2d
 
-        mask_highpass = np.ones((rows,cols),np.float64)
-        if r_hp > 0:
-            mask_highpass = kernal2d_inverse[int((max(rows, cols)-rows)/2):
-            int((max(rows, cols)+rows)/2),int((max(rows, cols)-cols)/2):
-                int((max(rows, cols)+cols)/2)] #image sizes must be even integer
-        else:
-            mask_highpass = np.ones((rows,cols),np.float64)
-        print("band pass")
-        #Band Pass
-        if r_hp <= r_lp and r_lp > 0:
-            mask_gauss = mask_lowpass * mask_highpass
-            mask_gauss = mask_gauss/mask_gauss.max()
-        else:
-            mask_gauss = np.zeros((rows,cols),np.float64)
+#         mask_highpass = np.ones((rows,cols),np.float64)
+#         if r_hp > 0:
+#             mask_highpass = kernal2d_inverse[int((max(rows, cols)-rows)/2):
+#             int((max(rows, cols)+rows)/2),int((max(rows, cols)-cols)/2):
+#                 int((max(rows, cols)+cols)/2)] #image sizes must be even integer
+#         else:
+#             mask_highpass = np.ones((rows,cols),np.float64)
+#         print("band pass")
+#         #Band Pass
+#         if r_hp <= r_lp and r_lp > 0:
+#             mask_gauss = mask_lowpass * mask_highpass
+#             mask_gauss = mask_gauss/mask_gauss.max()
+#         else:
+#             mask_gauss = np.zeros((rows,cols),np.float64)
 
-        del mask_lowpass, mask_highpass, kernal, kernal2d, kernal2d_inverse
+#         del mask_lowpass, mask_highpass, kernal, kernal2d, kernal2d_inverse
         
-        #Inverse DFT
-        fshift = dft_shift*np.expand_dims(mask_gauss, axis = 2)
-        f_ishift = np.fft.ifftshift(fshift)
-        del fshift
+#         #Inverse DFT
+#         fshift = dft_shift*np.expand_dims(mask_gauss, axis = 2)
+#         f_ishift = np.fft.ifftshift(fshift)
+#         del fshift
 
-        img_back = cv2.idft(f_ishift)
-        img_back_gauss = cv2.magnitude(img_back[:,:,0],img_back[:,:,1])
-        print("img_back_gauss", img_back_gauss.shape)
-        spectrum_masked = magnitude_spectrum * mask_gauss
-##        img_back_scaled = None
-        img_back_scaled = 255*img_back_gauss/img_back_gauss.max()
-        img_filtered = cv2.cvtColor(img_back_scaled.astype(np.uint8),
-                                    cv2.COLOR_GRAY2BGR)
-        print("dft end")
-        h, w, s  = frame.shape
-        l, r, t, d = roi[0], w - roi[2], roi[1], h - roi[3]
-        print(h, w, s, t, d, l, r)
-        #fill border with zero to equalize frame size
-        img_filtered1 = cv2.copyMakeBorder(img_filtered, t, d, l, r,
-                                               cv2.BORDER_CONSTANT, 0)
+#         img_back = cv2.idft(f_ishift)
+#         img_back_gauss = cv2.magnitude(img_back[:,:,0],img_back[:,:,1])
+#         print("img_back_gauss", img_back_gauss.shape)
+#         spectrum_masked = magnitude_spectrum * mask_gauss
+# ##        img_back_scaled = None
+#         img_back_scaled = 255*img_back_gauss/img_back_gauss.max()
+#         img_filtered = cv2.cvtColor(img_back_scaled.astype(np.uint8),
+#                                     cv2.COLOR_GRAY2BGR)
+#         print("dft end")
+#         h, w, s  = frame.shape
+#         l, r, t, d = roi[0], w - roi[2], roi[1], h - roi[3]
+#         print(h, w, s, t, d, l, r)
+#         #fill border with zero to equalize frame size
+#         img_filtered1 = cv2.copyMakeBorder(img_filtered, t, d, l, r,
+#                                                cv2.BORDER_CONSTANT, 0)
 
-        print(img_filtered.shape, img_filtered1.shape, frame.shape)
-        return img_filtered1, spectrum_masked
+#         print(img_filtered.shape, img_filtered1.shape, frame.shape)
+#         return img_filtered1, spectrum_masked
         

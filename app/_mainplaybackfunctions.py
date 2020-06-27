@@ -22,13 +22,13 @@ class MainPlaybackFunctions:
             while True:
                 print("Loop start", time.time())
                 
-                self.ret, self.frame = self.cap.read()
+                self.ret, self.frame_current = self.cap.read()
                 print("try", self.ret)
                 if self.ret == False: #reset video at end or at error
                     print("if")
                     self.cap.release()
                     self.cap = cv2.VideoCapture(self.videoPath)
-                    self.ret, self.frame = self.cap.read()
+                    self.ret, self.frame_current = self.cap.read()
                     self.framePos = self.cap.get(cv2.CAP_PROP_POS_FRAMES)
                     self.playStatus = False #pause
                 else:
@@ -44,14 +44,16 @@ class MainPlaybackFunctions:
                                            "%)" + "\tTime: " +
                                            "{0:.2f}".format(self.frameTime[int(self.framePos-1)]) + " s")
     
-                print("frame no. get", self.framePos, self.frame.shape, time.time())
+                print("frame no. get", self.framePos, self.frame_current.shape, time.time())
 
                 
-                self.frame_current = self.frame.copy()
+                roi = self.roiBound
+                self.frame = self.frame_current[roi[1]:roi[3], roi[0]:roi[2]].copy() #filter inside roi
                 print("Frame copy", time.time())
                 
                 self.video_effect(self.frame) #apply filter, b/c, bg subtract effects
                 print("Video Effect", time.time())
+                
                 self.roi_auto = self.threshROIGroupBox.isChecked()
                 self.roi_hull = self.applyHullROI.isChecked()
                 self.combine_roi = self.combineROI.isChecked()
@@ -110,8 +112,8 @@ class MainPlaybackFunctions:
                     self.seekSlider.blockSignals(True)
                     self.seekSlider.setValue(0)
                     self.seekSlider.blockSignals(False)
-                    self.ret, self.frame = self.cap.read()
-                    self.frame_current = self.frame.copy()
+                    self.ret, self.frame_current = self.cap.read()
+                    self.frame = self.frame_current.copy()
 ##                    self.roiBound = [0, 0, self.frameWidth, self.frameHeight]
 ##                    self.video_effect(self.frame)
                     self.roi_auto = self.threshROIGroupBox.isChecked()
@@ -122,7 +124,7 @@ class MainPlaybackFunctions:
                     self.renderVideo("Raw", self.ret, self.frame)
                     self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
                     self.playStatus = False
-                    self.frame_current = self.frame.copy()
+                    # self.frame_current = self.frame.copy()
                     self.effectChain = [1, 1, 1, 1]
                     self.recordStatus = False
 
@@ -160,7 +162,7 @@ class MainPlaybackFunctions:
 ##            if self.framePos == self.frameCount-1: #REMOVE -1 and CHECK
 ##                self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
 
-            self.ret, self.frame = self.cap.read()
+            self.ret, self.frame_current = self.cap.read()
             if self.seekSlider.value() == 0:
                 self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
 
@@ -168,7 +170,7 @@ class MainPlaybackFunctions:
                 print("if")
                 self.cap.release()
                 self.cap = cv2.VideoCapture(self.videoPath)
-                self.ret, self.frame = self.cap.read()
+                self.ret, self.frame_current = self.cap.read()
 ##                self.framePos = self.cap.get(cv2.CAP_PROP_POS_FRAMES)
 ##            else:
             self.framePos = self.cap.get(cv2.CAP_PROP_POS_FRAMES)
@@ -187,11 +189,11 @@ class MainPlaybackFunctions:
 ##            self.statusBar.showMessage("Frame number: " + str(int(self.framePos)) + "\t("
 ##                                       + str(int((self.framePos)*100/self.frameCount)) +
 ##                                       "%)")
+            roi = self.roiBound
+            self.frame = self.frame_current[roi[1]:roi[3], roi[0]:roi[2]].copy() #filter inside roi
             
-                    
+            self.video_effect(self.frame) #apply filter, b/c, bg subtract effects
             
-            self.frame_current = self.frame.copy()
-            self.video_effect(self.frame_current) #apply filter, b/c, bg subtract effects
             self.roi_auto = self.threshROIGroupBox.isChecked()
             self.roi_hull = self.applyHullROI.isChecked()
             self.combine_roi = self.combineROI.isChecked()

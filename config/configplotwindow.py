@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import QCheckBox, QLabel, QPushButton, \
 class ConfigPlotWindow(QWidget):
     def __init__(self):
         super().__init__()
-        self.setGeometry(100, 580, 1000, 200)
+        self.setGeometry(100, 100, 1000, 200)
         self.setWindowTitle("Configure Plot")
         self.layout = QGridLayout()
         self.home()

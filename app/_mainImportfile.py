@@ -12,7 +12,7 @@ import os.path
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QFileDialog
 from PyQt5.QtChart import QScatterSeries
-from source.analyze_force import ForceAnal
+from source.analysis.forceanalysis import ForceAnal
 from source.threads.countframethread import CountFrameThread
 
 class MainImportFile:

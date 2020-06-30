@@ -193,6 +193,7 @@ class SummaryAnal:
             #calculate additional data
             self.df_forcedata['Adhesion_Stress'] = self.df_forcedata['Adhesion_Force']/self.df_forcedata['Pulloff_Area']
             self.df_forcedata['Friction_Stress'] = self.df_forcedata['Friction_Force']/self.df_forcedata['Friction_Area']
+            self.df_forcedata['Normalized_Pulloff_Force'] = self.df_forcedata['Adhesion_Force']/self.df_forcedata['Max_Area']
             self.df_forcedata['Adhesion_Energy_per_Area'] = self.df_forcedata['Adhesion_Energy']/self.df_forcedata['Max_Area']
             self.df_forcedata['Date_of_Experiment'] =  self.df_forcedata['Data_Folder'].str.split(pat = "/").str[-1].str.slice(start=0, stop=9)
             
@@ -245,7 +246,7 @@ class SummaryAnal:
             unit = ' $(s)$'
         elif var in ["Slope"]: #slope
             unit = self.slope_unit
-        elif var in ["Adhesion_Stress", "Friction_Stress"]:
+        elif var in ["Adhesion_Stress", "Friction_Stress", "Normalized_Pulloff_Force"]:
             unit = ' $(μN' + '/' + df["Area_Units"].iloc[0] + ')$'
         elif var in ["Beam_Spring_Constant"]:
             unit = ' $(μN/μm)$'

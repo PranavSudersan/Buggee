@@ -36,18 +36,22 @@ class SummaryDialog:
                             'plot num':[None, None, None, None],
                             'fit': [None, None, None, None],
                             'order': [None, None, None, None],
-                            'title':[None], 'format':[None]} #initialize
+                            'title':[None], 
+                            'format':[None],
+                            'plot type':["Scatter"]} #initialize
 
         plotTitle =  QLineEdit(self.sumDialog)
         plotTitle.textChanged.connect(lambda: self.update_summary_dict('title',
-                                                                       plotTitle.text(),0))
+                                                                       plotTitle.text(),
+                                                                       0))
         plotTitle.setText('Adhesion vs Area')
         
         plotFormat = QComboBox(self.sumDialog) #plot save format
         plotFormat.addItems(['jpg', 'svg', 'pdf', 'png', 'tif', 'tiff'])
         plotFormat.currentIndexChanged.connect(lambda:
                                                self.update_summary_dict('format',
-                                                                        plotFormat.currentText(), 0))
+                                                                        plotFormat.currentText(),
+                                                                        0))
         self.update_summary_dict('format', plotFormat.currentText(), 0)
         
         grouplist = ["Date", "Folder_Name", "Species", "Sex", "Leg", "Pad",
@@ -69,6 +73,14 @@ class SummaryDialog:
         combine.stateChanged.connect(lambda: self.combine_toggled(groupVar, combine, okButton))       
         okButton.clicked.connect(lambda: self.combine_summary_data(combine.isChecked(),
                                                                    groupVar.currentText()))
+
+        plotTypeLabel = QLabel("<b>Plot Type</b>", self.sumDialog)
+        plotType = QComboBox(self.sumDialog) #x variable
+        plotType.addItems(["Scatter", "Box", "Violin"])
+        plotType.currentIndexChanged.connect(lambda: self.update_summary_dict('plot type',
+                                                                          plotType.currentText(),
+                                                                          0))
+        
 ##        okButton.setDefault(True)
         resetButton = QPushButton("Reset", self.sumDialog)
         resetButton.clicked.connect(self.reset_summary)
@@ -96,8 +108,10 @@ class SummaryDialog:
         gridLayout.addWidget(groupVar, 0, 3, 1, 1)
         gridLayout.addWidget(formatLabel, 0, 4, 1, 1, alignment = Qt.AlignRight)
         gridLayout.addWidget(plotFormat, 0, 5, 1, 1)
+        gridLayout.addWidget(plotTypeLabel, 6, 0, 1, 1)
+        gridLayout.addWidget(plotType, 6, 1, 1, 1)
         gridLayout.addWidget(okButton, 6, 3, 1, 1)
-        gridLayout.addWidget(resetButton, 6, 1, 1, 1)
+        gridLayout.addWidget(resetButton, 6, 5, 1, 1)
         
 ##        self.sumDialog.show()
 
@@ -117,7 +131,7 @@ class SummaryDialog:
                    "Initial_Deformation","Pulloff_Deformation","Adhesion_Energy",
                    "Max_Bounding_Area", "Max_Bounding_Perimeter",
                    "Max_Bounding_Length", "Max_Bounding_Width", 
-                   "Adhesion_Energy_per_Area", "Date_of_Experiment"]
+                   "Normalized_Adhesion_Energy", "Date_of_Experiment"]
         varlist.sort()
         plotLabel = QLabel(str(plotnum), self.sumDialog)
         self.update_summary_dict('plot num', plotnum, plotnum-1)

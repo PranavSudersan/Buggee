@@ -194,7 +194,7 @@ class SummaryAnal:
             self.df_forcedata['Adhesion_Stress'] = self.df_forcedata['Adhesion_Force']/self.df_forcedata['Pulloff_Area']
             self.df_forcedata['Friction_Stress'] = self.df_forcedata['Friction_Force']/self.df_forcedata['Friction_Area']
             self.df_forcedata['Normalized_Pulloff_Force'] = self.df_forcedata['Adhesion_Force']/self.df_forcedata['Max_Area']
-            self.df_forcedata['Adhesion_Energy_per_Area'] = self.df_forcedata['Adhesion_Energy']/self.df_forcedata['Max_Area']
+            self.df_forcedata['Normalized_Adhesion_Energy'] = self.df_forcedata['Adhesion_Energy']/self.df_forcedata['Max_Area']
             self.df_forcedata['Date_of_Experiment'] =  self.df_forcedata['Data_Folder'].str.split(pat = "/").str[-1].str.slice(start=0, stop=9)
             
             self.df_forcedata.reset_index(inplace = True, drop = True)
@@ -254,7 +254,7 @@ class SummaryAnal:
             unit = ' $(μm)$'
         elif var in ["Adhesion_Energy"]:
             unit = ' $(pJ)$'
-        elif var in ["Adhesion_Energy_per_Area"]:
+        elif var in ["Normalized_Adhesion_Energy"]:
             unit = ' $(J/m^2)$'
         else:
             unit = ''
@@ -300,10 +300,9 @@ class SummaryAnal:
         print("grp", group)
         group_unique = list(set(df_filter[group]))
         group_unique.sort()
-        group_list = group_unique #if leg == None else ["All"] #only plot "All" for experiment list
-        
+        self.group_list = group_unique #if leg == None else ["All"] #only plot "All" for experiment list
 ##        self.eq_count["All"] = [1,1,1,1]
-        for b in group_list:
+        for b in self.group_list:
             j = 0 if j > 15 else j #reset index
 
 ##            #combine roi data into dataframe
@@ -333,11 +332,17 @@ class SummaryAnal:
             #show variable names for numeric values in legend
             group_unit = self.get_units(group, df_roi_filter)
             group_unit_clean = group_unit.split('(')[1].split(')')[0] if group_unit != '' else group_unit
-            b = group.replace('_', ' ') + ' ' + str(b) + group_unit_clean \
-                if isinstance(b, str) !=True and b!= None else b
-            leg = group.replace('_', ' ') + ' ' + str(leg) + group_unit_clean \
-                  if isinstance(leg, str) !=True and leg!= None else leg
-
+            self.group_name = group.replace('_', ' ') + group_unit
+            if summaryDict['plot type'][0] == "Scatter":
+                b = group.replace('_', ' ') + ' ' + str(b) + group_unit_clean  \
+                    if isinstance(b, str) !=True and b!= None else b
+                leg = group.replace('_', ' ') + ' ' + str(leg) + group_unit_clean \
+                      if isinstance(leg, str) !=True and leg!= None else leg
+            else:
+                b = str(b)  \
+                    if isinstance(b, str) !=True and b!= None else b
+                leg = str(leg) \
+                      if isinstance(leg, str) !=True and leg!= None else leg
 ##            if leg == None: #initialize fit equation counter
             self.eq_count[b] = [1,1,1,1]
             
@@ -346,9 +351,9 @@ class SummaryAnal:
                 c = group.replace('_', ' ') + ' ' + str(c) + group_unit_clean \
                     if isinstance(c, str) !=True and c!= None else c
 
-                adhesion_speed_plots = {}
-                friction_speed_plots = {}
-
+                # adhesion_speed_plots = {}
+                # friction_speed_plots = {}
+                
                 title_a = summaryDict['title'][0] + ' (' + c + ')'
               
 ##                title_l = 'Adhesion (' + c + ') vs Length'
@@ -365,12 +370,15 @@ class SummaryAnal:
                 y1 = summaryDict['y var'][0]
                 y1_clean = y1.replace('_', ' ')
                 y1_unit =  self.get_units(y1, df_roi_filter)
-                fig_a = self.preparePlot('Effect of ' + p1_clean, title_a, df_full, 
+                title1 = 'Effect of ' + p1_clean \
+                    if summaryDict['plot type'][0] == "Scatter" else y1_clean
+                fig_a = self.preparePlot(summaryDict['plot type'][0], 
+                                         title1, title_a, df_full, 
                                          df_roi_filter[x1], df_roi_filter[y1],
                                          df_roi_filter[p1], self.get_errordata(y1, df_roi_filter),
                                          x1_clean + x1_unit,
                                          y1_clean + y1_unit,
-                                         p1_clean + p1_unit,
+                                         p1_clean + p1_unit, j,
                                          mk if leg == None and c == "All" else marker,
                                          figlist[c][0] if c in self.figdict.keys() else None,
                                          b if leg == None and c == "All" else leg,
@@ -398,12 +406,15 @@ class SummaryAnal:
                 y2 = summaryDict['y var'][1]
                 y2_clean = y2.replace('_', ' ')
                 y2_unit =  self.get_units(y2, df_roi_filter)
-                fig_a = self.preparePlot('Effect of ' + p2_clean, title_a, df_full, 
+                title2 = 'Effect of ' + p2_clean \
+                    if summaryDict['plot type'][0] == "Scatter" else y2_clean
+                fig_a = self.preparePlot(summaryDict['plot type'][0], 
+                                         title2, title_a, df_full, 
                                         df_roi_filter[x2], df_roi_filter[y2],
                                         df_roi_filter[p2], self.get_errordata(y2, df_roi_filter),
                                         x2_clean + x2_unit,
                                          y2_clean + y2_unit,
-                                         p2_clean + p2_unit,
+                                         p2_clean + p2_unit, j,
                                          mk if leg == None and c == "All" else marker,
                                         fig_a, b if leg == None and c == "All" else leg,
                                          subplt = 2, fit_flag = summaryDict['fit'][1],
@@ -425,12 +436,15 @@ class SummaryAnal:
                 y3 = summaryDict['y var'][2]
                 y3_clean = y3.replace('_', ' ')
                 y3_unit =  self.get_units(y3, df_roi_filter)
-                fig_a = self.preparePlot('Effect of ' + p3_clean, title_a, df_full,  
+                title3 = 'Effect of ' + p3_clean \
+                    if summaryDict['plot type'][0] == "Scatter" else y3_clean
+                fig_a = self.preparePlot(summaryDict['plot type'][0], 
+                                         title3, title_a, df_full,  
                                          df_roi_filter[x3], df_roi_filter[y3],
                                         df_roi_filter[p3], self.get_errordata(y3, df_roi_filter),
                                          x3_clean + x3_unit,
                                          y3_clean + y3_unit,
-                                         p3_clean + p3_unit,
+                                         p3_clean + p3_unit, j,
                                          mk if leg == None and c == "All" else marker,
                                         fig_a, b if leg == None and c == "All" else leg,
                                          subplt = 3, fit_flag = summaryDict['fit'][2],
@@ -452,12 +466,15 @@ class SummaryAnal:
                 y4 = summaryDict['y var'][3]
                 y4_clean = y4.replace('_', ' ')
                 y4_unit =  self.get_units(y4, df_roi_filter)
-                fig_a = self.preparePlot('Effect of ' + p4_clean, title_a, df_full, 
+                title4 = 'Effect of ' + p4_clean \
+                    if summaryDict['plot type'][0] == "Scatter" else y4_clean
+                fig_a = self.preparePlot(summaryDict['plot type'][0], 
+                                         title4, title_a, df_full, 
                                          df_roi_filter[x4], df_roi_filter[y4],
                                         df_roi_filter[p4], self.get_errordata(y4, df_roi_filter),
                                          x4_clean + x4_unit,
                                          y4_clean + y4_unit,
-                                         p4_clean + p4_unit,
+                                         p4_clean + p4_unit, j,
                                          mk if leg == None and c == "All" else marker,
                                         fig_a, b if leg == None and c == "All" else leg,
                                          subplt = 4, fit_flag = summaryDict['fit'][3],
@@ -480,10 +497,13 @@ class SummaryAnal:
 ##        self.df_all.to_excel("E:/Work/Codes/Test codes/test5.xlsx") #export as excel
                 
     
-    def preparePlot(self, ax_title, fig_title, df_full, xdata, ydata, bardata, errdata, xlabel, ylabel,
-                    barlabel, mk = "o", figname = None, leg = None, subplt = None, fit_flag = False, fit_order = 1):
+    def preparePlot(self, plot_type, ax_title, fig_title, df_full, xdata, ydata, 
+                    bardata, errdata, xlabel, ylabel, barlabel, grp_num, mk = "o", 
+                    figname = None, leg = None, subplt = None, 
+                    fit_flag = False, fit_order = 1):
         print("preparePlot")
         group = fig_title.split('(')[1].split(')')[0] #group value
+        ax_num = 2 if plot_type == "Scatter" else 1; #number of axis per subplot
         if figname == None: #create figure
             fig = plt.figure(num=fig_title, figsize = [16, 10])
             plt.clf() #clear figure cache
@@ -492,91 +512,120 @@ class SummaryAnal:
             ax.set_title(ax_title)
             plt.cla() #clear axis cache
             ax.set_title(ax_title)
+            # if plot_type == "Scatter":
             ax.set_xlabel(xlabel)
+            # else:
+            #     ax.set_xlabel(self.group_name)
             ax.set_ylabel(ylabel)
             labels = []
             cbar_flag = True
-        elif subplt > (len(figname.axes))/2: #create subplot
+        elif subplt > (len(figname.axes))/ax_num: #create subplot
             print("a", len(figname.axes))
             fig = figname
             ax = fig.add_subplot(2,2,subplt)
             ax.set_title(ax_title)
 ##            plt.cla() #clear axis cache
 ##            ax.set_title(title)
+            # if plot_type == "Scatter":
             ax.set_xlabel(xlabel)
+            # else:
+            #     ax.set_xlabel(self.group_name)
             ax.set_ylabel(ylabel)
             labels = []
             cbar_flag = True
         else:
             print("b", len(figname.axes))
             fig = figname
-            ax = figname.axes[2*(subplt-1)]
+            ax = figname.axes[ax_num*(subplt-1)]
             handles, labels = ax.get_legend_handles_labels()
             cbar_flag = False
             #increment for each new data group
             if fit_flag == True: 
                 self.eq_count[group][subplt-1] += 1
         print(group, self.eq_count)
-        if leg in labels:
-            leg = "_nolegend_"
-
-        if bardata.dtype == 'object': #for string type data
-            ticklabels = list(set(df_full[bardata.name]))
-            ticklabels.sort()
-            bardata_full = [ticklabels.index(a) for a in df_full[bardata.name]]
-            bardata_new = [ticklabels.index(a) for a in bardata]
-            cmin, cmax = min(bardata_full), max(bardata_full)
-        else:
-            cmin, cmax = df_full[bardata.name].min(), df_full[bardata.name].max()
-            ticklabels = []
-            bardata_new = bardata
-
-        im = ax.scatter(xdata, ydata, marker = mk, s = 100, alpha = None,
-                        c = bardata_new, cmap="plasma", label = leg,
-                        vmin = cmin, vmax = cmax)
         
-        if leg != None and leg not in labels:
-            ax.legend(loc = 'upper left')
-
-        if cbar_flag == True:
-            print(barlabel)
-            if bardata.dtype == 'object':
-                cbar = fig.colorbar(im, ax = ax, ticks = [ticklabels.index(a) \
-                                                          for a in ticklabels])
-                cbar.ax.set_yticklabels(ticklabels)
+        if plot_type == "Scatter":
+            if leg in labels:
+                leg = "_nolegend_"
+    
+            if bardata.dtype == 'object': #for string type data
+                ticklabels = list(set(df_full[bardata.name]))
+                ticklabels.sort()
+                bardata_full = [ticklabels.index(a) for a in df_full[bardata.name]]
+                bardata_new = [ticklabels.index(a) for a in bardata]
+                cmin, cmax = min(bardata_full), max(bardata_full)
             else:
-                cbar = fig.colorbar(im, ax = ax)
-            cbar.set_clim(cmin, cmax)
-            cbar.set_label(barlabel)
+                cmin, cmax = df_full[bardata.name].min(), df_full[bardata.name].max()
+                ticklabels = []
+                bardata_new = bardata
+               
+            im = ax.scatter(xdata, ydata, marker = mk, s = 100, alpha = None,
+                            c = bardata_new, cmap="plasma", label = leg,
+                            vmin = cmin, vmax = cmax)
         
-        ax.errorbar(xdata, ydata,yerr= errdata,
-                    capsize = 3, ecolor = 'k', zorder=0,
-                    elinewidth = 1, linestyle="None", label = None)
-
-        if fit_flag == True:
-            cmap = plt.cm.get_cmap('Set1')
-            vshift = 0.05
-            data = zip(xdata, ydata)
-            data = np.array(sorted(data, key = lambda x: x[0]))
-            coeff = np.polyfit(data[:,0],data[:,1], fit_order) #fitting coeffients
-            p_fit = np.poly1d(coeff)
-            y_fit = p_fit(data[:,0])
-            y_avg = np.sum(data[:,1])/len(data[:,1])
-            r2 = (np.sum((y_fit-y_avg)**2))/(np.sum((data[:,1] - y_avg)**2))
-            sign = '' if coeff[1] < 0 else '+'
-            eq_id = leg.split(' ')[-1] if leg != None else fig_title.split('(')[1].split(')')[0].split(' ')[-1]#[:2]
-            eq_coff = ["$%.1e"%(coeff[i]) + "x^" + str(len(coeff) - i - 1) + "$"\
-                 if i < len(coeff) - 2 else "%.4fx"%(coeff[i]) for i in range(len(coeff)-1)]
-            eq =  "y=" + '+'.join(eq_coff) + "+%.4f"%(coeff[len(coeff)-1]) + "; $R^2$=" + "%.4f"%(r2)  
-            eq_clean = eq.replace('+-', '-')
-            x_fit = np.linspace(min(data[:,0]), max(data[:,0]), 100)
-            ax.plot(x_fit, p_fit(x_fit), color = cmap(self.eq_count[group][subplt-1]*0.1),
-                    linewidth=1, linestyle='dotted')
-            ax.text(1,0.2 - (vshift * self.eq_count[group][subplt-1]),
-                    eq_id + ": " + eq_clean, ha = 'right',
-                    transform=ax.transAxes, color = cmap(self.eq_count[group][subplt-1]*0.1),
-                    bbox=dict(facecolor='white', edgecolor = 'white', alpha=0.5))
-##            self.eq_count[subplt-1] += 1
+            if leg != None and leg not in labels:
+                ax.legend(loc = 'upper left')
+    
+            if cbar_flag == True:
+                print(barlabel)
+                if bardata.dtype == 'object':
+                    cbar = fig.colorbar(im, ax = ax, ticks = [ticklabels.index(a) \
+                                                              for a in ticklabels])
+                    cbar.ax.set_yticklabels(ticklabels)
+                else:
+                    cbar = fig.colorbar(im, ax = ax)
+                cbar.set_clim(cmin, cmax)
+                cbar.set_label(barlabel)
+            
+            ax.errorbar(xdata, ydata,yerr= errdata,
+                        capsize = 3, ecolor = 'k', zorder=0,
+                        elinewidth = 1, linestyle="None", label = None)
+    
+            if fit_flag == True:
+                cmap = plt.cm.get_cmap('Set1')
+                vshift = 0.05
+                data = zip(xdata, ydata)
+                data = np.array(sorted(data, key = lambda x: x[0]))
+                coeff = np.polyfit(data[:,0],data[:,1], fit_order) #fitting coeffients
+                p_fit = np.poly1d(coeff)
+                y_fit = p_fit(data[:,0])
+                y_avg = np.sum(data[:,1])/len(data[:,1])
+                r2 = (np.sum((y_fit-y_avg)**2))/(np.sum((data[:,1] - y_avg)**2))
+                sign = '' if coeff[1] < 0 else '+'
+                eq_id = leg.split(' ')[-1] if leg != None else fig_title.split('(')[1].split(')')[0].split(' ')[-1]#[:2]
+                eq_coff = ["$%.1e"%(coeff[i]) + "x^" + str(len(coeff) - i - 1) + "$"\
+                     if i < len(coeff) - 2 else "%.4fx"%(coeff[i]) for i in range(len(coeff)-1)]
+                eq =  "y=" + '+'.join(eq_coff) + "+%.4f"%(coeff[len(coeff)-1]) + "; $R^2$=" + "%.4f"%(r2)  
+                eq_clean = eq.replace('+-', '-')
+                x_fit = np.linspace(min(data[:,0]), max(data[:,0]), 100)
+                ax.plot(x_fit, p_fit(x_fit), color = cmap(self.eq_count[group][subplt-1]*0.1),
+                        linewidth=1, linestyle='dotted')
+                ax.text(1,0.2 - (vshift * self.eq_count[group][subplt-1]),
+                        eq_id + ": " + eq_clean, ha = 'right',
+                        transform=ax.transAxes, color = cmap(self.eq_count[group][subplt-1]*0.1),
+                        bbox=dict(facecolor='white', edgecolor = 'white', alpha=0.5))
+    ##            self.eq_count[subplt-1] += 1
+        
+        elif plot_type in ["Box","Violin"]:                      
+            print("Box",leg)
+            if group == "All":
+                group_size = len(self.group_list)
+                boxdata = [[]]*group_size
+                boxdata[grp_num-1] = ydata
+                boxlabels = self.group_list
+                # boxlabels = [[]]*group_size
+                boxlabels[grp_num-1] = leg
+                boxpositions = list(range(1,group_size+1))
+                ax.set_xlabel(self.group_name)
+            else:
+                boxdata = ydata
+                boxlabels = [group]
+                boxpositions = [1]
+                ax.set_xlabel(None)
+            if plot_type == "Box":
+                ax.boxplot(boxdata, labels=boxlabels, positions=boxpositions)
+            elif plot_type == "Violin":
+                ax.violinplot(boxdata, positions=boxpositions)
 
         fig.tight_layout()
 ##        fig.show()

@@ -302,8 +302,13 @@ class SummaryAnal:
         group_unique.sort()
         self.group_list = group_unique #if leg == None else ["All"] #only plot "All" for experiment list
 ##        self.eq_count["All"] = [1,1,1,1]
+        self.violindata = {}
+        self.violinlabels = {}
+        self.violindata["All"] = [[],[],[],[]]
+        self.violinlabels["All"] = [[],[],[],[]]
         for b in self.group_list:
             j = 0 if j > 15 else j #reset index
+            
 
 ##            #combine roi data into dataframe
 ##            data_nocomb = [b] + [df_filter[x] \
@@ -333,18 +338,22 @@ class SummaryAnal:
             group_unit = self.get_units(group, df_roi_filter)
             group_unit_clean = group_unit.split('(')[1].split(')')[0] if group_unit != '' else group_unit
             self.group_name = group.replace('_', ' ') + group_unit
-            if summaryDict['plot type'][0] == "Scatter":
-                b = group.replace('_', ' ') + ' ' + str(b) + group_unit_clean  \
-                    if isinstance(b, str) !=True and b!= None else b
-                leg = group.replace('_', ' ') + ' ' + str(leg) + group_unit_clean \
-                      if isinstance(leg, str) !=True and leg!= None else leg
-            else:
-                b = str(b)  \
-                    if isinstance(b, str) !=True and b!= None else b
-                leg = str(leg) \
-                      if isinstance(leg, str) !=True and leg!= None else leg
+            self.group_val = b
+            # if summaryDict['plot type'][0] == "Scatter":
+            b = group.replace('_', ' ') + ' ' + str(b) + group_unit_clean  \
+                if isinstance(b, str) !=True and b!= None else b
+            leg = group.replace('_', ' ') + ' ' + str(leg) + group_unit_clean \
+                  if isinstance(leg, str) !=True and leg!= None else leg
+            # else:
+            #     b = str(b)  \
+            #         if isinstance(b, str) !=True and b!= None else b
+            #     leg = str(leg) \
+            #           if isinstance(leg, str) !=True and leg!= None else leg:
+                          
 ##            if leg == None: #initialize fit equation counter
             self.eq_count[b] = [1,1,1,1]
+            self.violindata[b] = [[],[],[],[]]
+            self.violinlabels[b] = [[],[],[],[]]
             
 ##            self.eq_count[b] = [1,1,1,1]
             for c in roilist:
@@ -608,24 +617,37 @@ class SummaryAnal:
         
         elif plot_type in ["Box","Violin"]:                      
             print("Box",leg)
+            ax.cla()
+            ax.set_ylabel(ylabel)
+            self.violindata[group][subplt-1].append(ydata)
             if group == "All":
-                group_size = len(self.group_list)
-                boxdata = [[]]*group_size
-                boxdata[grp_num-1] = ydata
-                boxlabels = self.group_list
-                # boxlabels = [[]]*group_size
-                boxlabels[grp_num-1] = leg
-                boxpositions = list(range(1,group_size+1))
+                # group_size = len(self.group_list)
+                # boxdata = [[]]*group_size
+                # boxdata[grp_num-1] = ydata
+                # boxlabels = self.group_list
+                # # boxlabels = [[]]*group_size
+                # boxlabels[grp_num-1] = leg
+                # boxpositions = list(range(1,group_size+1))
+                self.violinlabels[group][subplt-1].append(self.group_val)
                 ax.set_xlabel(self.group_name)
             else:
-                boxdata = ydata
-                boxlabels = [group]
-                boxpositions = [1]
+                # boxdata = ydata
+                # boxlabels = [group]
+                # boxpositions = [1]
+                self.violinlabels[group][subplt-1].append(group)
                 ax.set_xlabel(None)
+            violinpositions = list(range(1,len(self.violinlabels[group][subplt-1])+1)) 
             if plot_type == "Box":
-                ax.boxplot(boxdata, labels=boxlabels, positions=boxpositions)
+                ax.boxplot(self.violindata[group][subplt-1], positions=violinpositions,
+                           labels=self.violinlabels[group][subplt-1])
             elif plot_type == "Violin":
-                ax.violinplot(boxdata, positions=boxpositions)
+                # self.violindata[group][subplt-1].append(ydata)
+                # self.violinlabels[group][subplt-1].append(leg)
+                # violinpositions = list(range(1,len(self.violinlabels[group][subplt-1])+1))
+                ax.violinplot(self.violindata[group][subplt-1], positions=violinpositions, 
+                              showmedians=True)
+                ax.set_xticks(violinpositions)
+                ax.set_xticklabels(self.violinlabels[group][subplt-1])
 
         fig.tight_layout()
 ##        fig.show()

@@ -26,6 +26,7 @@ class MainRecordFunctions:
 ##                                                              roi[0]:roi[2]],
 ##                                              w, h, inter = cv2.INTER_AREA)
 ##            else:
+            
             self.merged_frame[:h, :w], scaleFactor = self.image_resize(frame1, w, h,
                                                                       inter = cv2.INTER_AREA)
 
@@ -46,6 +47,7 @@ class MainRecordFunctions:
                 frame4 = cv2.resize(cv2.cvtColor(self.forceData.convertPlot(), cv2.COLOR_RGB2BGR),
                                                       (w, h), interpolation = cv2.INTER_AREA)
                 
+                #only record till plot range. continue playing to get all data
                 if int(self.framePos) == self.forceData.plot_slice2.stop + 1:
                 # if ret == False: #video at end
                     print("2nd video end")
@@ -77,10 +79,35 @@ class MainRecordFunctions:
                                                               inter = cv2.INTER_AREA)
                     self.merged_frame[h:, w:], r = self.image_resize(frame4, w, h,
                                                               inter = cv2.INTER_AREA)
+                    # Write video2 title
+                    font = cv2.FONT_HERSHEY_SIMPLEX
+                    bottomLeftCornerOfText = (int(1.0*w), int(0.05*h))
+                    fontScale = 1.5
+                    fontColor = (0,0,250)
+                    thickness = 3
+                    lineType = 1
+        
+                    cv2.putText(self.merged_frame, 
+                                self.configRecWindow.video2Title.text(), 
+                                bottomLeftCornerOfText, font,fontScale,
+                                fontColor,thickness, lineType)
             else:
                 self.merged_frame[:h, w:], r = self.image_resize(frame2, w, h,
                                                           inter = cv2.INTER_AREA)
 
+            # Write video1 title
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            bottomLeftCornerOfText = (int(0.0*w), int(0.05*h))
+            fontScale = 1.5
+            fontColor = (0,0,250)
+            thickness = 3
+            lineType = 1
+
+            cv2.putText(self.merged_frame, 
+                        self.configRecWindow.video1Title.text(), 
+                        bottomLeftCornerOfText, font,fontScale,
+                        fontColor,thickness, lineType)
+            
             # Write time
             font = cv2.FONT_HERSHEY_SIMPLEX
             bottomLeftCornerOfText = (int(1.55*w), int(0.1*h))
@@ -105,7 +132,7 @@ class MainRecordFunctions:
                      fontColor, thickness)
             fontScale = 1
             thickness = 5
-            color = (0,200,200, 0)
+            color = (0,200,200)
             text = str(int(self.lengthValue.value())) + ' ' + self.lengthUnit.currentText()
 
             font = ImageFont.truetype("arial.ttf", 28, encoding="unic")
@@ -116,6 +143,10 @@ class MainRecordFunctions:
 
             print(self.merged_frame.shape, w, h)
             self.out.write(self.merged_frame)
+            cv2.namedWindow("Recording Preview", cv2.WINDOW_KEEPRATIO)
+            cv2.imshow("Recording Preview", self.merged_frame)
+            cv2.resizeWindow("Recording Preview", 800, 400)
+            
 
     def record_frame(self):
         print("record_frame")

@@ -5,7 +5,7 @@ Created on Sat Jun  6 22:28:19 2020
 @author: adwait
 """
 from PyQt5.QtWidgets import QFileDialog, QCheckBox, QLabel, QPushButton, \
-     QComboBox, QTextEdit, QSpinBox, \
+     QComboBox, QTextEdit, QSpinBox, QLineEdit, \
      QGroupBox, QGridLayout, QWidget, QSizePolicy
 import time
      
@@ -48,20 +48,31 @@ class ConfigRecWindow(QWidget):
         self.fps.setRange(1, 100)
         self.fpsLabel = QLabel("Frames per second:", self)
         
+        video1label = QLabel("Video-1 Title:", self)
+        self.video1Title = QLineEdit(self)
+        self.video1Title.setText("Bottom View")
+
+        video2label = QLabel("Video-2 Title:", self)
+        self.video2Title = QLineEdit(self) 
+        self.video2Title.setText("Side View")
+        
         self.okBtn = QPushButton("OK", self) #Close window
 
         fileGroupBox = QGroupBox("Save video in...")
         codecGroupBox = QGroupBox("Video settings")
         videoGroupBox = QGroupBox("Select 2nd video")
+        titleGroupBox = QGroupBox("Select 2nd video")
 
         fileGroupBox.setStyleSheet("QGroupBox { font-weight: bold; } ")
         codecGroupBox.setStyleSheet("QGroupBox { font-weight: bold; } ")
         videoGroupBox.setStyleSheet("QGroupBox { font-weight: bold; } ")
+        titleGroupBox.setStyleSheet("QGroupBox { font-weight: bold; } ")
         
         self.layout.addWidget(fileGroupBox, 0, 0)
         self.layout.addWidget(codecGroupBox, 2, 0)
         self.layout.addWidget(videoGroupBox, 0, 1)
-        self.layout.addWidget(self.okBtn, 2, 1)
+        self.layout.addWidget(titleGroupBox, 2, 1)
+        self.layout.addWidget(self.okBtn, 3, 0, 1, 2)
 
         self.setLayout(self.layout)
         
@@ -82,6 +93,13 @@ class ConfigRecWindow(QWidget):
         codecVbox.addWidget(self.codec, 0, 1, 1, 1)
         codecVbox.addWidget(self.fpsLabel, 1, 0, 1, 1)
         codecVbox.addWidget(self.fps, 1, 1, 1, 1)
+        
+        titleGrid = QGridLayout()
+        titleGroupBox.setLayout(titleGrid)
+        titleGrid.addWidget(video1label, 0, 0)
+        titleGrid.addWidget(self.video1Title, 0, 1)
+        titleGrid.addWidget(video2label, 1, 0)
+        titleGrid.addWidget(self.video2Title, 1, 1)
 
     def save_dialog(self):
         name, _ = QFileDialog.getSaveFileName(self, "Save File")

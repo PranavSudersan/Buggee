@@ -19,6 +19,7 @@ class SummaryAnal:
 ##        self.eq_count = [1,1,1,1] #fitting equation counter for each subplot
         self.eq_count = {}
         self.eq_count["All"] = [1,1,1,1]
+        self.summary_filepath = ""
 
     def importSummary(self, filepath = None): #plot summary plots
         print("import")
@@ -193,7 +194,7 @@ class SummaryAnal:
             #calculate additional data
             self.df_forcedata['Adhesion_Stress'] = self.df_forcedata['Adhesion_Force']/self.df_forcedata['Pulloff_Area']
             self.df_forcedata['Friction_Stress'] = self.df_forcedata['Friction_Force']/self.df_forcedata['Friction_Area']
-            self.df_forcedata['Normalized_Pulloff_Force'] = self.df_forcedata['Adhesion_Force']/self.df_forcedata['Max_Area']
+            self.df_forcedata['Normalized_Adhesion_Force'] = self.df_forcedata['Adhesion_Force']/self.df_forcedata['Max_Area']
             self.df_forcedata['Normalized_Adhesion_Energy'] = self.df_forcedata['Adhesion_Energy']/self.df_forcedata['Max_Area']
             self.df_forcedata['Date_of_Experiment'] =  self.df_forcedata['Data_Folder'].str.split(pat = "/").str[-1].str.slice(start=0, stop=9)
             
@@ -246,7 +247,7 @@ class SummaryAnal:
             unit = ' $(s)$'
         elif var in ["Slope"]: #slope
             unit = self.slope_unit
-        elif var in ["Adhesion_Stress", "Friction_Stress", "Normalized_Pulloff_Force"]:
+        elif var in ["Adhesion_Stress", "Friction_Stress", "Normalized_Adhesion_Force"]:
             unit = ' $(μN' + '/' + df["Area_Units"].iloc[0] + ')$'
         elif var in ["Beam_Spring_Constant"]:
             unit = ' $(μN/μm)$'
@@ -256,6 +257,14 @@ class SummaryAnal:
             unit = ' $(pJ)$'
         elif var in ["Normalized_Adhesion_Energy"]:
             unit = ' $(J/m^2)$'
+        elif var in ["Contact_Angle-Water", "Contact_Angle-Hexadecane"]:
+            unit = r' $(°)$'
+        elif var in ["Temperature"]:
+            unit = r' $(°C)$'
+        elif var in ["Humidity"]:
+            unit = ' $(%)$'
+        elif var in ["Weight"]:
+            unit = ' $(g)$'
         else:
             unit = ''
         return unit
@@ -620,6 +629,7 @@ class SummaryAnal:
             ax.cla()
             ax.set_ylabel(ylabel)
             self.violindata[group][subplt-1].append(ydata)
+            datasize = str(len(ydata))
             if group == "All":
                 # group_size = len(self.group_list)
                 # boxdata = [[]]*group_size
@@ -628,13 +638,17 @@ class SummaryAnal:
                 # # boxlabels = [[]]*group_size
                 # boxlabels[grp_num-1] = leg
                 # boxpositions = list(range(1,group_size+1))
-                self.violinlabels[group][subplt-1].append(self.group_val)
+                self.violinlabels[group][subplt-1].append(str(self.group_val) + 
+                                                          '\n' + '(n=' + 
+                                                          datasize + ')')
                 ax.set_xlabel(self.group_name)
             else:
                 # boxdata = ydata
                 # boxlabels = [group]
                 # boxpositions = [1]
-                self.violinlabels[group][subplt-1].append(group)
+                self.violinlabels[group][subplt-1].append(str(group) + '\n' + 
+                                                          '(n=' + datasize + 
+                                                          ')')
                 ax.set_xlabel(None)
             violinpositions = list(range(1,len(self.violinlabels[group][subplt-1])+1)) 
             if plot_type == "Box":
@@ -751,13 +765,16 @@ class SummaryAnal:
             hum = []
             medium = []
             surface = []
+            ca_w = []
+            ca_o = []
             dataok = []
             includedata = []
             label = []
             
             header1 = ["Date", "Folder_Name", "Species", "Sex", "Leg", "Pad",
                        "Weight", "Temperature", "Humidity", "Medium",
-                       "Substrate", "Data_OK", "Include_Data", "Label"]
+                       "Substrate","Contact_Angle-Water", "Contact_Angle-Hexadecane", 
+                       "Data_OK", "Include_Data", "Label"]
 ##            header2 = ["Max_Area", "Pulloff_Area","Adhesion_Force",
 ##                      "Preload_Force", "Contact_Time", "Speed",
 ##                      "Steps", "Friction_Force", "Friction_Area",
@@ -773,8 +790,8 @@ class SummaryAnal:
             
             for i in range(3, m_row + 1):
                 #import data
-                ok = sheet_obj.cell(row = i, column = 14).value
-                include = sheet_obj.cell(row = i, column = 15).value
+                ok = sheet_obj.cell(row = i, column = 16).value
+                include = sheet_obj.cell(row = i, column = 17).value
 
                 if ok == 'No' or include == 'No': #only consider 'Yes' data in Data OK/Include Data
                     continue
@@ -790,9 +807,11 @@ class SummaryAnal:
                 hum.append(sheet_obj.cell(row = i, column = 9).value)
                 medium.append(sheet_obj.cell(row = i, column = 10).value)
                 surface.append(sheet_obj.cell(row = i, column = 11).value)
+                ca_w.append(sheet_obj.cell(row = i, column = 12).value)
+                ca_o.append(sheet_obj.cell(row = i, column = 13).value)
                 dataok.append(ok)
                 includedata.append(include)
-                label.append(sheet_obj.cell(row = i, column = 16).value)
+                label.append(sheet_obj.cell(row = i, column = 18).value)
 
                 print(foldername[j], m_row)
                 if foldername[j] != None:
@@ -803,10 +822,14 @@ class SummaryAnal:
 ##                    roi_label_unique.append(set(self.df_forcedata["ROI Label"]))
 ##                    speed_def_unique.append(self.speed_def_unique)
                     rownum = len(self.df_forcedata["Max_Area"])
-                    datalist = [[date[j]]*rownum, [foldername[j]]*rownum, [species[j]]*rownum,
-                                [sex[j]]*rownum, [leg[j]]*rownum, [pad[j]]*rownum, [weight[j]]*rownum,
-                                [temp[j]]*rownum, [hum[j]]*rownum, [medium[j]]*rownum, [surface[j]]*rownum,
-                                [dataok[j]]*rownum, [includedata[j]]*rownum, [label[j]]*rownum]
+                    datalist = [[date[j]]*rownum, [foldername[j]]*rownum, 
+                                [species[j]]*rownum,[sex[j]]*rownum, 
+                                [leg[j]]*rownum, [pad[j]]*rownum, 
+                                [weight[j]]*rownum,[temp[j]]*rownum, 
+                                [hum[j]]*rownum, [medium[j]]*rownum, 
+                                [surface[j]]*rownum, [ca_w[j]]*rownum,
+                                [ca_o[j]]*rownum, [dataok[j]]*rownum, 
+                                [includedata[j]]*rownum, [label[j]]*rownum]
                     datadict = dict(zip(header1, datalist))
                     df_data = pd.DataFrame(datadict)
                     df_joined = df_data.join(self.df_forcedata)
@@ -841,38 +864,42 @@ class SummaryAnal:
             
 ##            self.df_all.to_excel(excel_filepath) #export as excel
 
-            df_good = self.df_final
+            # df_good = self.df_final
             self.summary_filepath = excel_filepath #to save plots in Summary directory
+            # self.plotSummary(summaryDict,
+            #                  df_good,
+            #                  df_good,
+            #                  legend_parameter)            
 
-            if legend_parameter == "ROI Label": #no filtering as this is already plotted in prepareplot (when leg = None)          
-                self.plotSummary(summaryDict, df_good, df_good)
-            else:
-            ##    legend_parameter = 'Folder_Name' #choose, same as column names
-                legend_list = df_good[legend_parameter].unique()
-                legend_list.sort()
-                print(legend_list)
-                markerlist = ["o", "v", "P", "^", "D", "X", "<", ">", "*", "s",
-                              "+", "d", "1", "x", "2", "h"]
-                figlist = None
-                i = 0
-    ##            df_leg = pd.DataFrame(dict(zip([legend_parameter], [legend_list])))
-                for lg in legend_list:
-                    print("zxz", lg)
-                    i = 0 if i > 15 else i
-                    df_filtered = df_good[df_good[legend_parameter] == lg]
-                    self.plotSummary(summaryDict,
-                                     df_filtered, df_good, legend_parameter, markerlist[i],
-                                     figlist, lg)
-                    figlist = self.figdict.copy()
-    ##                df_all_joined = self.df_all.copy()
-    ##                df_all_joined.insert(0, legend_parameter, lg)
-    ##                if i == 0:
-    ##                    df_final = df_all_joined.copy()
-    ##                else:
-    ##                    df_final = df_final.append(df_all_joined, ignore_index=True, sort=False)
-    ##                print("iter", i)
-                    i += 1
-    ##            self.df_final = df_final.copy() 
+    #         if legend_parameter == "ROI Label": #no filtering as this is already plotted in prepareplot (when leg = None)          
+    #             self.plotSummary(summaryDict, df_good, df_good)
+    #         else:
+    #         ##    legend_parameter = 'Folder_Name' #choose, same as column names
+    #             legend_list = df_good[legend_parameter].unique()
+    #             legend_list.sort()
+    #             print(legend_list)
+    #             markerlist = ["o", "v", "P", "^", "D", "X", "<", ">", "*", "s",
+    #                           "+", "d", "1", "x", "2", "h"]
+    #             figlist = None
+    #             i = 0
+    # ##            df_leg = pd.DataFrame(dict(zip([legend_parameter], [legend_list])))
+    #             for lg in legend_list:
+    #                 print("zxz", lg)
+    #                 i = 0 if i > 15 else i
+    #                 df_filtered = df_good[df_good[legend_parameter] == lg]
+    #                 self.plotSummary(summaryDict,
+    #                                  df_filtered, df_good, legend_parameter, markerlist[i],
+    #                                  figlist, lg)
+    #                 figlist = self.figdict.copy()
+    # ##                df_all_joined = self.df_all.copy()
+    # ##                df_all_joined.insert(0, legend_parameter, lg)
+    # ##                if i == 0:
+    # ##                    df_final = df_all_joined.copy()
+    # ##                else:
+    # ##                    df_final = df_final.append(df_all_joined, ignore_index=True, sort=False)
+    # ##                print("iter", i)
+    #                 i += 1
+    # ##            self.df_final = df_final.copy() 
             
 
 ##a.combineSummary("Folder_Name")

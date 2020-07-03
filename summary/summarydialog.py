@@ -56,9 +56,10 @@ class SummaryDialog:
         
         grouplist = ["Date", "Folder_Name", "Species", "Sex", "Leg", "Pad",
                    "Weight", "Temperature", "Humidity", "Medium",
-                   "Substrate", "Data_OK", "Include_Data", "Label", "ROI Label",
-                     "Measurement_Number", "Contact_Time", "Detachment Speed",
-                   "Attachment Speed", "Sliding Speed", "Sliding_Step"]
+                   "Substrate", "Contact_Angle-Water", "Contact_Angle-Hexadecane",
+                   "Label", "ROI Label","Measurement_Number", "Contact_Time", 
+                   "Detachment Speed", "Attachment Speed", "Sliding Speed", 
+                   "Sliding_Step"]
         grouplist.sort()
 
         groupVar = QComboBox(self.sumDialog)
@@ -127,7 +128,7 @@ class SummaryDialog:
                    "Measurement_Number", "Contact_Time", "Detachment Speed",
                    "Attachment Speed", "Sliding Speed", "Sliding_Step", "Slope",
                    "Adhesion_Stress", "Friction_Stress", 
-                   "Normalized_Pulloff_Force", "Beam_Spring_Constant",
+                   "Normalized_Adhesion_Force", "Beam_Spring_Constant",
                    "Initial_Deformation","Pulloff_Deformation","Adhesion_Energy",
                    "Max_Bounding_Area", "Max_Bounding_Perimeter",
                    "Max_Bounding_Length", "Max_Bounding_Width", 
@@ -194,55 +195,69 @@ class SummaryDialog:
 ##        self.sumDialog.reject()
 ##        legend_parameter = self.sumlistwidget.currentItem().text()
         self.reset_summary()
-        
-        if combine == True:
-            self.summary = SummaryAnal()
+        self.summary = SummaryAnal()
+        if combine == True:            
             self.summary.combineSummary(self.summaryDict, legend_parameter)
             if self.summary.list_filepath != "":
                 self.comb = True
                 self.statusBar.showMessage("Summary Data combined!")
+                self.summary.plotSummary(self.summaryDict,
+                                         self.summary.df_final,
+                                         self.summary.df_final,
+                                         legend_parameter)
+                self.summary.showSummaryPlot()
             else:
                 self.statusBar.showMessage("No file selected")
                 self.comb = False
+                self.summary = None
         else:
-            self.comb = False
-
-        self.show_summary_plots(legend_parameter)
+            self.comb = False 
+            self.summary.importSummary()
+            if self.summary.summary_filepath != "":
+                self.summary.plotSummary(self.summaryDict,
+                                         self.summary.df_final,
+                                         self.summary.df_final,
+                                         legend_parameter)
+                self.summary.showSummaryPlot()
+            else:
+                self.summary = None
+        
         
     def export_summary_plots(self): #export summary plots
         if self.comb == False and self.summary == None:
             self.reset_summary()
             self.summary = SummaryAnal()
             self.summary.importSummary()
-##            if len(self.summary.roi_label_unique) == 2:
-##                self.summary.roi_label_unique.remove("All")
-##        self.summary.eq_count = [1,1,1,1]
-            self.summary.plotSummary(self.summaryDict,
-                                     self.summary.df_forcedata,
-                                     self.summary.df_forcedata)
+            if self.summary.summary_filepath != "":
+                self.summary.plotSummary(self.summaryDict,
+                                         self.summary.df_final,
+                                         self.summary.df_final)
+            else:
+                self.summary = None
         #save summary plots in separate thread
-        saveSummPlotThread = SummPlotThread(self.summary,
-                                            self.summaryDict['format'][0])
-        saveSummPlotThread.output.connect(self.process_indicate)
-        saveSummPlotThread.finished.connect(self.save_plot_indicate)
-        saveSummPlotThread.start()
+        if self.summary != None:
+            saveSummPlotThread = SummPlotThread(self.summary,
+                                                self.summaryDict['format'][0])
+            saveSummPlotThread.output.connect(self.process_indicate)
+            saveSummPlotThread.finished.connect(self.save_plot_indicate)
+            saveSummPlotThread.start()
 
     def save_plot_indicate(self):
         self.statusBar.showMessage("Summary Plots saved!")
 
-    def show_summary_plots(self, group = "ROI Label"): #show summary plots
+    def show_summary_plots(self): #show summary plots
         if self.comb == False and self.summary == None:
             self.reset_summary()
             self.summary = SummaryAnal()
             self.summary.importSummary()
-##            if len(self.summary.roi_label_unique) == 2:
-##                self.summary.roi_label_unique.remove("All")
-##        self.summary.eq_count = [1,1,1,1]
-            self.summary.plotSummary(self.summaryDict,
-                                     self.summary.df_forcedata,
-                                     self.summary.df_forcedata,
-                                     group)
-        self.summary.showSummaryPlot()
+            if self.summary.summary_filepath != "":
+                self.summary.plotSummary(self.summaryDict,
+                                         self.summary.df_final,
+                                         self.summary.df_final)
+            else:
+                self.summary = None
+        if self.summary != None:
+            self.summary.showSummaryPlot()
 
     def reset_summary(self): #reset self.comb to False
         self.comb = False

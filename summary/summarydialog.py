@@ -54,16 +54,16 @@ class SummaryDialog:
                                                                         0))
         self.update_summary_dict('format', plotFormat.currentText(), 0)
         
-        grouplist = ["Date", "Folder_Name", "Species", "Sex", "Leg", "Pad",
-                   "Weight", "Temperature", "Humidity", "Medium",
-                   "Substrate", "Contact_Angle-Water", "Contact_Angle-Hexadecane",
-                   "Label", "ROI Label","Measurement_Number", "Contact_Time", 
-                   "Detachment Speed", "Attachment Speed", "Sliding Speed", 
-                   "Sliding_Step"]
-        grouplist.sort()
+        self.grouplist = ["Date", "Folder_Name", "Species", "Sex", "Leg", "Pad",
+                           "Weight", "Temperature", "Humidity", "Medium",
+                           "Substrate", "Contact_Angle-Water", "Contact_Angle-Hexadecane",
+                           "Label", "ROI Label","Measurement_Number", "Contact_Time", 
+                           "Detachment Speed", "Attachment Speed", "Sliding Speed", 
+                           "Sliding_Step"]
+        self.grouplist.sort()
 
         groupVar = QComboBox(self.sumDialog)
-        groupVar.addItems(grouplist)
+        groupVar.addItems(self.grouplist)
         # ind = groupVar.findText("ROI Label")
         groupVar.setCurrentIndex(groupVar.findText("ROI Label"))
 ##        groupVar.setEnabled(False)
@@ -81,10 +81,16 @@ class SummaryDialog:
         plotType.currentIndexChanged.connect(lambda: self.update_summary_dict('plot type',
                                                                           plotType.currentText(),
                                                                           0))
+        self.filter_dialog_init()   #initialize filter dialog
+        filterButton = QPushButton("Filter..", self.sumDialog)
+        filterButton.clicked.connect(self.filterDialog.show)
         
 ##        okButton.setDefault(True)
         resetButton = QPushButton("Reset", self.sumDialog)
         resetButton.clicked.connect(self.reset_summary)
+        
+        closeButton = QPushButton("Close", self.sumDialog)
+        closeButton.clicked.connect(self.close_summary)
 
         gridLayout = QGridLayout(self.sumDialog)
         
@@ -111,9 +117,10 @@ class SummaryDialog:
         gridLayout.addWidget(plotFormat, 0, 5, 1, 1)
         gridLayout.addWidget(plotTypeLabel, 6, 0, 1, 1)
         gridLayout.addWidget(plotType, 6, 1, 1, 1)
+        gridLayout.addWidget(filterButton, 6, 2, 1, 1)
         gridLayout.addWidget(okButton, 6, 3, 1, 1)
-        gridLayout.addWidget(resetButton, 6, 5, 1, 1)
-        
+        gridLayout.addWidget(resetButton, 6, 4, 1, 1)
+        gridLayout.addWidget(closeButton, 6, 5, 1, 1)
 ##        self.sumDialog.show()
 
     def summary_layout_make(self, plotnum, x_init, y_init, cb_init,
@@ -268,3 +275,84 @@ class SummaryDialog:
         plt.close()
         gc.collect()
         self.statusBar.showMessage("Reset!")
+
+    def close_summary(self):
+        self.sumDialog.done(0)
+        
+    def filter_dialog_init(self):
+        self.filterDialog = QDialog()
+        self.filterDialog.setWindowTitle("Filter")
+        
+        self.filterLayout = QGridLayout(self.filterDialog)
+        
+        self.filterOk = QPushButton("OK")
+        self.filterOk.clicked.connect(self.update_filter_dict)
+        
+        self.filter_count = 0
+        self.filterAdd = QPushButton("ADD")
+        self.filterAdd.clicked.connect(lambda: self.filter_add_widgets("Add",-1))
+
+        self.filterLayout.addWidget(self.filterOk, 0, 0, 1, 2)
+        self.filterLayout.addWidget(self.filterAdd, 0, 2, 1, 2)
+        
+        # self.filter_dialog_widgets(self.filter_count)
+    
+    def filter_dialog_widgets(self, rownum):
+        groupVar = QComboBox()
+        groupVar.addItems(self.grouplist)
+        
+        conditionVar = QComboBox()
+        conditionVar.addItems(["equal to", "not equal to", "less than", 
+                                "greater than", "less than or equal to",
+                                "greater than or equal to"])
+
+        filterValue =  QLineEdit()
+        
+        connectiveVar = QComboBox()
+        connectiveVar.addItems(["None", "AND", "OR", "Delete"])
+        connectiveVar.currentIndexChanged.connect(lambda: self.filter_add_widgets(
+            connectiveVar.currentText(),self.filterLayout.indexOf(connectiveVar),
+            groupVar, conditionVar, filterValue, connectiveVar))
+        
+        self.filterLayout.addWidget(groupVar, rownum, 0, 1, 1)
+        self.filterLayout.addWidget(conditionVar, rownum, 1, 1, 1)
+        self.filterLayout.addWidget(filterValue, rownum, 2, 1, 1)
+        self.filterLayout.addWidget(connectiveVar, rownum, 3, 1, 1)
+        self.filterLayout.addWidget(self.filterOk, rownum+1, 0, 1, 2)
+        self.filterLayout.addWidget(self.filterAdd, rownum+1, 2, 1, 2)
+    
+    def filter_add_widgets(self, var, itemnum, groupVar=None, conditionVar=None, 
+                           filterValue=None, connectiveVar=None):
+        if var == "Delete":
+            print(var,itemnum)
+            self.filterLayout.removeWidget(groupVar)
+            groupVar.deleteLater()
+            self.filterLayout.removeWidget(conditionVar)
+            conditionVar.deleteLater()
+            self.filterLayout.removeWidget(filterValue)
+            filterValue.deleteLater()
+            self.filterLayout.removeWidget(connectiveVar)
+            connectiveVar.deleteLater()                        
+            
+            # self.filterDialog.resize(self.filterDialog.size().width(),
+            #                          self.filterDialog.minimumHeight())
+            if itemnum == (4*(self.filter_count))-1 and self.filter_count > 1:
+                widgetLast = self.filterLayout.itemAt((4*(self.filter_count-1))-1).widget()
+                widgetLast.setCurrentIndex(widgetLast.findText("None"))
+            # count = self.filter_count
+            # self.filterDialog.close()
+            # self.filter_dialog_init()
+            # for i in range(1,count):
+            #     self.filter_dialog_widgets(i)
+            self.filter_count -= 1
+            # self.filterDialog.show()
+        elif var in ["AND", "OR", "Add"]:
+            if itemnum == (4*(self.filter_count))-1 or itemnum == -1:
+                self.filter_count += 1
+                self.filter_dialog_widgets(self.filter_count-1)
+
+        self.filterDialog.resize(self.filterDialog.sizeHint())
+        
+    def update_filter_dict(self):
+        print("cl")
+        self.filterDialog.done(0)

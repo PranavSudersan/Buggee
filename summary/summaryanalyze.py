@@ -226,6 +226,21 @@ class SummaryAnal:
 ##            self.roi_label_unique.update(["All"])
 ##            self.df_final.to_excel('E:/Work/Data/Summary/20200213/Sex/summary_temp_' +
 ##                                   str(random.randint(1, 90000)) + '.xlsx') #export as excel 
+
+    def filter_df(self, df, col, cond, val): #filter df based on condition
+        if cond == 'equal to':
+            df_filtered = df[df[col] == val]
+        elif cond == 'not equal to':
+            df_filtered = df[df[col] != val]
+        elif cond == 'greater than':
+            df_filtered = df[df[col] > val]
+        elif cond == 'less than':
+            df_filtered = df[df[col] < val]
+        elif cond == 'greater than or equal to':
+            df_filtered = df[df[col] >= val]
+        elif cond == 'less than or equal to':
+            df_filtered = df[df[col] <= val]
+        return df_filtered
             
     def get_units(self, var, df):
         if var in ["Adhesion_Force", "Adhesion_Preload",

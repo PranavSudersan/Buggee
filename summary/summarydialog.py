@@ -30,15 +30,16 @@ class SummaryDialog:
         fitLabel = QLabel("<b>Fit</b>", self.sumDialog)
         orderLabel = QLabel("<b>Order</b>", self.sumDialog)
 
-        self.summaryDict = {'x var':[None, None, None, None],
-                            'y var':[None, None, None, None],
-                            'cbar var':[None, None, None, None],
-                            'plot num':[None, None, None, None],
+        self.summaryDict = {'x var': [None, None, None, None],
+                            'y var': [None, None, None, None],
+                            'cbar var': [None, None, None, None],
+                            'plot num': [None, None, None, None],
                             'fit': [None, None, None, None],
                             'order': [None, None, None, None],
-                            'title':[None], 
-                            'format':[None],
-                            'plot type':["Scatter"]} #initialize
+                            'title': [None], 
+                            'format': [None],
+                            'plot type': ["Scatter"],
+                            'filter': [None]} #initialize
 
         plotTitle =  QLineEdit(self.sumDialog)
         plotTitle.textChanged.connect(lambda: self.update_summary_dict('title',
@@ -282,11 +283,12 @@ class SummaryDialog:
     def filter_dialog_init(self):
         self.filterDialog = QDialog()
         self.filterDialog.setWindowTitle("Filter")
+        self.filterDialog.resize(468, 69)
         
         self.filterLayout = QGridLayout(self.filterDialog)
         
         self.filterOk = QPushButton("OK")
-        self.filterOk.clicked.connect(self.update_filter_dict)
+        self.filterOk.clicked.connect(self.close_filter_dialog)
         
         self.filter_count = 0
         self.filterAdd = QPushButton("ADD")
@@ -295,23 +297,33 @@ class SummaryDialog:
         self.filterLayout.addWidget(self.filterOk, 0, 0, 1, 2)
         self.filterLayout.addWidget(self.filterAdd, 0, 2, 1, 2)
         
+        self.filter_dict = {}
         # self.filter_dialog_widgets(self.filter_count)
     
     def filter_dialog_widgets(self, rownum):
         groupVar = QComboBox()
         groupVar.addItems(self.grouplist)
+        groupVar.currentIndexChanged.connect(lambda:
+                                             self.update_filter_dict(rownum, 0,
+                                                    groupVar.currentText()))
         
         conditionVar = QComboBox()
         conditionVar.addItems(["equal to", "not equal to", "less than", 
                                 "greater than", "less than or equal to",
                                 "greater than or equal to"])
-
+        conditionVar.currentIndexChanged.connect(lambda:
+                                                 self.update_filter_dict(rownum, 1,
+                                                    conditionVar.currentText()))
+            
         filterValue =  QLineEdit()
-        
+        filterValue.textChanged.connect(lambda:
+                                       self.update_filter_dict(rownum, 2,
+                                            filterValue.text()))
+            
         connectiveVar = QComboBox()
         connectiveVar.addItems(["None", "AND", "OR", "Delete"])
         connectiveVar.currentIndexChanged.connect(lambda: self.filter_add_widgets(
-            connectiveVar.currentText(),self.filterLayout.indexOf(connectiveVar),
+            connectiveVar.currentText(),rownum,self.filterLayout.indexOf(connectiveVar),
             groupVar, conditionVar, filterValue, connectiveVar))
         
         self.filterLayout.addWidget(groupVar, rownum, 0, 1, 1)
@@ -320,11 +332,22 @@ class SummaryDialog:
         self.filterLayout.addWidget(connectiveVar, rownum, 3, 1, 1)
         self.filterLayout.addWidget(self.filterOk, rownum+1, 0, 1, 2)
         self.filterLayout.addWidget(self.filterAdd, rownum+1, 2, 1, 2)
+        
+        #filter dictionary: variable, condition, value, connective operator
+        self.filter_dict[rownum] = [groupVar.currentText(), conditionVar.currentText(),
+                                    filterValue.text(), connectiveVar.currentText()]
     
-    def filter_add_widgets(self, var, itemnum, groupVar=None, conditionVar=None, 
-                           filterValue=None, connectiveVar=None):
+    def filter_add_widgets(self, var, key, itemnum=None, groupVar=None, 
+                           conditionVar=None, filterValue=None, connectiveVar=None):
+        if itemnum == None: #Add clicked
+            rownum = self.filter_count-1
+        else:
+            rownum = int(((itemnum+1)/4)-1) #row number corresponding to changed item
+        
+        filter_keys = list(self.filter_dict.keys())
+        filter_keys.sort()
+                       
         if var == "Delete":
-            print(var,itemnum)
             self.filterLayout.removeWidget(groupVar)
             groupVar.deleteLater()
             self.filterLayout.removeWidget(conditionVar)
@@ -334,25 +357,35 @@ class SummaryDialog:
             self.filterLayout.removeWidget(connectiveVar)
             connectiveVar.deleteLater()                        
             
+            
             # self.filterDialog.resize(self.filterDialog.size().width(),
             #                          self.filterDialog.minimumHeight())
-            if itemnum == (4*(self.filter_count))-1 and self.filter_count > 1:
+            if rownum == self.filter_count-1 and self.filter_count > 1:
                 widgetLast = self.filterLayout.itemAt((4*(self.filter_count-1))-1).widget()
-                widgetLast.setCurrentIndex(widgetLast.findText("None"))
-            # count = self.filter_count
-            # self.filterDialog.close()
-            # self.filter_dialog_init()
-            # for i in range(1,count):
-            #     self.filter_dialog_widgets(i)
-            self.filter_count -= 1
-            # self.filterDialog.show()
-        elif var in ["AND", "OR", "Add"]:
-            if itemnum == (4*(self.filter_count))-1 or itemnum == -1:
-                self.filter_count += 1
-                self.filter_dialog_widgets(self.filter_count-1)
+                widgetLast.setCurrentIndex(widgetLast.findText("None")) 
+                key_prev = filter_keys[filter_keys.index(key)-1]
+                self.filter_dict[key_prev][3] = "None"
+            
+            del self.filter_dict[key]
 
-        self.filterDialog.resize(self.filterDialog.sizeHint())
+            self.filter_count -= 1
+            self.filterDialog.resize(468, 69)
+
+        elif var in ["AND", "OR", "Add"]:
+            if connectiveVar != None:
+                self.filter_dict[key][3] = connectiveVar.currentText() 
+            if rownum == self.filter_count-1 or key == -1:
+                self.filter_count += 1
+                key_new = max(filter_keys) + 1 if len(filter_keys) != 0  else 0
+                self.filter_dialog_widgets(key_new)
         
-    def update_filter_dict(self):
-        print("cl")
+        # self.filterDialog.update()       
+        # print(self.filterDialog.sizeHint())
+        # self.filterDialog.resize(self.filterDialog.sizeHint())
+        
+    def update_filter_dict(self, key, index, val):        
+        self.filter_dict[key][index] = val
+        
+    def close_filter_dialog(self):
+        self.summaryDict['filter'] = self.filter_dict
         self.filterDialog.done(0)

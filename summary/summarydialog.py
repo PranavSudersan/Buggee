@@ -38,8 +38,7 @@ class SummaryDialog:
                             'order': [None, None, None, None],
                             'title': [None], 
                             'format': [None],
-                            'plot type': ["Scatter"],
-                            'filter': [None]} #initialize
+                            'plot type': ["Scatter"]} #initialize
 
         plotTitle =  QLineEdit(self.sumDialog)
         plotTitle.textChanged.connect(lambda: self.update_summary_dict('title',
@@ -209,6 +208,7 @@ class SummaryDialog:
             if self.summary.list_filepath != "":
                 self.comb = True
                 self.statusBar.showMessage("Summary Data combined!")
+                self.summary.filter_df(self.filter_dict)
                 self.summary.plotSummary(self.summaryDict,
                                          self.summary.df_final,
                                          self.summary.df_final,
@@ -222,6 +222,7 @@ class SummaryDialog:
             self.comb = False 
             self.summary.importSummary()
             if self.summary.summary_filepath != "":
+                self.summary.filter_df(self.filter_dict)
                 self.summary.plotSummary(self.summaryDict,
                                          self.summary.df_final,
                                          self.summary.df_final,
@@ -237,6 +238,7 @@ class SummaryDialog:
             self.summary = SummaryAnal()
             self.summary.importSummary()
             if self.summary.summary_filepath != "":
+                self.summary.filter_df(self.filter_dict)
                 self.summary.plotSummary(self.summaryDict,
                                          self.summary.df_final,
                                          self.summary.df_final)
@@ -259,6 +261,7 @@ class SummaryDialog:
             self.summary = SummaryAnal()
             self.summary.importSummary()
             if self.summary.summary_filepath != "":
+                self.summary.filter_df(self.filter_dict)
                 self.summary.plotSummary(self.summaryDict,
                                          self.summary.df_final,
                                          self.summary.df_final)
@@ -270,6 +273,7 @@ class SummaryDialog:
     def reset_summary(self): #reset self.comb to False
         self.comb = False
         self.summary = None
+        # self.filter_dialog_init()
 ##        self.summary_dialog_init()
         plt.clf()
         plt.cla()
@@ -387,5 +391,6 @@ class SummaryDialog:
         self.filter_dict[key][index] = val
         
     def close_filter_dialog(self):
-        self.summaryDict['filter'] = self.filter_dict
+        print(self.filter_dict)
+        # self.summaryDict['filter'] = self.filter_dict
         self.filterDialog.done(0)

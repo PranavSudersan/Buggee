@@ -138,6 +138,7 @@ class MainImportFile:
             self.cap = cv2.VideoCapture(self.videoPath)
             self.playStatus = False
             self.frameAction = "Play"
+            self.recordStatus = False
 ##            self.frameCount = self.cap.get(cv2.CAP_PROP_FRAME_COUNT)
 
             self.countThread = CountFrameThread(self.cap) #count frames in separate thread
@@ -216,8 +217,6 @@ class MainImportFile:
             self.seekSlider.setSingleStep(int(0.1 *self.frameCount))
             self.seekSlider.setMaximum(int(self.frameCount))
             self.seekSlider.blockSignals(False)
-            
-            self.recordStatus = False
             
             self.analyzeVideo.blockSignals(True)
             self.analyzeVideo.setChecked(False)

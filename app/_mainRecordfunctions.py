@@ -120,7 +120,7 @@ class MainRecordFunctions:
             cv2.putText(self.merged_frame, text, 
                         bottomLeftCornerOfText, font,fontScale,
                         fontColor,thickness, lineType)
-
+            
             #Draw scale bar
             print(scaleFactor, "scalef")
             pixLength = scaleFactor * self.pixelValue.value()

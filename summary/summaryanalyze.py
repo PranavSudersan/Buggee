@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import time
+from datetime import datetime
 import os
 import os.path
 from tkinter import filedialog
@@ -225,22 +226,38 @@ class SummaryAnal:
 ##
 ##            self.roi_label_unique.update(["All"])
 ##            self.df_final.to_excel('E:/Work/Data/Summary/20200213/Sex/summary_temp_' +
-##                                   str(random.randint(1, 90000)) + '.xlsx') #export as excel 
+##                                   str(random.randint(1, 90000)) + '.xlsx') #export as excel        
 
-    def filter_df(self, df, col, cond, val): #filter df based on condition
-        if cond == 'equal to':
-            df_filtered = df[df[col] == val]
-        elif cond == 'not equal to':
-            df_filtered = df[df[col] != val]
-        elif cond == 'greater than':
-            df_filtered = df[df[col] > val]
-        elif cond == 'less than':
-            df_filtered = df[df[col] < val]
-        elif cond == 'greater than or equal to':
-            df_filtered = df[df[col] >= val]
-        elif cond == 'less than or equal to':
-            df_filtered = df[df[col] <= val]
-        return df_filtered
+    def filter_df(self, filter_dict): #filter df based on condition
+        print(filter_dict)
+        for k in filter_dict.keys():
+            col = filter_dict[k][0]
+            cond = filter_dict[k][1]
+            if col in ["Weight","Temperature","Humidity","Contact_Angle-Water", 
+                       "Contact_Angle-Hexadecane","Measurement_Number","Contact_Time", 
+                       "Detachment Speed", "Attachment Speed", "Sliding Speed"]:
+                val = float(filter_dict[k][2])
+            elif col in ["Folder_Name", "Species", "Sex", "Leg", "Pad","Medium",
+                           "Substrate","Label", "ROI Label","Sliding_Step"]:
+                val = filter_dict[k][2]
+            elif col in ["Date"]:
+                val = datetime.strptime(filter_dict[k][2], "%d/%m/%Y").date()
+            if cond == 'equal to':
+                print("equal condition")
+                self.df_final = self.df_final[self.df_final[col] == val]
+            elif cond == 'not equal to':
+                self.df_final = self.df_final[self.df_final[col] != val]
+            elif cond == 'greater than':
+                self.df_final = self.df_final[self.df_final[col] > val]
+                print(self.df_final[col].head())
+                print("greater than", val)
+            elif cond == 'less than':
+                self.df_final = self.df_final[self.df_final[col] < val]
+            elif cond == 'greater than or equal to':
+                self.df_final = self.df_final[self.df_final[col] >= val]
+            elif cond == 'less than or equal to':
+                self.df_final = self.df_final[self.df_final[col] <= val]
+        # return df_filtered
             
     def get_units(self, var, df):
         if var in ["Adhesion_Force", "Adhesion_Preload",
@@ -859,7 +876,8 @@ class SummaryAnal:
             wb_obj.close()
             print("import finish")
 
-            df['Date'] = df['Date'].dt.strftime('%d/%m/%Y')
+            # df['Date'] = df['Date'].dt.strftime('%d/%m/%Y')
+            df['Date'] = pd.to_datetime(df['Date'], format = '%d=%m-%Y').dt.date
 
 ##            roi_label_unique = list(set([a for b in roi_label_unique for a in b]))
 ##            speed_def_unique = list(set([a for b in speed_def_unique for a in b]))

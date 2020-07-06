@@ -1867,6 +1867,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                     
                     cv2.drawContours(self.frame_contour, [self.roiDict[k][3]],
                                      -1, (0,0,255), 2) #roi 
+                    self.draw_roi_labels(k)
                     # cv2.drawContours(self.frame_contour, self.roiDict[k][2], -1,
                     #                  (0,255,0), -1) #contours
                     if self.roi_auto == True: 
@@ -1976,6 +1977,19 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                 self.effectView.fitInView(self.effectPixmapItem, 1)
                 # self.showContours.setEnabled(False)
 
+    def draw_roi_labels(self, key): #draw roi labels in contour frame
+        font = cv2.FONT_HERSHEY_SIMPLEX        
+        fontScale = 1
+        fontColor = (250,0,250)
+        thickness = 2
+        lineType = 1
+        f = 0.9
+        w = (f*self.roiDict[key][1][0] + (1-f)*self.roiDict[key][1][2])-self.roiBound[0]
+        h = self.roiDict[key][1][3]-self.roiBound[1]-10
+        bottomLeftCornerOfText = (int(w), int(h))
+        cv2.putText(self.frame_contour, key, 
+                    bottomLeftCornerOfText, font,fontScale,
+                    fontColor,thickness, lineType)        
 
 #     def rawViewTabChanged(self): #raw view tab changed
 #         tabname = self.rawViewTab.tabText(self.rawViewTab.currentIndex())
@@ -2467,7 +2481,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
     #render video frame
     def renderVideo(self, view, ret, frame, roiCorners = np.array([],np.int32)): 
 
-        if ret == True:
+        if ret == True and self.recordStatus == False:
             
 ##            if view == "Raw" and self.analyzeVideo.isChecked() == False:
 ##                roi = self.roiBound

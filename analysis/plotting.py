@@ -58,7 +58,7 @@ class Plotting:
         ax1 = self.fig1.add_subplot(1,1,1)
         lns = []
                 
-        ax1.set_title('Speed = ' + str(self.speed_um) + ' μm/s')
+        # ax1.set_title('Speed = ' + str(self.speed_um) + ' μm/s')
         ax1.set_xlabel(self.x_var)
         ax1.set_ylabel('Vertical Force (μN)', color = 'r')
         p1, = ax1.plot(xAxisData[self.plot_slice], self.force_vert1_shifted[self.plot_slice], 'ro',
@@ -70,6 +70,7 @@ class Plotting:
             i = 0
             lns_reg = [] #region legend handle
             lab_reg = [] #region legend label
+            speed_inview = [] #speed list in plot range
             for a in self.steps: #shade step regions
                 if i < ((self.plot_slice.start+1)/self.ptsperstep)-1:
                     i += 1
@@ -94,6 +95,7 @@ class Plotting:
                                     color='aliceblue', label = a)
                     lns_reg.append(v1)
                     lab_reg.append(a)
+                    speed_inview.append(self.speed_um[i])
                     if exit_flag == True:
                         break
                 elif a == 'Back':
@@ -101,6 +103,7 @@ class Plotting:
                                 color='whitesmoke', label = a)
                     lns_reg.append(v2)
                     lab_reg.append(a)
+                    speed_inview.append(self.speed_um[i])
                     if exit_flag == True:
                         break                    
                 elif a == 'Up':
@@ -108,6 +111,7 @@ class Plotting:
                                 color='honeydew', label = a)
                     lns_reg.append(v3)
                     lab_reg.append(a)
+                    speed_inview.append(self.speed_um[i])
                     if exit_flag == True:
                         break                    
                 elif a == 'Down':
@@ -115,6 +119,7 @@ class Plotting:
                                 color='linen', label = a)
                     lns_reg.append(v4)
                     lab_reg.append(a)
+                    speed_inview.append(self.speed_um[i])
                     if exit_flag == True:
                         break                    
                 elif a == 'Pause':
@@ -122,11 +127,14 @@ class Plotting:
                                 color='lightyellow', label = a)
                     lns_reg.append(v5)
                     lab_reg.append(a)
+                    speed_inview.append(self.speed_um[i])
                     if exit_flag == True:
                         break
                 i += 1
             
-    
+        ax1.set_title('Speed = ' + str(speed_inview).replace('[','').replace(']','') 
+                      + ' μm/s')
+        
         dict_reg = dict(zip(lab_reg, lns_reg)) #legend dictionary (remove dup)
         self.fig1.legend(dict_reg.values(), dict_reg.keys(), loc='lower right',
                          ncol=len(lns_reg))

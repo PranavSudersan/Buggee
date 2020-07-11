@@ -149,8 +149,10 @@ class ForceAnal(Plotting):
             self.defl_lat = [float(y.split('\t')[3+ic]) for y in x1[23+ir:]]
             self.calib_vert1 = x1[19+ir].split('\t')[1].replace("^", "**")
             #make 'Back' speeds negative
-            self.speed = [-speed1[self.steps.index(a)] if a == 'Back' \
-                          else speed1[self.steps.index(a)] for a in self.steps]
+            # self.speed = [-speed1[self.steps.index(a)] if a == 'Back' \
+            #               else speed1[self.steps.index(a)] for a in self.steps]
+            self.speed = [-speed1[i] if self.steps[i] == 'Back' \
+                          else speed1[i] for i in range(len(self.steps))]
             print(self.ptsnumber)
 
             self.dataClean()
@@ -365,11 +367,15 @@ class ForceAnal(Plotting):
             self.slideStep = "None"
         else:
             self.speedDict["Sliding Speed"] = self.speed_um[int(force_lat_index/self.ptsperstep)]
-            self.speedDict["Detachment Speed"] = self.speed_um[int(self.force_min_index/self.ptsperstep)]
-            self.speedDict["Attachment Speed"] = self.speed_um[self.step_num - 1 - \
-                                           self.steps[::-1].index('Down')] #last down step
-            self.slideStep = self.steps[int(force_lat_index/self.ptsperstep)] #lateral sliding step
+            ind_detach = int(self.force_min_index/self.ptsperstep)
+            self.speedDict["Detachment Speed"] = self.speed_um[ind_detach]
+            #last down step bfore detachment
+            self.speedDict["Attachment Speed"] = self.speed_um[ind_detach - \
+                                           self.steps[ind_detach::-1].index('Down')]
+            #lateral sliding step
+            self.slideStep = self.steps[int(force_lat_index/self.ptsperstep)]
             print("slide step ", force_lat_index, self.ptsperstep)
+            print("Speed dict", self.speedDict)
         self.contact_time1 = sum(self.pause) #contact time
         
         #calculate actual vertical deformation

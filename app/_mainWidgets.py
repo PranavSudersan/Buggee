@@ -629,14 +629,14 @@ class MainWidgets:
 ##        self.showPlot.move(800,600)
 
         self.saveBtn = QPushButton("Save Data", self) #Save area data
-        self.saveBtn.clicked.connect(self.save_data)
+        self.saveBtn.clicked.connect(self.save_prompt)
         # self.saveBtn.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
         self.saveBtn.setStyleSheet("QPushButton { font-weight: bold; font-size: 14px;} ")
 ##        self.saveBtn.resize(self.saveBtn.minimumSizeHint())
 ##        self.saveBtn.move(900,600)
 
         self.clearData = QPushButton("Clear Data", self) #Clear area data
-        self.clearData.clicked.connect(self.clear_data)
+        self.clearData.clicked.connect(self.clear_prompt)
         # self.clearData.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
         self.clearData.setStyleSheet("QPushButton { font-weight: bold; font-size: 14px;} ")
 ##        self.clearData.resize(self.clearData.minimumSizeHint())
@@ -704,7 +704,7 @@ class MainWidgets:
         # playbackGroupBox.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
         playbackGroupBox.setStyleSheet("QGroupBox { font-weight: bold; } ")
         playbackVbox = QGridLayout(self)
-        playbackVbox.setRowStretch(1, 1.5)
+        # playbackVbox.setRowStretch(1, 1.5)
         playbackGroupBox.setLayout(playbackVbox)
         playbackVbox.addWidget(self.seekSlider, 0, 0, 1, 5)
         playbackVbox.addWidget(self.playBtn, 1, 0, 1, 1)

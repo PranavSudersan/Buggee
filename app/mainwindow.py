@@ -61,9 +61,9 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                  MainImportFile, MainParameterChanged, MainRecordFunctions,
                  MainLivePlot, SummaryDialog, MainMeasurementDialog,
                  MainRoiFunctions, ImageSegment): #also try inherit Effect, unify self.frame everywhere
-    def __init__(self):
+    def __init__(self, wd, ht):
         super().__init__()
-        self.setGeometry(0, 0, 1300, 730)
+        self.setGeometry(0, 0, wd, ht)
         self.appVersion = "AdheSee v1.0"
         self.setWindowTitle(self.appVersion)
         self.layout = QGridLayout()
@@ -1913,7 +1913,8 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                     self.forceData.plotData(self.lengthUnit.currentText()) #prepare plot
                     self.w = self.roiBound[2] - self.roiBound[0]
                     self.h = self.roiBound[3] - self.roiBound[1]
-                    dim = (1280, 1024) #CHECK!
+                    # dim = (1280, 1024) #CHECK!
+                    dim = self.rawView.width(), self.rawView.height()
     ##                dim = (2560, 1440)
                     self.frameEffect = cv2.resize(cv2.cvtColor(self.forceData.convertPlot(), cv2.COLOR_RGB2BGR),
                                                   dim, interpolation = cv2.INTER_AREA) 
@@ -2489,6 +2490,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
 ##            else:
             frame_view = frame.copy()
             h, w = frame_view.shape[:2]
+            # w, h = (720, 480)
             
             if len(frame.shape) == 2: #binary image
                 print("binary")
@@ -3082,7 +3084,34 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
     #     memory[1:(ysize-1)*2+2:2] = ydata
     #     return polyline   
         
-    
+    def save_prompt(self): #save data prompt
+        msg = QMessageBox()
+        msg.setStyleSheet("QLabel{min-width:500 px; font-size: 24px;} QPushButton{ width:500px; font-size: 24px; }");
+        savelist = ["Image Data", "Plot", "Summary", "Contour Data"]
+        savelistflags = [self.configPathWindow.dataGroupBox.isChecked(),
+                         self.configPathWindow.plotGroupBox.isChecked(),
+                         self.configPathWindow.summaryGroupBox.isChecked(),
+                         self.configPathWindow.contourGroupBox.isChecked()]
+        checkedlist = str([savelist[i] for i in range(len(savelist)) if savelistflags[i] == True]).replace('[','').replace(']','')
+        choice = msg.question(self, 'Saving...',
+                                      "Really save " + checkedlist + "?",
+                                      msg.Yes | msg.No)        
+        if choice == msg.Yes:
+            self.save_data()
+        else:
+            msg.close()
+
+    def clear_prompt(self): #clear data prompt
+        msg = QMessageBox()
+        msg.setStyleSheet("QLabel{min-width:500 px; font-size: 24px;} QPushButton{ width:500px; font-size: 24px; }");
+        choice = msg.question(self, 'Clearing...',
+                                      "Really clear data?",
+                                      msg.Yes | msg.No)        
+        if choice == msg.Yes:
+            self.clear_data()
+        else:
+            msg.close()   
+             
     def save_data(self): #save data and plots
         if len(self.frame) != 0:
             roi_corners = []
@@ -3521,8 +3550,11 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
 #         self.statusBar.showMessage("Reset!")
     
     def resizeEvent(self, event): #resize view
+        self.rawViewTab.resize(self.width()/2, self.rawViewTab.height())
+        self.effectViewTab.resize(self.width()/2, self.effectViewTab.height())
         self.rawView.fitInView(self.rawPixmapItem, 1)
-        self.effectView.fitInView(self.effectPixmapItem, 1)       
+        self.effectView.fitInView(self.effectPixmapItem, 1)
+        # print("app size", self.width(),self.height())
            
     def closeEvent(self, event): #close application
         msg = QMessageBox()

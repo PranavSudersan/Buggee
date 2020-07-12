@@ -4,8 +4,8 @@ import sys
 import traceback as tb
 import os
 from PyQt5.QtCore import QFile, QTextStream
-from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QApplication, QMessageBox
+from PyQt5.QtGui import QIcon, QPixmap
+from PyQt5.QtWidgets import QApplication, QMessageBox, QSplashScreen
 
 
 #include source dirctory into module search path
@@ -29,6 +29,10 @@ def except_hook(cls, exception, traceback): #display error message/print traceba
          
 def run():
     app = QApplication(sys.argv)
+    pixmap = QPixmap("images/splash.png")
+    splash = QSplashScreen(pixmap)
+    splash.show()
+    app.processEvents()
     screen_resolution = app.desktop().screenGeometry()
     w, h = screen_resolution.width(), screen_resolution.height()
     app.setWindowIcon(QIcon('images/icon.ico'))
@@ -40,6 +44,7 @@ def run():
     Gui.setWindowIcon(QIcon('images/icon.ico'))
     # sys.exit(app.exec_())
     Gui.show()
+    splash.finish(Gui)
     app.exec_()
 
 sys.excepthook = except_hook

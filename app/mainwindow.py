@@ -64,7 +64,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
     def __init__(self, wd, ht):
         super().__init__()
         self.setGeometry(0, 0, wd, ht)
-        self.appVersion = "AdheSee v1.0"
+        self.appVersion = "AdheSee v1.1"
         self.setWindowTitle(self.appVersion)
         self.layout = QGridLayout()
         self.layout.setColumnMinimumWidth(0,650)

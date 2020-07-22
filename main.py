@@ -40,7 +40,7 @@ def run():
     file.open(QFile.ReadOnly | QFile.Text)
     stream = QTextStream(file)
     app.setStyleSheet(stream.readAll())
-    Gui = MainWindow(0.9*w,0.9*h)
+    Gui = MainWindow(0.95*w,0.9*h)
     Gui.setWindowIcon(QIcon('images/icon.ico'))
     # sys.exit(app.exec_())
     Gui.show()

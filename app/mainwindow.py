@@ -64,7 +64,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
     def __init__(self, wd, ht):
         super().__init__()
         self.setGeometry(0, 0, wd, ht)
-        self.appVersion = "AdheSee v1.1"
+        self.appVersion = "AdheSee v1.2"
         self.setWindowTitle(self.appVersion)
         self.layout = QGridLayout()
         self.layout.setColumnMinimumWidth(0,650)
@@ -2743,6 +2743,15 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
     #             self.dataDict[k][3][int(self.framePos-1)] *= self.calibFactor**2
     #             self.dataDict[k][4][int(self.framePos-1)] *= self.calibFactor
     #         self.plotSequence()
+
+    def zero_force_correct(self): #correct vertical force wrt zero
+        if self.forceData.force_filepath != "":
+            if self.correctZeroForce.isChecked() == True:
+                self.zero_force_calc()
+                self.forceData.defl_vert1 = self.defl_vert1_actual.copy()
+            else:
+                self.forceData.defl_vert1 = self.defl_vert1_raw.copy()
+##        self.updatePlot(clean = False)
             
     def configurePlot(self): #set plot design flags
         self.plotSequence()
@@ -2754,6 +2763,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                 self.init_plotconfig()
                 if self.forceData.ptsnumber != 0: #when no force file loaded
                     self.forceData.calcData()
+                    self.forceData.getArea(self.frameTime, self.dataDict)
                 #self.effect_change()
                 self.video_analysis()
             self.plot_live_data()
@@ -2779,6 +2789,8 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         self.forceData.flag_fp = self.configPlotWindow.showFriction.isChecked()
         self.forceData.flag_st = self.configPlotWindow.showStress.isChecked()
         self.forceData.flag_zd = self.configPlotWindow.showDeformation.isChecked()
+        self.forceData.show_title = self.configPlotWindow.showTitle.isChecked()
+        self.forceData.showLegend2 = self.configPlotWindow.showLegend2.isChecked()
         self.forceData.x_var = self.configPlotWindow.xAxisParam.currentText()
         self.forceData.calib_lat1 = self.configPlotWindow.latCalibEq.text()
         self.forceData.invert_latf = self.configPlotWindow.invertLatForce.isChecked()
@@ -2797,6 +2809,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         self.forceData.polyorder = self.configPlotWindow.filter_poly.value()
         self.forceData.startFull = self.configPlotWindow.startFull.value()
         self.forceData.endFull = self.configPlotWindow.endFull.value()
+        self.forceData.fontSize = self.configPlotWindow.fontSize.value()        
         self.forceData.noiseSteps = self.configPlotWindow.noiseSteps.text()
         self.forceData.legendPos = self.configPlotWindow.legendPos.text()
         self.forceData.flag_fit = self.configPlotWindow.fittingGroupBox.isChecked()
@@ -3285,15 +3298,6 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
 #                                  self.forceData.defl_vert1[i] -
 #                                  self.zeroForceData.defl_vert1_corrected[i] \
 #                                  for i in range(len(self.forceData.defl_vert1))]
-        
-    def zero_force_correct(self): #correct vertical force wrt zero
-        if self.forceData.force_filepath != "":
-            if self.correctZeroForce.isChecked() == True:
-                self.zero_force_calc()
-                self.forceData.defl_vert1 = self.defl_vert1_actual.copy()
-            else:
-                self.forceData.defl_vert1 = self.defl_vert1_raw.copy()
-##        self.updatePlot(clean = False)
 
     def clear_data(self): #clear area data
         for k in self.roiDict.keys():

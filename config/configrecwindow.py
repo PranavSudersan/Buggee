@@ -61,7 +61,7 @@ class ConfigRecWindow(QWidget):
         fileGroupBox = QGroupBox("Save video in...")
         codecGroupBox = QGroupBox("Video settings")
         videoGroupBox = QGroupBox("Select 2nd video")
-        titleGroupBox = QGroupBox("Select 2nd video")
+        titleGroupBox = QGroupBox("Titles")
 
         fileGroupBox.setStyleSheet("QGroupBox { font-weight: bold; } ")
         codecGroupBox.setStyleSheet("QGroupBox { font-weight: bold; } ")

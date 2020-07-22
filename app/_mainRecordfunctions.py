@@ -14,139 +14,161 @@ class MainRecordFunctions:
     
     def recordVideo(self, frame1, frame2):
         print("recordvideo")
+        if self.forceData.force_filepath == "":
+            start_framenum = -1
+            end_framenum = -1
+        else:
+            # self.forceData.getArea(self.frameTime, self.dataDict)
+            start_framenum = self.forceData.plot_slice2.start
+            end_framenum = self.forceData.plot_slice2.stop + 1
+        
         if self.recordStatus == True:
-            h , w = 1024, 1280
-            # dim = (w, h)
-            if frame2.ndim == 2:
-                frame2 = cv2.cvtColor(frame2, cv2.COLOR_GRAY2BGR)
-            
-##            if self.showContours.isChecked() == False:
-##                roi = self.roiBound
-##                self.merged_frame[:h, :w] = self.image_resize(frame1[roi[1]:roi[3],
-##                                                              roi[0]:roi[2]],
-##                                              w, h, inter = cv2.INTER_AREA)
-##            else:
-            
-            self.merged_frame[:h, :w], scaleFactor = self.image_resize(frame1, w, h,
-                                                                      inter = cv2.INTER_AREA)
-
-            if self.configRecWindow.fourRec.isChecked() == True:
-                if self.forceData.force_filepath == "" or self.cap2 == None:
-                    root = Tk()
-                    root.withdraw()
-                    messagebox.showinfo("Error!", "Check 2nd video file or force data file. Not found!")
-                    root.destroy()
-                    self.record_frame() #finish recording
-                    self.playStatus = False #pause video
-                    return
-##                frame2 = cv2.cvtColor(self.frame_contours, cv2.COLOR_GRAY2BGR)
-                frame2 = self.frame_contour.copy()
-                ret, frame3 = self.cap2.read()
-                self.forceData.getArea(self.frameTime, self.dataDict)
-                self.forceData.plotData(self.lengthUnit.currentText()) #prepare plot
-                frame4 = cv2.resize(cv2.cvtColor(self.forceData.convertPlot(), cv2.COLOR_RGB2BGR),
-                                                      (w, h), interpolation = cv2.INTER_AREA)
+            if int(self.framePos) >= start_framenum:
+                h , w = 1024, 1280
+                # dim = (w, h)
+                if frame2.ndim == 2:
+                    frame2 = cv2.cvtColor(frame2, cv2.COLOR_GRAY2BGR)
                 
-                #only record till plot range. continue playing to get all data
-                if int(self.framePos) == self.forceData.plot_slice2.stop + 1:
-                # if ret == False: #video at end
-                    print("2nd video end")
-                    self.cap2.release()
-                    self.cap2 = None
-                    self.record_frame() #finish recording
-                    self.playStatus = True
-                    return
-                else:
-                    framenumber1 = self.cap.get(cv2.CAP_PROP_POS_FRAMES)
-                    framenumber2 = self.cap2.get(cv2.CAP_PROP_POS_FRAMES)
-                    print("position", framenumber1, framenumber2)
-                    if framenumber1 != framenumber2: #check both videos are in sync
+    ##            if self.showContours.isChecked() == False:
+    ##                roi = self.roiBound
+    ##                self.merged_frame[:h, :w] = self.image_resize(frame1[roi[1]:roi[3],
+    ##                                                              roi[0]:roi[2]],
+    ##                                              w, h, inter = cv2.INTER_AREA)
+    ##            else:
+                
+                self.merged_frame[:h, :w], scaleFactor = self.image_resize(frame1, w, h,
+                                                                          inter = cv2.INTER_AREA)
+                
+                if self.configRecWindow.fourRec.isChecked() == True:
+                    if self.forceData.force_filepath == "" or self.cap2 == None:
                         root = Tk()
                         root.withdraw()
-                        messagebox.showinfo("Error!", "Video frame numbers dont match!\n" +
-                                            "Video-1 frame:\t" + str(framenumber1) + "\n" +
-                                            "Video-2 frame:\t" + str(framenumber2))
+                        messagebox.showinfo("Error!", "Check 2nd video file or force data file. Not found!")
                         root.destroy()
                         self.record_frame() #finish recording
                         self.playStatus = False #pause video
                         return
-                    print("position", self.cap.get(cv2.CAP_PROP_POS_FRAMES),
-                          self.cap2.get(cv2.CAP_PROP_POS_FRAMES))
+    ##                frame2 = cv2.cvtColor(self.frame_contours, cv2.COLOR_GRAY2BGR)
+                    # frame2 = self.frame_contour.copy()
+                    # ret, frame3 = self.cap2.read()
+                    # self.forceData.getArea(self.frameTime, self.dataDict)
+                    # self.forceData.plotData(self.lengthUnit.currentText()) #prepare plot
+                    # frame4 = cv2.resize(cv2.cvtColor(self.forceData.convertPlot(), cv2.COLOR_RGB2BGR),
+                    #                                       (w, h), interpolation = cv2.INTER_AREA)
                     
-                    self.merged_frame[:h, w:], r = self.image_resize(frame3, w, h,
-                                                              inter = cv2.INTER_AREA)
-                    self.merged_frame[h:, :w], r = self.image_resize(frame2, w, h,
-                                                              inter = cv2.INTER_AREA)
-                    self.merged_frame[h:, w:], r = self.image_resize(frame4, w, h,
-                                                              inter = cv2.INTER_AREA)
-                    # Write video2 title
-                    font = cv2.FONT_HERSHEY_SIMPLEX
-                    bottomLeftCornerOfText = (int(1.0*w), int(0.05*h))
-                    fontScale = 1.5
-                    fontColor = (0,0,250)
-                    thickness = 3
-                    lineType = 1
-        
-                    cv2.putText(self.merged_frame, 
-                                self.configRecWindow.video2Title.text(), 
-                                bottomLeftCornerOfText, font,fontScale,
-                                fontColor,thickness, lineType)
-            else:
-                self.merged_frame[:h, w:], r = self.image_resize(frame2, w, h,
-                                                          inter = cv2.INTER_AREA)
-
-            # Write video1 title
-            font = cv2.FONT_HERSHEY_SIMPLEX
-            bottomLeftCornerOfText = (int(0.0*w), int(0.05*h))
-            fontScale = 1.5
-            fontColor = (0,0,250)
-            thickness = 3
-            lineType = 1
-
-            cv2.putText(self.merged_frame, 
-                        self.configRecWindow.video1Title.text(), 
-                        bottomLeftCornerOfText, font,fontScale,
-                        fontColor,thickness, lineType)
+                    #only record till plot range. continue playing to get all data
+                    if int(self.framePos) == end_framenum:
+                    # if ret == False: #video at end
+                        print("2nd video end")
+                        self.cap2.release()
+                        self.cap2 = None
+                        self.record_frame() #finish recording
+                        self.playStatus = True
+                        return
+                    else:
+                        frame2 = self.frame_contour.copy()
+                        ret, frame3 = self.cap2.read()
+                        # self.forceData.getArea(self.frameTime, self.dataDict)
+                        self.forceData.plotData(self.lengthUnit.currentText()) #prepare plot
+                        frame4 = cv2.resize(cv2.cvtColor(self.forceData.convertPlot(), cv2.COLOR_RGB2BGR),
+                                                              (w, h), interpolation = cv2.INTER_AREA)
+                        framenumber1 = self.cap.get(cv2.CAP_PROP_POS_FRAMES)
+                        framenumber2 = self.cap2.get(cv2.CAP_PROP_POS_FRAMES)
+                        print("position", framenumber1, framenumber2)
+                        if framenumber1 != framenumber2: #check both videos are in sync
+                            root = Tk()
+                            root.withdraw()
+                            messagebox.showinfo("Error!", "Video frame numbers dont match!\n" +
+                                                "Video-1 frame:\t" + str(framenumber1) + "\n" +
+                                                "Video-2 frame:\t" + str(framenumber2))
+                            root.destroy()
+                            self.record_frame() #finish recording
+                            self.playStatus = False #pause video
+                            return
+                        print("position", self.cap.get(cv2.CAP_PROP_POS_FRAMES),
+                              self.cap2.get(cv2.CAP_PROP_POS_FRAMES))
+                        
+                        self.merged_frame[:h, w:], r = self.image_resize(frame3, w, h,
+                                                                  inter = cv2.INTER_AREA)
+                        self.merged_frame[h:, :w], r = self.image_resize(frame2, w, h,
+                                                                  inter = cv2.INTER_AREA)
+                        self.merged_frame[h:, w:], r = self.image_resize(frame4, w, h,
+                                                                  inter = cv2.INTER_AREA)
+                        # Write video2 title
+                        font = cv2.FONT_HERSHEY_SIMPLEX
+                        bottomLeftCornerOfText = (int(1.0*w), int(0.05*h))
+                        fontScale = 1.5
+                        fontColor = (0,0,250)
+                        thickness = 3
+                        lineType = 1
             
-            # Write time
-            font = cv2.FONT_HERSHEY_SIMPLEX
-            bottomLeftCornerOfText = (int(1.55*w), int(0.1*h))
-            fontScale = 2
-            fontColor = (0,200,200)
-            thickness = 10
-            lineType = 2
-            print(self.frameTime.item(int(self.framePos-1)), bottomLeftCornerOfText)
-            text = 'Time: ' + "{0:.3f}".format(self.frameTime.item(int(self.framePos-1))) + ' s'
-            cv2.putText(self.merged_frame, text, 
-                        bottomLeftCornerOfText, font,fontScale,
-                        fontColor,thickness, lineType)
-            
-            #Draw scale bar
-            print(scaleFactor, "scalef")
-            pixLength = scaleFactor * self.pixelValue.value()
-            scalepos1 = (int(0.8*w), int(0.95*h))
-            scalepos2 = (int(scalepos1[0] + pixLength), scalepos1[1])
-            scalelabelpos = (int(scalepos1[0] + 0.5 * (pixLength - 100)),
-                             scalepos1[1] + 10) #length of label is 51 pixels
-            cv2.line(self.merged_frame, scalepos1, scalepos2,
-                     fontColor, thickness)
-            fontScale = 1
-            thickness = 5
-            color = (0,200,200)
-            text = str(int(self.lengthValue.value())) + ' ' + self.lengthUnit.currentText()
-
-            font = ImageFont.truetype("arial.ttf", 28, encoding="unic")
-            img_pil = Image.fromarray(self.merged_frame)
-            draw = ImageDraw.Draw(img_pil)
-            draw.text(scalelabelpos, text, font = font, fill = color)
-            self.merged_frame = np.array(img_pil)
-
-            print(self.merged_frame.shape, w, h)
-            self.out.write(self.merged_frame)
-            cv2.namedWindow("Recording Preview", cv2.WINDOW_KEEPRATIO)
-            cv2.imshow("Recording Preview", self.merged_frame)
-            cv2.resizeWindow("Recording Preview", 800, 400)
-            
+                        cv2.putText(self.merged_frame, 
+                                    self.configRecWindow.video2Title.text(), 
+                                    bottomLeftCornerOfText, font,fontScale,
+                                    fontColor,thickness, lineType)
+                else:
+                    #only record till plot range. continue playing to get all data
+                    if int(self.framePos) == end_framenum:
+                        self.record_frame() #finish recording
+                        self.playStatus = True
+                        return
+                    else:
+                        self.merged_frame[:h, w:], r = self.image_resize(frame2, w, h,
+                                                                  inter = cv2.INTER_AREA)
+    
+                # Write video1 title
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                bottomLeftCornerOfText = (int(0.0*w), int(0.05*h))
+                fontScale = 1.5
+                fontColor = (0,0,250)
+                thickness = 3
+                lineType = 1
+    
+                cv2.putText(self.merged_frame, 
+                            self.configRecWindow.video1Title.text(), 
+                            bottomLeftCornerOfText, font,fontScale,
+                            fontColor,thickness, lineType)
+                
+                # Write time
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                bottomLeftCornerOfText = (int(1.55*w), int(0.1*h))
+                fontScale = 2
+                fontColor = (0,200,200)
+                thickness = 10
+                lineType = 2
+                print(self.frameTime.item(int(self.framePos-1)), bottomLeftCornerOfText)
+                text = 'Time: ' + "{0:.3f}".format(self.frameTime.item(int(self.framePos-1))) + ' s'
+                cv2.putText(self.merged_frame, text, 
+                            bottomLeftCornerOfText, font,fontScale,
+                            fontColor,thickness, lineType)
+                
+                #Draw scale bar
+                print(scaleFactor, "scalef")
+                pixLength = scaleFactor * self.pixelValue.value()
+                scalepos1 = (int(0.8*w), int(0.95*h))
+                scalepos2 = (int(scalepos1[0] + pixLength), scalepos1[1])
+                scalelabelpos = (int(scalepos1[0] + 0.5 * (pixLength - 100)),
+                                 scalepos1[1] + 10) #length of label is 51 pixels
+                cv2.line(self.merged_frame, scalepos1, scalepos2,
+                         fontColor, thickness)
+                fontScale = 1
+                thickness = 5
+                color = (0,200,200)
+                text = str(int(self.lengthValue.value())) + ' ' + self.lengthUnit.currentText()
+    
+                font = ImageFont.truetype("arial.ttf", 28, encoding="unic")
+                img_pil = Image.fromarray(self.merged_frame)
+                draw = ImageDraw.Draw(img_pil)
+                draw.text(scalelabelpos, text, font = font, fill = color)
+                self.merged_frame = np.array(img_pil)
+    
+                print(self.merged_frame.shape, w, h)
+                self.out.write(self.merged_frame)
+                cv2.namedWindow("Recording Preview", cv2.WINDOW_KEEPRATIO)
+                cv2.imshow("Recording Preview", self.merged_frame)
+                cv2.resizeWindow("Recording Preview", 800, 400)
+            elif self.configRecWindow.fourRec.isChecked() == True:
+                ret, frame3 = self.cap2.read()
 
     def record_frame(self):
         print("record_frame")

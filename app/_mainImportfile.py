@@ -7,6 +7,7 @@ Created on Fri Jun 19 12:10:12 2020
 
 import numpy as np
 import cv2
+import matplotlib.pyplot as plt
 import openpyxl
 import os.path
 from PyQt5.QtCore import Qt
@@ -340,9 +341,11 @@ class MainImportFile:
             self.frameRate = self.forceData.fps
             self.forceFileNameLabel.setText("<b>Force data:</b>\n" + self.forceData.force_filepath)
 ##            self.videoEffect.model().item(6).setEnabled(True)
-            self.init_plotconfig()
-            self.forceData.dataClean()
-            self.forceData.calcData()
+            plt.close()
+            self.plotSequence()
+            # self.init_plotconfig()
+            # self.forceData.dataClean()
+            # self.forceData.calcData()
             print(self.frameRate)
 
     def import_zero_force(self): #import zero force line

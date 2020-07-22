@@ -37,6 +37,10 @@ class ConfigPlotWindow(QWidget):
         self.showFriction = QCheckBox('friction calculation', self) #friction calc lines
         self.showStress = QCheckBox('stress', self) #stress
         self.showDeformation = QCheckBox('deformation', self) #deformation
+        self.showTitle = QCheckBox('title', self) #plt title
+        self.showTitle.setChecked(True)
+        self.showLegend2 = QCheckBox('legend2', self) #plt title
+        self.showLegend2.setChecked(True)
 
         self.xAxisLabel = QLabel("<b>X Axis:</b>", self)
         self.xAxisParam = QComboBox(self) #x axis parameter
@@ -44,6 +48,12 @@ class ConfigPlotWindow(QWidget):
         self.xAxisParam.addItem("Vertical Position (μm)")
         self.xAxisParam.addItem("Lateral Position (μm)")
         self.xAxisParam.addItem("Deformation (μm)")
+        
+        self.fontLabel = QLabel("Font Size:", self)
+        self.fontSize = QDoubleSpinBox(self) #vertical force zero range start
+        self.fontSize.setValue(12)
+        self.fontSize.setSingleStep(1)
+        self.fontSize.setRange(1, 100)
         
         self.roiChoice = QComboBox(self) #choose ROI
         self.roiChoice.addItem("Default")
@@ -295,8 +305,10 @@ class ConfigPlotWindow(QWidget):
         filterVbox.addWidget(self.filter_wind, 2, 1, 1, 1)
         filterVbox.addWidget(self.polyLabel, 3, 0, 1, 1)
         filterVbox.addWidget(self.filter_poly, 3, 1, 1, 1)
-        filterVbox.addWidget(self.eqLabel, 2, 2, 1, 2)
-        filterVbox.addWidget(self.latCalibEq, 3, 2, 1, 2)
+        filterVbox.addWidget(self.fontLabel, 2, 2, 1, 1)
+        filterVbox.addWidget(self.fontSize, 2, 3, 1, 1)
+        filterVbox.addWidget(self.eqLabel, 3, 2, 1, 1)
+        filterVbox.addWidget(self.latCalibEq, 3, 3, 1, 1)
         filterVbox.addWidget(self.invertLatForce, 0, 2, 1, 2)
         filterVbox.addWidget(self.zeroShift, 0, 0, 1, 1)
         filterVbox.addWidget(self.applyCrossTalk, 1, 2, 1, 2)
@@ -330,6 +342,8 @@ class ConfigPlotWindow(QWidget):
         flagVbox.addWidget(self.showEcc, 3, 1)
         flagVbox.addWidget(self.showStress, 3, 2)
         flagVbox.addWidget(self.showDeformation, 4, 0)
+        flagVbox.addWidget(self.showTitle, 4, 1)
+        flagVbox.addWidget(self.showLegend2, 4, 2)
 
         lastCalibVbox = QGridLayout()
         self.latCalibGroupBox.setLayout(lastCalibVbox)

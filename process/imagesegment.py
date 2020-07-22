@@ -9,6 +9,7 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 import source.app.drawroi as drawroi
+import source.process.imagetransform as imagetransform
 import time
 import statistics
 
@@ -82,7 +83,7 @@ class ImageSegment:
             if self.bg_roi_apply == True:
                 kernal = (self.bg_blur_size_roi, self.bg_blur_size_roi)
                 frame_bg_roi = cv2.blur(frame_gray_roi, kernal)
-                frame_subtracted_roi = self.backgroundSubtract(frame_gray_roi, frame_bg_roi,
+                frame_subtracted_roi = imagetransform.backgroundSubtract(frame_gray_roi, frame_bg_roi,
                                                      self.bg_blend_roi, inv = True)
             else:
                 frame_subtracted_roi = frame_gray_roi

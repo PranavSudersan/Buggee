@@ -28,7 +28,9 @@ class Plotting:
         self.x_var = 'Time' #x axis default parameter
         self.legendPos = "upper right"
         self.fig1_close = True
-
+        self.show_title = True
+        self.showLegend2 = True
+        self.fontSize = 12
         #fitting
         self.flag_fit = False
         self.fit_x = 'Vertical Position (μm)'
@@ -50,6 +52,8 @@ class Plotting:
         
         markerlist = ["o", "v", "^", "s", "P", "*", "D", "<", "X", ">"]
         linelist = [":", "-.", "--", "-", ":", "-.", "--", "-", ":", "-."]
+        
+        plt.rcParams.update({'font.size': self.fontSize})
         
         self.fig1 = plt.figure(num="Force/Area vs Time", figsize = [11, 5])
         self.fig1.canvas.mpl_connect('close_event', self.handle_close)
@@ -131,13 +135,14 @@ class Plotting:
                     if exit_flag == True:
                         break
                 i += 1
-            
-        ax1.set_title('Speed = ' + str(speed_inview).replace('[','').replace(']','') 
-                      + ' μm/s')
         
-        dict_reg = dict(zip(lab_reg, lns_reg)) #legend dictionary (remove dup)
-        self.fig1.legend(dict_reg.values(), dict_reg.keys(), loc='lower right',
-                         ncol=len(lns_reg))
+        if self.show_title == True:
+            ax1.set_title('Speed = ' + str(speed_inview).replace('[','').replace(']','') 
+                          + ' μm/s')
+        if self.showLegend2 == True:
+            dict_reg = dict(zip(lab_reg, lns_reg)) #legend dictionary (remove dup)
+            self.fig1.legend(dict_reg.values(), dict_reg.keys(), loc='lower right',
+                             ncol=len(lns_reg))
         
         if self.flag_ap == True: #show adhesion calc
             #fill adhesion energy region 
@@ -178,10 +183,14 @@ class Plotting:
                                    linewidth=1, markersize=2,
                                    label="Contact Area: " + k)
                     lns.append(p2)
-                    if self.flag_ap == True:
+                    if self.flag_ap == True: #adhesion calc
                         ax2.plot(self.indDict["time1_max"][i],
                                  self.areaDict["area2_pulloff"][i],
                                  'y' + markerlist[i], alpha=0.8)
+                    if self.flag_fp == True: #friction calc
+                        ax2.plot(self.indDict["time1_lat_avg"][i],
+                                 self.areaDict["area_friction"][i],
+                                 'g' + markerlist[i], alpha=0.8)
                     i += 1
             if self.flag_ra == True: #consider first key since auto roi is same for all keys
                 colors = plt.cm.Blues([0.7, 0.5, 0.9, 0.3, 1])
@@ -201,7 +210,7 @@ class Plotting:
         if self.flag_lf == True:
             ax3 = ax1.twinx() #lateral force
             ax3.set_ylabel('Lateral Force (μN)', color = 'c')
-            ax3.spines['left'].set_position(('outward', 60))
+            ax3.spines['left'].set_position(('outward', int(6*self.fontSize)))
             ax3.spines["left"].set_visible(True)
             ax3.yaxis.set_label_position('left')
             ax3.yaxis.set_ticks_position('left')
@@ -232,9 +241,9 @@ class Plotting:
                     ax3.axvline(x=xAxisData[self.time1.index(self.indDict["time1_lat_avg"][i])],
                                 color='g', alpha=1,
                                 linestyle=linelist[i], linewidth=1)
-                    ax2.plot(self.indDict["time1_lat_avg"][i],
-                             self.areaDict["area_friction"][i],
-                             'g' + markerlist[i], alpha=0.8)
+                    # ax2.plot(self.indDict["time1_lat_avg"][i],
+                    #          self.areaDict["area_friction"][i],
+                    #          'g' + markerlist[i], alpha=0.8)
                     i += 1
                 ax3.axhline(y=self.forceDict["zero2"],
                             color='g', alpha=0.5,
@@ -247,7 +256,7 @@ class Plotting:
             ax4 = ax1.twinx() #piezo waveform
             ax4.set_ylabel('Displacement (μm)', color = 'violet')
             if self.flag_ca == True or self.flag_ra == True: #shift axis if area plotted
-                ax4.spines['right'].set_position(('outward', 70))
+                ax4.spines['right'].set_position(('outward', int(7*self.fontSize)))
 ##                ax4.invert_yaxis()
             if self.flag_zp == True:
                 p5, = ax4.plot(xAxisData[self.plot_slice], self.dist_vert1[self.plot_slice], '-',
@@ -275,7 +284,7 @@ class Plotting:
             ax5.set_prop_cycle(color=colors)
             ax5.set_ylabel('Length ($' + unit + '$)', color = 'brown')
             if self.flag_ca == True or self.flag_ra == True: 
-                ax5.spines['right'].set_position(('outward', 70))            
+                ax5.spines['right'].set_position(('outward', int(7*self.fontSize)))            
             if self.flag_cl == True: #contact length
                 i = 0
                 for k in self.rangeDict.keys():
@@ -309,7 +318,7 @@ class Plotting:
             num = len(self.rangeDict.keys())
             colors = plt.cm.copper(np.linspace(0.2,0.7,num))
             ax5.set_prop_cycle(color=colors)
-            ax5.spines['right'].set_position(('outward', 70))
+            ax5.spines['right'].set_position(('outward', int(7*self.fontSize)))
             i = 0
             for k in self.rangeDict.keys():
                 if len(self.rangeDict.keys()) > 1 and k == "Default":
@@ -326,7 +335,7 @@ class Plotting:
             num = len(self.rangeDict.keys())
             colors = plt.cm.copper(np.linspace(0.2,0.7,num))
             ax5.set_prop_cycle(color=colors)
-            ax5.spines['right'].set_position(('outward', 70))
+            ax5.spines['right'].set_position(('outward', int(7*self.fontSize)))
             i = 0
             for k in self.rangeDict.keys():
                 if len(self.rangeDict.keys()) > 1 and k == "Default":
@@ -342,7 +351,7 @@ class Plotting:
         if self.flag_st == True or self.flag_lf_filter == True: #stress
             ax6 = ax1.twinx() 
             ax6.set_ylabel('Stress (μN/$' + unit + '^2$)', color = 'c')
-            ax6.spines['left'].set_position(('outward', 60))
+            ax6.spines['left'].set_position(('outward', int(6*self.fontSize)))
             ax6.spines["left"].set_visible(True)
             ax6.yaxis.set_label_position('left')
             ax6.yaxis.set_ticks_position('left')

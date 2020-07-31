@@ -15,13 +15,14 @@ import pandas as pd
 # from PIL import ImageFont, ImageDraw, Image
 # import openpyxl
 import copy
+import ast
 from cv2_rolling_ball import subtract_background_rolling_ball
 # import gc
 from PyQt5.QtGui import QPixmap, QImage#, QIcon, QPolygonF, QBrush
 # from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication, QMainWindow, \
      QMessageBox, QAction, QStatusBar, \
-     QGridLayout
+     QGridLayout, QFileDialog
 # from PyQt5.QtChart import QChart, QScatterSeries
 
 ##import qdarkstyle
@@ -111,6 +112,12 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         self.chooseMsrmnt.setStatusTip("Select measurement from list")
         self.chooseMsrmnt.triggered.connect(self.choose_measurement)
 
+        savesettings = QAction("&Save Settings...", self) #save settings
+        savesettings.triggered.connect(self.save_settings)
+        
+        opensettings = QAction("&Open Settings...", self) #save settings
+        opensettings.triggered.connect(self.open_settings)
+        
         recordVideo = QAction("&Record", self) #configure recording
 ##        recordVideo.setShortcut("Ctrl+R")
         recordVideo.setStatusTip("Configure Record")
@@ -156,6 +163,8 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         fileMenu.addAction(self.openZeroForceFile)
         fileMenu.addAction(openFileList)
         fileMenu.addAction(self.chooseMsrmnt)
+        fileMenu.addAction(opensettings)
+        fileMenu.addAction(savesettings)
         fileMenu.addAction(quitWindow)
 
         self.chooseMsrmnt.setEnabled(False)
@@ -190,6 +199,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         self.definePaths()
         self.rawViewTabChanged()
         self.effectViewTabChanged()
+        self.update_settings_dict()
         
         #scale fit graphic view
         self.rawView.fitInView(self.rawPixmapItem, 0)
@@ -3126,6 +3136,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
             msg.close()   
              
     def save_data(self): #save data and plots
+        self.update_settings_dict()
         if len(self.frame) != 0:
             roi_corners = []
             roi_labels = []
@@ -3153,59 +3164,27 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                     f.write("Date\t" + time.strftime("%d/%m/%Y, %H:%M:%S") + "\n")
                     f.write("Measurement number\t" + str(self.msrmnt_num) + "\n")
                     f.write("Video file\t" + self.videoPath + "\n")
-                    f.write("Threshold Type\t" + str(self.threshType.currentText()) + "\n")
-                    f.write("Threshold Size\t" + str(self.threshSpinBox1.value()) + "\n")
-                    f.write("Threshold Constant\t" + str(self.threshSpinBox2.value()) + "\n")
-                    f.write("Apply Segment\t" + str(self.applySegment.isChecked()) + "\n")
-                    f.write("Segment FG\t" + str(self.segmentFGSpinBox.value()) + "\n")
-                    f.write("Segment BG\t" + str(self.segmentBGSpinBox.value()) + "\n")
-                    f.write("Auto detect ROI\t" + str(self.threshROIGroupBox.isChecked()) + "\n")
-                    f.write("Distinct ROI\t" + str(self.distinctAutoROI.isChecked()) + "\n")
-                    f.write("Combine ROI\t" + str(self.combineROI.isChecked()) + "\n")
-                    f.write("Apply Hull\t" + str(self.applyHullROI.isChecked()) + "\n")
-                    f.write("ROI Minimum\t" + str(self.roiMinSpinBox.value()) + "\n")
-                    f.write("Resolution\t" + str(self.epsilonSpinBox.value()) + "\n")
-                    f.write("Resize factor\t" + str(self.resizeROISpinBox.value()) + "\n")
-                    f.write("Apply Morph\t" + str(self.morphROI.isChecked()) + "\n")
-                    f.write("Morph Kernal\t" + str([self.morphXSpinBox.value(),self.morphYSpinBox.value()]) + "\n")
-                    f.write("Apply ROI BG Correction\t" + str(self.applybgROI.isChecked()) + "\n")
-                    f.write("ROI BG Correction Value\t" + str(self.bgblurROISpinBox.value()) + "\n")
-                    f.write("ROI BG Blend fraction\t" + str(self.bgblendROISpinBox.value()) + "\n")
-                    f.write("ROI Threshold Type\t" + str(self.threshType.currentText()) + "\n")
-                    f.write("ROI Threshold Size\t" + str(self.threshROISpinBox1.value()) + "\n")
-                    f.write("ROI Threshold Constant\t" + str(self.threshROISpinBox2.value()) + "\n")
-                    f.write("ROI Blur Size\t" + str(self.blurROISpinBox.value()) + "\n")
-                    f.write("Brightness\t" + str(self.brightnessSpinBox.value()) + "\n")
-                    f.write("Contrast\t" +  str(self.contrastSpinBox.value()) + "\n")
-                    f.write("Minimum Area\t" + str(self.minAreaFilter.value()) + "\n")
-                    f.write("Maximum Area\t" + str(self.maxAreaFilter.value()) + "\n")
-                    f.write("Apply Filter\t" + str(self.dftGroupBox.isChecked()) + "\n")
-                    f.write("Filter Type\t" + str(self.filterType.currentText()) + "\n")
-                    f.write("Filter Param1\t" +  str(self.lowPassSpinBox.value()) + "\n")
-                    f.write("Filter Param2\t" + str(self.highPassSpinBox.value()) + "\n")
-                    f.write("Subtract Background\t" + str(self.bgGroupBox.isChecked()) + "\n")
-                    f.write("BG Correction\t" + str(self.backgroundCorrection.currentText()) + "\n")
-                    f.write("BG Correction Value\t" + str(self.bgSpinBox.value()) + "\n")
-                    f.write("BG Blend fraction\t" + str(self.bgAlphaSpinBox.value()) + "\n")
-                    f.write("BG Frame no.\t" + str(self.bgframeNumber) + "\n")
                     f.write("Frames per second\t" + str(self.fpsSpinBox.value()) + "\n")
+                    f.write("ROI Labels\t" + str(roi_labels) + "\n")
                     f.write("ROI Corners \t" + str(roi_corners) + "\n")
                     print("Calibration factor [" + self.lengthUnit.currentText() + "/px]\t" + str(self.calibFactor) + "\n")
                     f.write("Calibration factor [" + self.lengthUnit.currentText() + "/px]\t" +
                                 "{0:.8f}".format(self.calibFactor) + "\n")
-                    f.write("Noise filter window\t" +  str(self.configPlotWindow.filter_wind.value()) + "\n")
-                    f.write("Noise filter polyord\t" + str(self.configPlotWindow.filter_poly.value()) + "\n")
-                    f.write("ROI Labels\t" + str(roi_labels) + "\n")
-                    f.write("Lateral Force Calibration [μN]\t" +
-                            self.configPlotWindow.latCalibEq.text() + "\n")
-                    f.write("Apply Cross Talk \t" +
-                            str(self.configPlotWindow.applyCrossTalk.isChecked()) + "\n")
-                    f.write("Vertical Cross Talk [μN/μN]\t" +
-                            str(self.configPlotWindow.vertCrossTalk.value()) + "\n")
-                    f.write("Lateral Cross Talk [μN/μN]\t" +
-                            str(self.configPlotWindow.latCrossTalk.value()) + "\n")
-                    f.write("Apply Zero-Force Correction\t" +
-                            str(self.correctZeroForce.isChecked()) + "\n")
+                    f.write("BG Frame no.\t" + str(self.bgframeNumber) + "\n")
+                    
+                    for key in self.settingsDict.keys():
+                        wid = self.settingsDict[key]
+                        widtype = wid.__class__.__name__
+                        if key in ["Force Range dictionary"]:#not a widget
+                            f.write(key + "\t" + str(wid) + "\n")
+                        elif widtype in ["QCheckBox", "QGroupBox"]:
+                            f.write(key + "\t" + str(wid.isChecked()) + "\n")
+                        elif widtype in ["QComboBox"]:
+                            f.write(key + "\t" + str(wid.currentText()) + "\n")
+                        elif widtype in ["QLineEdit"]:
+                            f.write(key + "\t" + str(wid.text()) + "\n") 
+                        else:                    
+                            f.write(key + "\t" + str(wid.value()) + "\n")
                     
                     f.write("Time [s]\tContact_Area [" + self.lengthUnit.currentText() + "2]\t" +
                             "Contact_Length [" + self.lengthUnit.currentText() + "]\t" + 
@@ -3253,6 +3232,128 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
     def process_indicate(self, status_text):
         self.statusBar.showMessage(status_text)
 
+    #open settings
+    def open_settings(self):
+        self.update_settings_dict()
+        filepath, _ = QFileDialog.getOpenFileName(self, "Open settings file")
+
+        if filepath != "":
+            with open(filepath, "r", encoding = "utf_8") as f: #save area data
+                x = f.read().splitlines()
+            for line in x[2:]:
+                key = line.split('\t')[0]
+                val = line.split('\t')[1]
+                wid = self.settingsDict[key]
+                widtype = wid.__class__.__name__
+                if key in ["Force Range dictionary"]:#not a widget
+                    fdict = ast.literal_eval(val)
+                    for k in fdict.keys():
+                        if k in self.configPlotWindow.rangeDict.keys():
+                            self.configPlotWindow.rangeDict[k] = fdict[k]
+                elif widtype in ["QCheckBox", "QGroupBox"]:
+                    wid.setChecked(ast.literal_eval(val))
+                elif widtype in ["QComboBox"]:
+                    wid.setCurrentIndex(wid.findText(val))
+                elif widtype in ["QLineEdit"]:
+                    wid.setText(val) 
+                else:                    
+                    wid.setValue(ast.literal_eval(val))
+            self.statusBar.showMessage("Settings set!")
+        
+    #save current settings
+    def save_settings(self):
+        self.update_settings_dict()
+        name, _ = QFileDialog.getSaveFileName(self, "Save settings")
+        filepath = name + '.txt'
+
+        with open(filepath, "w", encoding = "utf_8") as f: #save area data
+            f.write(self.appVersion + "\n")
+            f.write("Date\t" + time.strftime("%d/%m/%Y, %H:%M:%S") + "\n")
+            for key in self.settingsDict.keys():
+                wid = self.settingsDict[key]
+                widtype = wid.__class__.__name__
+                if key in ["Force Range dictionary"]:#not a widget
+                    f.write(key + "\t" + str(wid) + "\n")
+                elif widtype in ["QCheckBox", "QGroupBox"]:
+                    f.write(key + "\t" + str(wid.isChecked()) + "\n")
+                elif widtype in ["QComboBox"]:
+                    f.write(key + "\t" + str(wid.currentText()) + "\n")
+                elif widtype in ["QLineEdit"]:
+                    f.write(key + "\t" + str(wid.text()) + "\n") 
+                else:                    
+                    f.write(key + "\t" + str(wid.value()) + "\n")
+        self.statusBar.showMessage("Settings saved!")
+    
+        #update settings widget dictionary
+    def update_settings_dict(self):
+        self.settingsDict = {}
+        
+        self.settingsDict["Threshold Type"] = self.threshType
+        self.settingsDict["Threshold Size"] = self.threshSpinBox1
+        self.settingsDict["Threshold Constant"] = self.threshSpinBox2
+        self.settingsDict["Apply Segment"] = self.applySegment
+        self.settingsDict["Segment FG"] = self.segmentFGSpinBox
+        self.settingsDict["Segment BG"] = self.segmentBGSpinBox
+        self.settingsDict["Auto detect ROI"] = self.threshROIGroupBox
+        self.settingsDict["Distinct ROI"] = self.distinctAutoROI
+        self.settingsDict["Combine ROI"] = self.combineROI
+        self.settingsDict["Apply Hull"] = self.applyHullROI
+        self.settingsDict["ROI Minimum"] = self.roiMinSpinBox
+        self.settingsDict["Resolution"] = self.epsilonSpinBox
+        self.settingsDict["Resize factor"] = self.resizeROISpinBox
+        self.settingsDict["Apply Morph"] = self.morphROI
+        self.settingsDict["Morph X"] = self.morphXSpinBox
+        self.settingsDict["Morph Y"] = self.morphYSpinBox
+        self.settingsDict["Apply ROI BG Correction"] = self.applybgROI
+        self.settingsDict["ROI BG Correction Value"] = self.bgblurROISpinBox
+        self.settingsDict["ROI BG Blend fraction"] = self.bgblendROISpinBox
+        self.settingsDict["ROI Threshold Type"] = self.threshType
+        self.settingsDict["ROI Threshold Size"] = self.threshROISpinBox1
+        self.settingsDict["ROI Threshold Constant"] = self.threshROISpinBox2
+        self.settingsDict["ROI Blur Size"] = self.blurROISpinBox
+        self.settingsDict["Brightness"] = self.brightnessSpinBox
+        self.settingsDict["Contrast"] = self.contrastSpinBox
+        self.settingsDict["Minimum Area"] = self.minAreaFilter
+        self.settingsDict["Maximum Area"] = self.maxAreaFilter
+        self.settingsDict["Apply Filter"] = self.dftGroupBox
+        self.settingsDict["Filter Type"] = self.filterType
+        self.settingsDict["Filter Param1"] = self.lowPassSpinBox
+        self.settingsDict["Filter Param2"] = self.highPassSpinBox
+        self.settingsDict["Subtract Background"] = self.bgGroupBox
+        self.settingsDict["BG Correction"] = self.backgroundCorrection
+        self.settingsDict["BG Correction Value"] = self.bgSpinBox
+        self.settingsDict["BG Blend fraction"] = self.bgAlphaSpinBox
+        self.settingsDict["Pixel Value"] = self.pixelValue
+        self.settingsDict["Length Value"] = self.lengthValue
+        self.settingsDict["Length Unit"] = self.lengthUnit
+        self.settingsDict["Apply Zero-Force Correction"] = self.correctZeroForce
+        #config plot settings
+        self.settingsDict["Force Range dictionary"] = self.configPlotWindow.rangeDict #not a widget
+        self.settingsDict["Zero shift force"] = self.configPlotWindow.zeroShift
+        self.settingsDict["Invert lateral force"] = self.configPlotWindow.invertLatForce
+        self.settingsDict["Apply filter"] = self.configPlotWindow.filterLatF
+        self.settingsDict["Noise filter window"] = self.configPlotWindow.filter_wind
+        self.settingsDict["Noise filter polyord"] = self.configPlotWindow.filter_poly
+        self.settingsDict["Lateral Force Calibration [μN]"] = self.configPlotWindow.latCalibEq
+        self.settingsDict["Apply Cross Talk "] = self.configPlotWindow.applyCrossTalk
+        self.settingsDict["Vertical Cross Talk [μN/μN]"] = self.configPlotWindow.vertCrossTalk
+        self.settingsDict["Lateral Cross Talk [μN/μN]"] = self.configPlotWindow.latCrossTalk
+        self.settingsDict["Deformation Start"] = self.configPlotWindow.deformStart
+        self.settingsDict["Beam Spring Constant"] = self.configPlotWindow.kBeam
+        self.settingsDict["Noisy Steps"] = self.configPlotWindow.noiseSteps
+        self.settingsDict["X Axis"] = self.configPlotWindow.xAxisParam
+        self.settingsDict["Plot Start"] = self.configPlotWindow.startFull
+        self.settingsDict["PLot End"] = self.configPlotWindow.endFull
+        self.settingsDict["Font Size"] = self.configPlotWindow.fontSize
+        self.settingsDict["Legend Position"] = self.configPlotWindow.legendPos
+        self.settingsDict["Fit data"] = self.configPlotWindow.fittingGroupBox
+        self.settingsDict["Fit Start"] = self.configPlotWindow.fitStart
+        self.settingsDict["Fit End"] = self.configPlotWindow.fitStop
+        self.settingsDict["Fit X-param"] = self.configPlotWindow.xFit
+        self.settingsDict["Fit Y-param"] = self.configPlotWindow.yFit
+        self.settingsDict["Fit position"] = self.configPlotWindow.fitPos
+        self.settingsDict["Show Fit Slope"] = self.configPlotWindow.showFitEq
+            
 #     def import_force_data(self): #import force data
 #         if self.msrListMode == False:
 #             self.forceData = ForceAnal()

@@ -116,6 +116,11 @@ class MainWidgets:
 ##        self.nextBtn.resize(self.nextBtn.minimumSizeHint())
 ##        self.nextBtn.move(250,500)
 
+        self.repeatBtn = QPushButton("", self) #Repeat playback
+        self.repeatBtn.clicked.connect(self.next_frame)
+        self.repeatBtn.setIcon(QIcon('images/repeat.png'))
+        self.repeatBtn.setCheckable(True)
+        
         self.recordBtn = QPushButton("", self) #Record video
         self.recordBtn.clicked.connect(self.record_frame)
         self.recordBtn.setIcon(QIcon('images/record.png'))
@@ -706,12 +711,13 @@ class MainWidgets:
         playbackVbox = QGridLayout(self)
         # playbackVbox.setRowStretch(1, 1.5)
         playbackGroupBox.setLayout(playbackVbox)
-        playbackVbox.addWidget(self.seekSlider, 0, 0, 1, 5)
+        playbackVbox.addWidget(self.seekSlider, 0, 0, 1, 6)
         playbackVbox.addWidget(self.playBtn, 1, 0, 1, 1)
         playbackVbox.addWidget(self.stopBtn, 1, 1, 1, 1)
         playbackVbox.addWidget(self.prevBtn, 1, 2, 1, 1)
         playbackVbox.addWidget(self.nextBtn, 1, 3, 1, 1)
-        playbackVbox.addWidget(self.recordBtn, 1, 4, 1, 1)        
+        playbackVbox.addWidget(self.repeatBtn, 1, 4, 1, 1)
+        playbackVbox.addWidget(self.recordBtn, 1, 5, 1, 1)        
 
         self.bgGroupBox = QGroupBox("Enable")
         # self.bgGroupBox.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)

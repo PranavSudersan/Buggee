@@ -30,7 +30,10 @@ class MainPlaybackFunctions:
                     self.cap = cv2.VideoCapture(self.videoPath)
                     self.ret, self.frame_current = self.cap.read()
                     self.framePos = self.cap.get(cv2.CAP_PROP_POS_FRAMES)
-                    self.playStatus = False #pause
+                    if self.repeatBtn.isChecked()==False:
+                        self.playStatus = False #pause
+                    else:
+                        self.playStatus = True #play
                 else:
                     self.framePos = self.cap.get(cv2.CAP_PROP_POS_FRAMES)
                     print("else", self.framePos)

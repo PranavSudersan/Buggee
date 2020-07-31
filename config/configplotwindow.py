@@ -436,6 +436,8 @@ class ConfigPlotWindow(QWidget):
                                                          self.prl2Range2.value()],
                                                         [self.zero2Range1.value(),
                                                            self.zero2Range2.value()]]
+        print(self.rangeDict)
     def show_window(self): #show window
-        self.update_dict()
+        self.update_range()
+        # self.update_dict()
         self.show()

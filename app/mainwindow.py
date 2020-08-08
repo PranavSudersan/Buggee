@@ -1816,6 +1816,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                                            self.threshSpinBox1.value(),
                                            self.threshSpinBox2.value(),
                                            self.resizeROISpinBox.value(),
+                                           self.useDistTransfrom.isChecked(),
                                            self.segmentFGSpinBox.value(),
                                            self.segmentBGSpinBox.value(),
                                            self.minAreaFilter.value(),
@@ -3177,6 +3178,8 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                         widtype = wid.__class__.__name__
                         if key in ["Force Range dictionary"]:#not a widget
                             f.write(key + "\t" + str(wid) + "\n")
+                        elif key in ["Show Plot Flags"]: #widget list
+                            f.write(key + "\t" + str([x.isChecked() for x in wid]) + "\n")
                         elif widtype in ["QCheckBox", "QGroupBox"]:
                             f.write(key + "\t" + str(wid.isChecked()) + "\n")
                         elif widtype in ["QComboBox"]:
@@ -3250,6 +3253,10 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                     for k in fdict.keys():
                         if k in self.configPlotWindow.rangeDict.keys():
                             self.configPlotWindow.rangeDict[k] = fdict[k]
+                elif key in ["Show Plot Flags"]: #widget list
+                    for i in range(len(ast.literal_eval(val))):
+                        state = ast.literal_eval(val)[i]
+                        self.configPlotWindow.showWidgets[i].setChecked(state)
                 elif widtype in ["QCheckBox", "QGroupBox"]:
                     wid.setChecked(ast.literal_eval(val))
                 elif widtype in ["QComboBox"]:
@@ -3274,6 +3281,8 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                 widtype = wid.__class__.__name__
                 if key in ["Force Range dictionary"]:#not a widget
                     f.write(key + "\t" + str(wid) + "\n")
+                elif key in ["Show Plot Flags"]: #widget list
+                    f.write(key + "\t" + str([x.isChecked() for x in wid]) + "\n")
                 elif widtype in ["QCheckBox", "QGroupBox"]:
                     f.write(key + "\t" + str(wid.isChecked()) + "\n")
                 elif widtype in ["QComboBox"]:
@@ -3291,7 +3300,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         self.settingsDict["Threshold Type"] = self.threshType
         self.settingsDict["Threshold Size"] = self.threshSpinBox1
         self.settingsDict["Threshold Constant"] = self.threshSpinBox2
-        self.settingsDict["Apply Segment"] = self.applySegment
+        self.settingsDict["Apply Segment"] = self.segmentGroupBox
         self.settingsDict["Segment FG"] = self.segmentFGSpinBox
         self.settingsDict["Segment BG"] = self.segmentBGSpinBox
         self.settingsDict["Auto detect ROI"] = self.threshROIGroupBox
@@ -3329,6 +3338,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         self.settingsDict["Apply Zero-Force Correction"] = self.correctZeroForce
         #config plot settings
         self.settingsDict["Force Range dictionary"] = self.configPlotWindow.rangeDict #not a widget
+        self.settingsDict["Show Plot Flags"] = self.configPlotWindow.showWidgets #list of widgets
         self.settingsDict["Zero shift force"] = self.configPlotWindow.zeroShift
         self.settingsDict["Invert lateral force"] = self.configPlotWindow.invertLatForce
         self.settingsDict["Apply filter"] = self.configPlotWindow.filterLatF
@@ -3343,7 +3353,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         self.settingsDict["Noisy Steps"] = self.configPlotWindow.noiseSteps
         self.settingsDict["X Axis"] = self.configPlotWindow.xAxisParam
         self.settingsDict["Plot Start"] = self.configPlotWindow.startFull
-        self.settingsDict["PLot End"] = self.configPlotWindow.endFull
+        self.settingsDict["Plot End"] = self.configPlotWindow.endFull
         self.settingsDict["Font Size"] = self.configPlotWindow.fontSize
         self.settingsDict["Legend Position"] = self.configPlotWindow.legendPos
         self.settingsDict["Fit data"] = self.configPlotWindow.fittingGroupBox

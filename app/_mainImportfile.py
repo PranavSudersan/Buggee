@@ -93,7 +93,7 @@ class MainImportFile:
 
 ##            self.distinctAutoROI.setEnabled(False)
             self.roi_auto = False
-            self.segment = False
+            self.segment = self.segmentGroupBox.isChecked()
             self.show_segment = self.showSegment.isChecked()
             self.show_fg = self.segmentFGButton.isChecked()
             self.show_bg = self.segmentBGButton.isChecked()
@@ -167,7 +167,13 @@ class MainImportFile:
             self.frameBackground = 255 * np.ones((self.frameHeight,
                                                 self.frameWidth, 3),dtype=np.uint8)
             self.bgframeNumber = None
+            
             self.ret, self.frame = self.cap.read()
+            if self.ret == False: #reset video on error
+                    print("if")
+                    self.cap.release()
+                    self.cap = cv2.VideoCapture(self.videoPath)
+                    self.ret, self.frame = self.cap.read()
             self.renderVideo("Raw", self.ret, self.frame)
 
             self.effectScene.removeItem(self.effectPixmapItem)
@@ -237,7 +243,7 @@ class MainImportFile:
 
 ##            self.distinctAutoROI.setEnabled(False)
             self.roi_auto = False
-            self.segment = False
+            self.segment = self.segmentGroupBox.isChecked()
             self.show_segment = self.showSegment.isChecked()
             self.show_fg = self.segmentFGButton.isChecked()
             self.show_bg = self.segmentBGButton.isChecked()

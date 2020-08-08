@@ -28,8 +28,8 @@ class ImageSegment:
     #    roi_corners = roi_dry(frame) #draw ROI manually
 
     def getContours(self, tresh_type, tresh_size, tresh_cst = 0, 
-                    resize_factor = 1, seg_fg = 0.7, seg_bg = 3,
-                    min_area = 25, max_area = 1000000):
+                    resize_factor = 1, dist_trans= False, seg_fg = 3, 
+                    seg_bg = 3, min_area = 25, max_area = 1000000):
     #    global filename, ms_type, roi_corners
     #    frame = cv2.imread(filename)
         print("getContours")
@@ -167,7 +167,7 @@ class ImageSegment:
         if self.segment == True:
             sure_fg = np.zeros(frame_bin.shape, dtype=np.uint8)
             sure_bg = np.zeros(frame_bin.shape, dtype=np.uint8)
-            segm = np.zeros(frame_bin.shape, dtype=np.uint8)
+            # segm = np.zeros(frame_bin.shape, dtype=np.uint8)
         
         for k in self.roiDict.keys():
             print(k) 
@@ -189,12 +189,12 @@ class ImageSegment:
             self.areaDict[k] = [np.count_nonzero(mask_roi_auto==0)]
             
             if self.segment == True:  #get segmented contours boundary by watershed algorithm
-                frame_contour, cpt[k], contours, fg, bg, sg = \
+                frame_contour, cpt[k], contours, fg, bg, mk = \
                     self.segmentWatershed(k, frame_current, frame_contour, frame_masked, 
-                                      min_area, max_area, seg_bg, seg_fg)
+                                      min_area, max_area, dist_trans, seg_bg, seg_fg)
                 sure_fg = cv2.bitwise_or(sure_fg, fg)
                 sure_bg = cv2.bitwise_or(sure_bg, bg)
-                segm = cv2.bitwise_or(segm, sg)          
+                # segm = cv2.bitwise_or(segm, mk.astype(np.uint8))          
             else: #get contours by findContours function
                 contours, hierarchy = cv2.findContours(frame_masked, cv2.RETR_TREE,
                                                         cv2.CHAIN_APPROX_SIMPLE)
@@ -226,7 +226,7 @@ class ImageSegment:
                 cv2.destroyWindow("Sure Background")
             if self.show_segment == True:
                 # cv2.imshow("Segmented", segm)
-                plt.imshow(segm)
+                plt.imshow(mk)
                 plt.pause(0.05)
                 plt.draw()
                 plt.show()
@@ -317,16 +317,22 @@ class ImageSegment:
 
     #image segmentation by watershed algorithm and contour analysis
     def segmentWatershed(self, key, frame, frame_contour, frame_bin, 
-                     min_area, max_area, k_size=3, dist_fr=0.7):
+                     min_area, max_area, dist_trans=False,  k_size=3, dist_fr=3):
         frame_seg = frame.copy()
         kernel = np.ones((k_size,k_size),np.uint8)
         # sure background area
         sure_bg = cv2.dilate(frame_bin,kernel)
         
         # Finding sure foreground area
-        dist_transform = cv2.distanceTransform(frame_bin,cv2.DIST_L2,5)
-        ret, sure_fg = cv2.threshold(dist_transform, dist_fr*dist_transform.max(),
-                                     255,0)
+        if dist_trans == True:
+            dist_transform = cv2.distanceTransform(frame_bin,cv2.DIST_L2,5)
+            ret, sure_fg = cv2.threshold(dist_transform, (dist_fr/100)*dist_transform.max(),
+                                          255,0)
+        else:
+            k_size2 = dist_fr
+            kernel = np.ones((k_size2,k_size2),np.uint8)
+            sure_fg = cv2.erode(frame_bin,kernel)
+        
         
         # Finding unknown region
         sure_fg = np.uint8(sure_fg)
@@ -453,7 +459,7 @@ class ImageSegment:
         #     cv2.destroyWindow("Segmented: " + key)
         # cv2.imshow("frame", frame)
         # cv2.imshow("frame_seg", frame_seg)
-        return frame_contour, cpt, contours, sure_fg, sure_bg, markers.astype(np.uint8)     
+        return frame_contour, cpt, contours, sure_fg, sure_bg, markers     
 
     #Contour analysis from inbuilt contour property functions
     def segmentContour(self, key, frame, frame_masked, contours, min_area, max_area): 

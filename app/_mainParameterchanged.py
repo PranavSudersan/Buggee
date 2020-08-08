@@ -52,7 +52,7 @@ class MainParameterChanged:
             self.video_analysis()
 
     def segment_change(self): #image segment change
-        if self.applySegment.isChecked() == True:
+        if self.segmentGroupBox.isChecked() == True:
             self.segmentFGButton.setEnabled(True)
             self.segmentFGSlider.setEnabled(True)
             self.segmentFGSpinBox.setEnabled(True)
@@ -78,14 +78,14 @@ class MainParameterChanged:
         changed_object = self.sender() #signal source
         if changed_object.__class__.__name__ == "QSlider":
             self.segmentFGSpinBox.blockSignals(True)
-            self.segmentFGSpinBox.setValue(self.segmentFGSlider.value()/10)
+            self.segmentFGSpinBox.setValue(self.segmentFGSlider.value())
             self.segmentFGSpinBox.blockSignals(False)
             self.segmentBGSpinBox.blockSignals(True)
             self.segmentBGSpinBox.setValue(self.segmentBGSlider.value())
             self.segmentBGSpinBox.blockSignals(False)          
-        elif changed_object.__class__.__name__ in ["QSpinBox", "QDoubleSpinBox"]:
+        elif changed_object.__class__.__name__ in ["QSpinBox"]:
             self.segmentFGSlider.blockSignals(True)
-            self.segmentFGSlider.setValue(int(self.segmentFGSpinBox.value()*10))
+            self.segmentFGSlider.setValue(self.segmentFGSpinBox.value())
             self.segmentFGSlider.blockSignals(False)
             self.segmentBGSlider.blockSignals(True)
             self.segmentBGSlider.setValue(self.segmentBGSpinBox.value())

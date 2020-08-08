@@ -41,7 +41,13 @@ class ConfigPlotWindow(QWidget):
         self.showTitle.setChecked(True)
         self.showLegend2 = QCheckBox('legend2', self) #plt title
         self.showLegend2.setChecked(True)
-
+        
+        self.showWidgets = [self.showContactArea, self.showROIArea, self.showZPiezo, 
+                            self.showXPiezo, self.showAdhesion, self.showFriction,
+                            self.showLateralForce, self.showContactLength, self.showROILength,
+                            self.showContactNumber, self.showEcc, self.showStress,
+                            self.showDeformation, self.showTitle, self.showLegend2]
+        
         self.xAxisLabel = QLabel("<b>X Axis:</b>", self)
         self.xAxisParam = QComboBox(self) #x axis parameter
         self.xAxisParam.addItem("Time (s)")

@@ -15,19 +15,27 @@ import statistics
 
 class ImageSegment:
     
-##    def __init__(self, frame, roi_corners): #constructor
-##        self.frame = frame
-####        self.frame_bg = frame_bg
-####        self.ms_type = ms_type
-##        self.roi_corners = roi_corners
-    #ms_type = 'Dry' #set as 'Dry' or 'Wet' depending on image
-    #filename = 'dry pad.png'
-    #frame = cv2.imread(filename)
-    #if ms_type == 'Dry':
-    #    #Create ROI manually
-    #    roi_corners = roi_dry(frame) #draw ROI manually
+    #binarize frame by image thresholding
+    def binarize(self, frame_gray, tresh_type, tresh_size, 
+                 tresh_cst = 0, invert = False):
+        # frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        print("gray", time.time() * 1000)
 
-    def getContours(self, tresh_type, tresh_size, tresh_cst = 0, 
+        if tresh_type == "Global":
+            ret, frame_bin = cv2.threshold(frame_gray, tresh_size, 255, cv2.THRESH_BINARY)
+        elif tresh_type == "Adaptive":
+            frame_bin = cv2.adaptiveThreshold(frame_gray, 255, 
+                                          cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
+                                          cv2.THRESH_BINARY, tresh_size, tresh_cst)
+        elif tresh_type == "Otsu":
+            ret, frame_bin = cv2.threshold(frame_gray, 0, 255,
+                                           cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+        if invert == True:
+            frame_bin = cv2.bitwise_not(frame_bin)
+            
+        return frame_bin
+
+    def getContours(self, tresh_type, tresh_size, tresh_cst, 
                     resize_factor = 1, dist_trans= False, seg_fg = 3, 
                     seg_bg = 3, min_area = 25, max_area = 1000000):
     #    global filename, ms_type, roi_corners
@@ -55,23 +63,19 @@ class ImageSegment:
         frame_gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
         print("gray", time.time() * 1000)
 
-        if tresh_type == "Global":
-            ret, frame_bin = cv2.threshold(frame_gray, tresh_size, 255, cv2.THRESH_BINARY)
-        elif tresh_type == "Adaptive":
-            frame_bin = cv2.adaptiveThreshold(frame_gray, 255, 
-                                          cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-                                          cv2.THRESH_BINARY, tresh_size, tresh_cst)
-        elif tresh_type == "Otsu":
-            ret, frame_bin = cv2.threshold(frame_gray, 0, 255,
-                                           cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+        # if tresh_type == "Global":
+        #     ret, frame_bin = cv2.threshold(frame_gray, tresh_size, 255, cv2.THRESH_BINARY)
+        # elif tresh_type == "Adaptive":
+        #     frame_bin = cv2.adaptiveThreshold(frame_gray, 255, 
+        #                                   cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
+        #                                   cv2.THRESH_BINARY, tresh_size, tresh_cst)
+        # elif tresh_type == "Otsu":
+        #     ret, frame_bin = cv2.threshold(frame_gray, 0, 255,
+        #                                    cv2.THRESH_BINARY+cv2.THRESH_OTSU)
      
-        print("treshold", time.time() * 1000)
+        frame_bin = self.binarize(frame_gray, tresh_type, tresh_size, tresh_cst)
         
-    #    if subtract == True:
-    #        frame_bg = cv2.adaptiveThreshold(frame_bg, 255, 
-    #                                      cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-    #                                      cv2.THRESH_BINARY, tresh_size, 1)
-    #        frame_bin = bg_subtract(frame_bin, frame_bg)
+        print("treshold", time.time() * 1000)
         
         if self.roi_auto == True:
             # Detect ROI automatically
@@ -104,63 +108,23 @@ class ImageSegment:
             elif self.roi_tresh_type == "Canny":
                 frame_bin_roi = cv2.Canny(frame_blur_roi, self.tresh_size_roi,
                                                self.tresh_cst_roi, L2gradient = False)
-            
-##            #find and clean contours
-##            contours_wet, hierarchy_edge = cv2.findContours(frame_bin_thresh, cv2.RETR_EXTERNAL, 
-##                                               cv2.CHAIN_APPROX_SIMPLE)
-##            i = 0
-##            j = 0
-##            print("length", len(contours_wet))
-##            if len(contours_wet) != 0:
-##                while i - j <= len(contours_wet) - 1:
-##                    a = cv2.contourArea(contours_wet[i-j])
-##                    if a < self.roi_min_area: #fill small areas                        
-##                        cv2.drawContours(frame_bin_thresh, [contours_wet[i-j]],
-##                                         -1, (0,0,0), -1)
-##                        del contours_wet[i-j]
-##                        print(i,j)
-##                        j += 1 #count small areas
-##                        i += 1
-##                        continue
-##                    i += 1
-##
-##            #morph roi
-##            if self.roi_morph == True:
-##                rect_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (self.x_roi_morph, self.y_roi_morph))
-##                self.frame_bin_roi = cv2.morphologyEx(frame_bin_thresh, cv2.MORPH_CLOSE, rect_kernel)
-##            else:
-##                self.frame_bin_roi = frame_bin_thresh
-##            self.roiCornersAuto = draw_roi.roi_wet(self.frame_bin_roi, self.epsilon_fraction)
+
             self.roiAutoFlag = 'Auto'
-##
-##            print("auto roi", time.time() * 1000)
-##            mask_roi_auto = 255*np.ones(frame_bin.shape, dtype=np.uint8)
-##            self.roiCornersAuto = self.resizeContour(self.roiCornersAuto,
-##                                                     resize_factor)
-##            cv2.fillPoly(mask_roi_auto, [self.roiCornersAuto], 0)
+
         else:
             self.roiAutoFlag = 'Manual'
             frame_bin_roi = np.empty(frame_bin.shape, dtype=np.uint8)
-##            self.roiCornersAuto = None
-##            mask_roi_auto = np.zeros(frame_bin.shape, dtype=np.uint8)
+
         self.frame_bin_roi_full = np.zeros(frame_bin_roi.shape, dtype=np.uint8)
-##        cv2.drawContours(frame_contour, [self.roiCornersNew], -1, (0,0,255), 2)
+
         print("contours", time.time() * 1000)
-##        mask1 = 255*np.ones(frame_bin.shape, dtype=np.uint8)
+
         mask1 = np.zeros(frame_bin.shape, dtype=np.uint8)
 
-##        cv2.fillPoly(mask1, [self.roiDict["Default"][0]], 0)
         
         mask_full = 255*np.ones(frame_bin.shape, dtype=np.uint8)
         print(mask_full.shape)
         
-##        if self.roi_auto == True:
-##            mask_roi_auto = 255*np.ones(frame_bin.shape, dtype=np.uint8)
-##            self.roiCornersAuto = self.resizeContour(self.roiCornersAuto,
-##                                                     resize_factor)
-##            cv2.fillPoly(mask_roi_auto, [self.roiCornersAuto], 0)
-##        else:
-##            mask_roi_auto = np.zeros(frame_bin.shape, dtype=np.uint8)
         self.areaDict = {} #area of contours calculated by pixel counting
         cpt = {}
         ellipse = {}
@@ -315,10 +279,9 @@ class ImageSegment:
         contour_resized = contour_resized.astype(int)
         return contour_resized
 
-    #image segmentation by watershed algorithm and contour analysis
-    def segmentWatershed(self, key, frame, frame_contour, frame_bin, 
-                     min_area, max_area, dist_trans=False,  k_size=3, dist_fr=3):
-        frame_seg = frame.copy()
+    #apply watershed algorithm
+    def watershed(self, frame, frame_bin, dist_trans=False, k_size=3, dist_fr=3):
+        
         kernel = np.ones((k_size,k_size),np.uint8)
         # sure background area
         sure_bg = cv2.dilate(frame_bin,kernel)
@@ -347,7 +310,16 @@ class ImageSegment:
         # Now, mark the region of unknown with zero
         markers[unknown==255] = 0
         
-        markers = cv2.watershed(frame_seg,markers)
+        markers = cv2.watershed(frame,markers)
+        # plt.imshow(markers)
+        return markers, sure_fg, sure_bg
+
+    #image segmentation by watershed algorithm and contour analysis
+    def segmentWatershed(self, key, frame, frame_contour, frame_bin, 
+                     min_area, max_area, dist_trans,  k_size, dist_fr):
+
+        markers, sure_fg, sure_bg = self.watershed(frame, frame_bin, 
+                                                   dist_trans, k_size, dist_fr)
         
         markers[:,0] = 1 #clean up borders
         markers[:,-1] = 1
@@ -535,179 +507,10 @@ class ImageSegment:
         cpt = (contourArea, totalLength, contourNumber, roiArea, roiLength, eccavg)
         cv2.drawContours(frame_contour, contours, -1, (0,255,0), -1) #draw contours
         
-        print('Contact Area: ', totalArea)    
-        print ('Number of contours:', contourNumber)
-        print ('ROI Area:', roiArea)
+        # print('Contact Area: ', totalArea)    
+        # print ('Number of contours:', contourNumber)
+        # print ('ROI Area:', roiArea)
         
         print("area plot", time.time() * 1000)
         
         return frame_contour, cpt, contours
-   
-#     def backgroundSubtract(self, frame, frame_bg, alpha, inv = False): #subtract background
-#         print(frame.shape)
-#         if alpha == 1: #direct subtraction if alpha is one
-#             frame_fg = cv2.subtract(255-frame,255-frame_bg)
-#             frame_fg_scaled = 255 - frame_fg
-#         else: #blend
-# ##            alpha = 0.5
-#             frame_fg_scaled  = cv2.addWeighted(frame, 1 - alpha, 255 - frame_bg,
-#                                               alpha, 0.0)
-#         frame_subtracted = 255 - frame_fg_scaled if inv == True else frame_fg_scaled
-#         print("bgSubtract")
-#         return frame_subtracted
-
-#     def applyBrightnessContrast(self, brightness = 0, contrast = 0, frame = None):
-        
-#         if brightness != 0:
-#             if brightness > 0:
-#                 shadow = brightness
-#                 highlight = 255
-#             else:
-#                 shadow = 0
-#                 highlight = 255 + brightness
-#             alpha_b = (highlight - shadow)/255
-#             gamma_b = shadow
-
-#             buf = cv2.addWeighted(frame, alpha_b, frame, 0, gamma_b)
-#         else:
-#             buf = frame.copy()
-
-#         if contrast != 0:
-#             f = 131*(contrast + 127)/(127*(131-contrast))
-#             alpha_c = f
-#             gamma_c = 127*(1-f)
-
-#             buf = cv2.addWeighted(buf, alpha_c, buf, 0, gamma_c)
-
-# ##        self.frame = buf #CHECK
-#         print("brightness")
-#         return buf
-
-# ##    def window_show(window_name, frame, posx, posy, resize_fraction):
-# ##        cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
-# ##    #    sc = 0.5 #window resize scale factor
-# ##        h, w = tuple(int(resize_fraction*x) for x in frame.shape[:2])    
-# ##        cv2.moveWindow(window_name, posx, posy)
-# ##        cv2.resizeWindow(window_name, w, h)
-# ##        cv2.imshow(window_name, frame)
-   
-
-#     def imageFilter(self, ftype, param1, param2, frame): #image filtering
-#         roi = self.roiBound
-#         frame1 = frame[roi[1]:roi[3], roi[0]:roi[2]].copy() #filter inside roi
-# ##        frame_gray = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
-# ##        del frame1
-#         if ftype == "Average Filter":
-#             frame_filtered = cv2.blur(frame1,(param1,param1))
-#         elif ftype == "Gaussian Filter":
-#             frame_filtered = cv2.GaussianBlur(frame1,(param1,param1),param2)
-#         elif ftype == "Median Filter":
-#             frame_filtered = cv2.medianBlur(frame1,param1)
-#         elif ftype == "Bilateral Filter":
-#             frame_filtered = cv2.bilateralFilter(frame1,0,param1,param2)
-#         elif ftype == "Morph Open":
-#             rect_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (param1,param2))
-#             frame_filtered = cv2.morphologyEx(frame1, cv2.MORPH_OPEN, rect_kernel)
-#         elif ftype == "Morph Close":
-#             rect_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (param1,param2))
-#             frame_filtered = cv2.morphologyEx(frame1, cv2.MORPH_CLOSE, rect_kernel)
-#         else:
-#             frame_filtered = frame1.copy()
-
-# ##        frame_filtered2 = cv2.cvtColor(frame_filtered.astype(np.uint8),
-# ##                                    cv2.COLOR_GRAY2BGR)
-#         h, w, s  = frame.shape
-#         l, r, t, d = roi[0], w - roi[2], roi[1], h - roi[3]
-#         print(h, w, s, t, d, l, r)
-#         #fill border with zero to equalize frame size
-#         frame_filtered2 = cv2.copyMakeBorder(frame_filtered, t, d, l, r,
-#                                                cv2.BORDER_CONSTANT, 0)
-        
-#         return frame_filtered2
-            
-
-#     def dftFilter(self, r_lp, r_hp, frame): #DFT Filter (Gaussian Bandpass)
-#         mask_gauss, img_back, img_back_gauss, img_back_scaled, \
-#             img_filtered, magnitude_spectrum, spectrum_masked = (None,)*7
-#         #DFT
-#         #if frame == None:
-#         #   frame = self.frame
-#         print("dft init", self.roiBound)
-#         roi = self.roiBound
-#         print("roi")
-#         frame1 = frame[roi[1]:roi[3], roi[0]:roi[2]].copy()
-#         print("dft")
-#         frame_gray = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
-#         del frame1
-#         print(frame_gray.shape)
-
-#         dft = cv2.dft(np.float32(frame_gray),flags = cv2.DFT_COMPLEX_OUTPUT)
-#         dft_shift = np.fft.fftshift(dft)
-
-
-#         magnitude_spectrum = 20*np.log(cv2.magnitude(dft_shift[:,:,0],
-#                                                      dft_shift[:,:,1]))
-#         rows, cols = frame_gray.shape
-#         crow,ccol = int(rows/2) , int(cols/2)
-#         print("low pass")
-#         #Low Pass
-#         kernal = cv2.getGaussianKernel(max(rows, cols), r_lp)
-#         kernal2d = kernal * kernal.transpose()
-#         kernal2d = kernal2d / kernal2d.max()
-# ##        kernal2d_inverse = 1 - kernal2d
-
-#         mask_lowpass = np.zeros((rows,cols),np.float64)
-#         if r_lp > 0:
-#             mask_lowpass = kernal2d[int((max(rows, cols)-rows)/2):
-#             int((max(rows, cols)+rows)/2),int((max(rows, cols)-cols)/2):
-#                 int((max(rows, cols)+cols)/2)] #image sizes must be even integer
-#         else:
-#             mask_lowpass = np.zeros((rows,cols),np.float64)
-#         print("high pass")
-#         #High Pass
-#         kernal = cv2.getGaussianKernel(max(rows, cols), r_hp)
-#         kernal2d = kernal * kernal.transpose()
-#         kernal2d = kernal2d / kernal2d.max()
-#         kernal2d_inverse = 1 - kernal2d
-
-#         mask_highpass = np.ones((rows,cols),np.float64)
-#         if r_hp > 0:
-#             mask_highpass = kernal2d_inverse[int((max(rows, cols)-rows)/2):
-#             int((max(rows, cols)+rows)/2),int((max(rows, cols)-cols)/2):
-#                 int((max(rows, cols)+cols)/2)] #image sizes must be even integer
-#         else:
-#             mask_highpass = np.ones((rows,cols),np.float64)
-#         print("band pass")
-#         #Band Pass
-#         if r_hp <= r_lp and r_lp > 0:
-#             mask_gauss = mask_lowpass * mask_highpass
-#             mask_gauss = mask_gauss/mask_gauss.max()
-#         else:
-#             mask_gauss = np.zeros((rows,cols),np.float64)
-
-#         del mask_lowpass, mask_highpass, kernal, kernal2d, kernal2d_inverse
-        
-#         #Inverse DFT
-#         fshift = dft_shift*np.expand_dims(mask_gauss, axis = 2)
-#         f_ishift = np.fft.ifftshift(fshift)
-#         del fshift
-
-#         img_back = cv2.idft(f_ishift)
-#         img_back_gauss = cv2.magnitude(img_back[:,:,0],img_back[:,:,1])
-#         print("img_back_gauss", img_back_gauss.shape)
-#         spectrum_masked = magnitude_spectrum * mask_gauss
-# ##        img_back_scaled = None
-#         img_back_scaled = 255*img_back_gauss/img_back_gauss.max()
-#         img_filtered = cv2.cvtColor(img_back_scaled.astype(np.uint8),
-#                                     cv2.COLOR_GRAY2BGR)
-#         print("dft end")
-#         h, w, s  = frame.shape
-#         l, r, t, d = roi[0], w - roi[2], roi[1], h - roi[3]
-#         print(h, w, s, t, d, l, r)
-#         #fill border with zero to equalize frame size
-#         img_filtered1 = cv2.copyMakeBorder(img_filtered, t, d, l, r,
-#                                                cv2.BORDER_CONSTANT, 0)
-
-#         print(img_filtered.shape, img_filtered1.shape, frame.shape)
-#         return img_filtered1, spectrum_masked
-        

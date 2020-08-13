@@ -5,6 +5,10 @@ Created on Wed Jun 24 21:04:04 2020
 @author: adwait
 """
 
+"""IMPORTANT!! Any new widget added should be included in update_settings_dict 
+of mainwindow.py if you want its parameters to be saved in settings file
+"""
+
 from PyQt5.QtGui import QPixmap, QIcon, QBrush
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QSlider, QCheckBox, QLabel, QPushButton, \

@@ -3301,6 +3301,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         self.settingsDict["Threshold Size"] = self.threshSpinBox1
         self.settingsDict["Threshold Constant"] = self.threshSpinBox2
         self.settingsDict["Apply Segment"] = self.segmentGroupBox
+        self.settingsDict["Use Distance Transform"] = self.useDistTransfrom
         self.settingsDict["Segment FG"] = self.segmentFGSpinBox
         self.settingsDict["Segment BG"] = self.segmentBGSpinBox
         self.settingsDict["Auto detect ROI"] = self.threshROIGroupBox

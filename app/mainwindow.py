@@ -54,6 +54,7 @@ from source.app._mainLiveplot import MainLivePlot
 
 from source.process.imagesegment import ImageSegment
 from source.process import imagetransform
+from source.process.templatematch import TemplateMatch
 
 
 
@@ -61,7 +62,7 @@ from source.process import imagetransform
 class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions, 
                  MainImportFile, MainParameterChanged, MainRecordFunctions,
                  MainLivePlot, SummaryDialog, MainMeasurementDialog,
-                 MainRoiFunctions, ImageSegment): #also try inherit Effect, unify self.frame everywhere
+                 MainRoiFunctions, ImageSegment, TemplateMatch): #also try inherit Effect, unify self.frame everywhere
     def __init__(self, wd, ht):
         super().__init__()
         self.setGeometry(0, 0, wd, ht)
@@ -1793,7 +1794,14 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                                               frame)
             print("filtered", self.frame.shape)
 ##            frame = self.frame
-        
+
+    def selectTemplateImage(self, template_type): #select templates for matching
+        roi = self.roiBound
+        if template_type == "Top":
+            self.template_top, w, h = self.selectTemplate(self.frame) # Top
+        elif template_type == "Bottom":
+            self.template_bottom, w, h = self.selectTemplate(self.frame) # Bottom
+
     def video_analysis(self):
         if self.videoPath != "":
             self.bgShow()
@@ -1809,18 +1817,62 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                 #if self.showEffect.isChecked() == True:
                     # self.frame_contour = self.frame[roi[1]:roi[3], roi[0]:roi[2]].copy()
                 # else:
-                self.frame_contour = self.frame_current[roi[1]:roi[3], roi[0]:roi[2]].copy()
+                
+                
+                # analysisMode = "Contact Angle"
+                if self.analysisMode.currentText() == "Contact Area Analysis":
+                    self.frame_contour = self.frame_current[roi[1]:roi[3], roi[0]:roi[2]].copy()
+                    self.frame_bin, self.frame_masked, self.frame_contour, cpt, elp = \
+                              self.getContours(self.threshType.currentText(),
+                                               self.threshSpinBox1.value(),
+                                               self.threshSpinBox2.value(),
+                                               self.binaryInvert.isChecked(),
+                                               self.resizeROISpinBox.value(),
+                                               self.useDistTransfrom.isChecked(),
+                                               self.segmentBGSpinBox.value(),
+                                               self.segmentFGSpinBox.value(),
+                                               self.minAreaFilter.value(),
+                                               self.maxAreaFilter.value())
+                elif self.analysisMode.currentText() == "Contact Angle Analysis":
+                    #segment
+                    gray, markers, self.frame_bin, self.frame_masked = \
+                        self.getMarkers(self.frame, 
+                                        self.threshType.currentText(),
+                                        self.threshSpinBox1.value(),
+                                        self.threshSpinBox2.value(),
+                                        self.binaryInvert.isChecked(),
+                                        self.useDistTransfrom.isChecked(),
+                                        self.segmentBGSpinBox.value(),
+                                        self.segmentFGSpinBox.value(),
+                                        self.segment, self.show_fg, 
+                                        self.show_fg, self.show_segment)
+                    #top line
+                    frame, top_angle, top_line_endpoints = \
+                        self.measureAngle("Top", self.frame.copy(), gray, 
+                                          markers, self.template_top,
+                                          self.lineTypeTop.currentText(),
+                                          self.markerWindowTop.value(),
+                                          self.lineThresh.value(),
+                                          self.lineLength.value(),
+                                          self.lineGap.value(),
+                                          (255,100,100),
+                                          self.displayFeatureEdgesTop.isChecked(),
+                                          self.displayFeatureLinesTop.isChecked())
+                    #bottom_line
+                    self.frame_contour, bottom_angle, bottom_line_endpoints = \
+                        self.measureAngle("Bottom", frame, gray, 
+                                          markers, self.template_bottom,
+                                          self.lineTypeBottom.currentText(),
+                                          self.markerWindowBottom.value(),
+                                          self.lineThresh.value(),
+                                          self.lineLength.value(),
+                                          self.lineGap.value(),
+                                          (100,255,100),
+                                          self.displayFeatureEdgesBottom.isChecked(),
+                                          self.displayFeatureLinesBottom.isChecked())
                     
-                self.frame_bin, self.frame_masked, self.frame_contour, cpt, elp = \
-                          self.getContours(self.threshType.currentText(),
-                                           self.threshSpinBox1.value(),
-                                           self.threshSpinBox2.value(),
-                                           self.resizeROISpinBox.value(),
-                                           self.useDistTransfrom.isChecked(),
-                                           self.segmentFGSpinBox.value(),
-                                           self.segmentBGSpinBox.value(),
-                                           self.minAreaFilter.value(),
-                                           self.maxAreaFilter.value())
+                    print("angles", top_angle, bottom_angle)
+                    cont_angle = abs((top_angle-bottom_angle)/2)
 
                 #initialise dictionary
     ##            self.dataDict = {"Default" : 6 * [np.zeros(int(self.frameCount), np.float64)]}
@@ -1853,17 +1905,21 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                     roiLength = copy.deepcopy(data[4])
                     eccAvg = copy.deepcopy(data[5])
                     ellipse = copy.deepcopy(data[6])
+                    contactAngle = copy.deepcopy(data[7])
                     # cpt = self.contourProperty(k, self.minAreaFilter.value(),
-                    #                            self.maxAreaFilter.value())                
-                    print(cpt[k])
-                    contactArea[int(self.framePos-1)] = cpt[k][0]
-                    # contactArea[int(self.framePos-1)] = np.count_nonzero(self.frame_masked==0)
-                    contactLength[int(self.framePos-1)] = cpt[k][1]
-                    contourNumber[int(self.framePos-1)] = cpt[k][2]
-                    roiArea[int(self.framePos-1)] = cpt[k][3]
-                    roiLength[int(self.framePos-1)] = cpt[k][4]
-                    eccAvg[int(self.framePos-1)] = cpt[k][5]
-                    ellipse[int(self.framePos-1)] = elp[k]
+                    #                            self.maxAreaFilter.value())                                    
+                    if self.analysisMode.currentText() == "Contact Area Analysis": #OPTIMIZE!! CHECK!
+                        print(cpt[k])
+                        contactArea[int(self.framePos-1)] = cpt[k][0]
+                        # contactArea[int(self.framePos-1)] = np.count_nonzero(self.frame_masked==0)
+                        contactLength[int(self.framePos-1)] = cpt[k][1]
+                        contourNumber[int(self.framePos-1)] = cpt[k][2]
+                        roiArea[int(self.framePos-1)] = cpt[k][3]
+                        roiLength[int(self.framePos-1)] = cpt[k][4]
+                        eccAvg[int(self.framePos-1)] = cpt[k][5]
+                        ellipse[int(self.framePos-1)] = elp[k]
+                    elif self.analysisMode.currentText() == "Contact Angle Analysis":
+                        contactAngle[int(self.framePos-1)] = cont_angle #DUMMY, CHECK!!
                     
                     #calibrate contact area
                     self.calibFactor = self.lengthValue.value()/self.pixelValue.value()
@@ -1874,7 +1930,8 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
 
                     self.dataDict[k] = [contactArea, contactLength,
                                         contourNumber, roiArea,
-                                        roiLength, eccAvg, ellipse]
+                                        roiLength, eccAvg, ellipse,
+                                        contactAngle]
                     
                     cv2.drawContours(self.frame_contour, [self.roiDict[k][3]],
                                      -1, (0,0,255), 2) #roi 
@@ -1912,7 +1969,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                                                                      roi[0]:roi[2]].copy(),
                                       'Binary': self.frame_bin,
                                       'Masked': self.frame_masked,
-                                      'Contours': self.frame_contour,
+                                      'Processed': self.frame_contour,
                                       'Transformed': self.frame,
                                       'Auto ROI': self.frame_bin_roi_full}
 
@@ -1933,11 +1990,11 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                     self.frameEffect = self.effectChoices.get(effecttabname)
                     # self.frameEffect = self.effectChoices.get(self.videoEffect. \
                     #                                 currentText())
-                    if self.effectContrast.isChecked() == True: #enhance effect contrast
-                        frame_inv = 255 - self.frameEffect
-                        max_intensity = np.max(frame_inv)
-                        gain = int(255/max_intensity) if max_intensity != 0 else 1
-                        self.frameEffect = 255 - (gain * frame_inv) #increase effect contrast
+                    # if self.effectContrast.isChecked() == True: #enhance effect contrast
+                    #     frame_inv = 255 - self.frameEffect
+                    #     max_intensity = np.max(frame_inv)
+                    #     gain = int(255/max_intensity) if max_intensity != 0 else 1
+                    #     self.frameEffect = 255 - (gain * frame_inv) #increase effect contrast
     ##            roi = self.roiBound
                 frame_disp = self.effectChoices.get(rawtabname)
     #             if rawtabname == "Contours":
@@ -3297,7 +3354,9 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
     def update_settings_dict(self):
         self.settingsDict = {}
         
+        self.settingsDict["Analysis Mode"] = self.analysisMode
         self.settingsDict["Threshold Type"] = self.threshType
+        self.settingsDict["Invert"] = self.binaryInvert
         self.settingsDict["Threshold Size"] = self.threshSpinBox1
         self.settingsDict["Threshold Constant"] = self.threshSpinBox2
         self.settingsDict["Apply Segment"] = self.segmentGroupBox
@@ -3321,6 +3380,13 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         self.settingsDict["ROI Threshold Size"] = self.threshROISpinBox1
         self.settingsDict["ROI Threshold Constant"] = self.threshROISpinBox2
         self.settingsDict["ROI Blur Size"] = self.blurROISpinBox
+        self.settingsDict["Line Type Top"] = self.lineTypeTop
+        self.settingsDict["Marker Window Top"] = self.markerWindowTop
+        self.settingsDict["Line Type Bottom"] = self.lineTypeBottom
+        self.settingsDict["Marker Window Bottom"] = self.markerWindowBottom
+        self.settingsDict["Line Threshold"] = self.lineThresh
+        self.settingsDict["Line Length"] = self.lineLength
+        self.settingsDict["Line Gap"] = self.lineGap 
         self.settingsDict["Brightness"] = self.brightnessSpinBox
         self.settingsDict["Contrast"] = self.contrastSpinBox
         self.settingsDict["Minimum Area"] = self.minAreaFilter
@@ -3416,7 +3482,8 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
             if len(self.roiDict.keys()) > 1 and k == "Default":
                 continue
             self.dataDict[k] = 6 * [np.zeros(int(self.frameCount), np.float64)] + \
-                               [[[(0,0),(0,0),0,1]]*int(self.frameCount)]
+                               [[[(0,0),(0,0),0,1]]*int(self.frameCount)] + \
+                    [np.zeros(int(self.frameCount), np.float64)]
         self.contour_data = [[], [], [], [], [], [], [], []]
         self.plotSequence()
         self.statusBar.showMessage("Data cleared!")

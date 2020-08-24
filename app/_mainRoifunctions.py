@@ -52,7 +52,8 @@ class MainRoiFunctions:
             self.roiDict[k][3] = self.roiDict[k][0] - [self.roiBound[0],
                                                        self.roiBound[1]]
             self.dataDict[k] = 6 * [np.zeros(int(self.frameCount), np.float64)] + \
-                               [[[(0,0),(0,0),0,1]]*int(self.frameCount)]
+                [[[(0,0),(0,0),0,1]]*int(self.frameCount)] + \
+                    [np.zeros(int(self.frameCount), np.float64)]
         self.contour_data = [[], [], [], [], [], [], [], []]
         self.video_effect(self.frame_current[roi[1]:roi[3], roi[0]:roi[2]])
         self.video_analysis() #CHECK
@@ -77,13 +78,15 @@ class MainRoiFunctions:
         self.configPlotWindow.rangeDict = {"Default" : [[0,1],[0,100],[0,100],
                                                         [0,100],[0,100],[0,1]]}
         self.dataDict = {"Default" : 6 * [np.zeros(int(self.frameCount), np.float64)] + \
-                         [[[(0,0),(0,0),0,1]]*int(self.frameCount)]}
+                         [[[(0,0),(0,0),0,1]]*int(self.frameCount)] + \
+                    [np.zeros(int(self.frameCount), np.float64)]}
         for k in self.configROIWindow.roiDict.values(): #update dictionary and combobox
             self.configPlotWindow.roiChoice.addItem(k)
             self.configPlotWindow.rangeDict[k] = [[0,1],[0,100],[0,100],
                                                   [0,100],[0,100], [0,1]]
             self.dataDict[k] = 6 * [np.zeros(int(self.frameCount), np.float64)] + \
-                               [[[(0,0),(0,0),0,1]]*int(self.frameCount)]
+                               [[[(0,0),(0,0),0,1]]*int(self.frameCount)] + \
+                    [np.zeros(int(self.frameCount), np.float64)]
 
         self.contour_data = [[], [], [], [], [], [], [], []]
 
@@ -106,7 +109,8 @@ class MainRoiFunctions:
             self.roiDict[k][3] = self.roiDict[k][0] - [self.roiBound[0],
                                                        self.roiBound[1]]
             self.dataDict[k] = 6 * [np.zeros(int(self.frameCount), np.float64)] + \
-                               [[[(0,0),(0,0),0,1]]*int(self.frameCount)]
+                               [[[(0,0),(0,0),0,1]]*int(self.frameCount)] + \
+                    [np.zeros(int(self.frameCount), np.float64)]
 
         self.plotSequence()
         self.video_effect(self.frame_current[roi[1]:roi[3], roi[0]:roi[2]])

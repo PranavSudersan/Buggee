@@ -53,22 +53,22 @@ class MainParameterChanged:
 
     def segment_change(self): #image segment change
         if self.segmentGroupBox.isChecked() == True:
-            self.segmentFGButton.setEnabled(True)
-            self.segmentFGSlider.setEnabled(True)
-            self.segmentFGSpinBox.setEnabled(True)
-            self.segmentBGButton.setEnabled(True)
-            self.segmentBGSlider.setEnabled(True)
-            self.segmentBGSpinBox.setEnabled(True)
-            self.showSegment.setEnabled(True)
+            # self.segmentFGButton.setEnabled(True)
+            # self.segmentFGSlider.setEnabled(True)
+            # self.segmentFGSpinBox.setEnabled(True)
+            # self.segmentBGButton.setEnabled(True)
+            # self.segmentBGSlider.setEnabled(True)
+            # self.segmentBGSpinBox.setEnabled(True)
+            # self.showSegment.setEnabled(True)
             self.segment = True
         else:
-            self.segmentFGButton.setEnabled(False)
-            self.segmentFGSlider.setEnabled(False)
-            self.segmentFGSpinBox.setEnabled(False)
-            self.segmentBGButton.setEnabled(False)
-            self.segmentBGSlider.setEnabled(False)
-            self.segmentBGSpinBox.setEnabled(False)
-            self.showSegment.setEnabled(False)
+            # self.segmentFGButton.setEnabled(False)
+            # self.segmentFGSlider.setEnabled(False)
+            # self.segmentFGSpinBox.setEnabled(False)
+            # self.segmentBGButton.setEnabled(False)
+            # self.segmentBGSlider.setEnabled(False)
+            # self.segmentBGSpinBox.setEnabled(False)
+            # self.showSegment.setEnabled(False)
             self.segment = False
         
         if len(self.frame) != 0:
@@ -108,7 +108,33 @@ class MainParameterChanged:
         self.show_bg = self.segmentBGButton.isChecked()
         if len(self.frame) != 0:
             self.video_analysis()
-
+    
+    def feature_param_change(self): #feature paraneters change
+        changed_object = self.sender() #signal source
+        if changed_object.__class__.__name__ == "QSlider": 
+            self.lineThresh.blockSignals(True)
+            self.lineThresh.setValue(self.lineThreshSlider.value())
+            self.lineThresh.blockSignals(False) 
+            self.lineLength.blockSignals(True)
+            self.lineLength.setValue(self.lineLengthSlider.value())
+            self.lineLength.blockSignals(False) 
+            self.lineGap.blockSignals(True)
+            self.lineGap.setValue(self.lineGapSlider.value())
+            self.lineGap.blockSignals(False) 
+        elif changed_object.__class__.__name__ in ["QSpinBox"]:
+            self.lineThreshSlider.blockSignals(True)
+            self.lineThreshSlider.setValue(self.lineThresh.value())
+            self.lineThreshSlider.blockSignals(False)
+            self.lineLengthSlider.blockSignals(True)
+            self.lineLengthSlider.setValue(self.lineLength.value())
+            self.lineLengthSlider.blockSignals(False)
+            self.lineGapSlider.blockSignals(True)
+            self.lineGapSlider.setValue(self.lineGap.value())
+            self.lineGapSlider.blockSignals(False)
+        
+        if len(self.frame) != 0:
+            self.video_analysis()
+    
     def dft_change(self): #dft filter change
         changed_object = self.sender() #signal source
         if changed_object.__class__.__name__ == "QSlider":

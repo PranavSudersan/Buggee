@@ -272,7 +272,11 @@ class MainWidgets:
 ##        self.threshType.move(900, 35)
 ##        self.threshType.resize(self.threshType.minimumSizeHint())
         self.threshType.currentIndexChanged.connect(self.threshold_change)
-
+        
+        
+        self.binaryInvert =  QCheckBox('Invert', self) #invert binary
+        self.binaryInvert.stateChanged.connect(self.threshold_change)
+        
         self.thresh1Label = QLabel("Cutoff:\t", self) #threshold cutoff
         self.threshSlider1 = QSlider(Qt.Horizontal, self) 
 ##        self.threshSlider1.setGeometry(800, 60, 200, 30)
@@ -308,6 +312,117 @@ class MainWidgets:
         self.threshSpinBox2.valueChanged.connect(self.threshold_change)
 ##        self.threshSpinBox2.move(1010, 90)
 ##        self.threshSpinBox2.resize(45, 20)
+
+        # Features Settings  
+        
+        topTemplateLabel = QLabel("Top Template:\t", self) 
+        
+        topTemplateBtn = QPushButton("Select", self) #top template image
+        topTemplateBtn.clicked.connect(lambda: self.selectTemplateImage("Top"))
+        
+        lineTypeTopLabel = QLabel("Line Type:", self) 
+        self.lineTypeTop = QComboBox(self) #line type
+        self.lineTypeTop.addItem("Longest")
+        self.lineTypeTop.addItem("Shortest")
+        self.lineTypeTop.addItem("Top most")
+        self.lineTypeTop.addItem("Bottom most")
+        self.lineTypeTop.addItem("Best fit")
+        self.lineTypeTop.currentIndexChanged.connect(self.video_analysis)
+        
+        markerWindowTopLabel = QLabel("Marker Window:", self) 
+        self.markerWindowTop = QSpinBox(self)
+        self.markerWindowTop.setRange(1, 99)
+        self.markerWindowTop.setValue(5)
+        self.markerWindowTop.setSingleStep(1)
+        self.markerWindowTop.valueChanged.connect(self.video_analysis)
+        
+        #display edges top
+        self.displayFeatureEdgesTop = QPushButton("Display Edges", self)
+        self.displayFeatureEdgesTop.setCheckable(True)
+        self.displayFeatureEdgesTop.clicked.connect(self.video_analysis)        
+
+        #display lines top
+        self.displayFeatureLinesTop = QPushButton("Display Lines", self)
+        self.displayFeatureLinesTop.setCheckable(True)
+        self.displayFeatureLinesTop.clicked.connect(self.video_analysis)
+        
+        bottomTemplateLabel = QLabel("Bottom Template:\t", self)
+        
+        bottomTemplateBtn = QPushButton("Select", self) #bottom template image
+        bottomTemplateBtn.clicked.connect(lambda: self.selectTemplateImage("Bottom"))
+        
+        lineTypeBottomLabel = QLabel("Line Type:", self) 
+        self.lineTypeBottom = QComboBox(self) #line type
+        self.lineTypeBottom.addItem("Longest")
+        self.lineTypeBottom.addItem("Shortest")
+        self.lineTypeBottom.addItem("Top most")
+        self.lineTypeBottom.addItem("Bottom most")
+        self.lineTypeBottom.addItem("Best fit")
+        self.lineTypeBottom.currentIndexChanged.connect(self.video_analysis)
+        
+        markerWindowBottomLabel = QLabel("Marker Window:", self) 
+        self.markerWindowBottom = QSpinBox(self)
+        self.markerWindowBottom.setRange(1, 99)
+        self.markerWindowBottom.setValue(5)
+        self.markerWindowBottom.setSingleStep(1)
+        self.markerWindowBottom.valueChanged.connect(self.video_analysis)
+
+        #display edges bottom
+        self.displayFeatureEdgesBottom = QPushButton("Display Edges", self)
+        self.displayFeatureEdgesBottom.setCheckable(True)
+        self.displayFeatureEdgesBottom.clicked.connect(self.video_analysis) 
+
+        #display lines bottom
+        self.displayFeatureLinesBottom = QPushButton("Display Lines", self)
+        self.displayFeatureLinesBottom.setCheckable(True)
+        self.displayFeatureLinesBottom.clicked.connect(self.video_analysis)
+
+        lineThreshLabel = QLabel("Line Threshold:", self) 
+        self.lineThreshSlider = QSlider(Qt.Horizontal, self)
+        self.lineThreshSlider.setMinimum(1)
+        self.lineThreshSlider.setMaximum(999)
+        self.lineThreshSlider.setValue(30)
+        # self.edgeMinSlider.setTickInterval(5)
+        self.lineThreshSlider.setTickPosition(QSlider.TicksBelow)
+        self.lineThreshSlider.valueChanged.connect(self.feature_param_change)
+        # self.edgeMinSlider.setSingleStep(2)
+        self.lineThresh = QSpinBox(self)
+        self.lineThresh.setRange(1, 999)
+        self.lineThresh.setValue(self.lineThreshSlider.value())
+        self.lineThresh.setSingleStep(1)
+        self.lineThresh.valueChanged.connect(self.feature_param_change)
+
+        lineLengthLabel = QLabel("Line Length:", self) 
+        self.lineLengthSlider = QSlider(Qt.Horizontal, self)
+        self.lineLengthSlider.setMinimum(1)
+        self.lineLengthSlider.setMaximum(999)
+        self.lineLengthSlider.setValue(50)
+        # self.edgeMinSlider.setTickInterval(5)
+        self.lineLengthSlider.setTickPosition(QSlider.TicksBelow)
+        self.lineLengthSlider.valueChanged.connect(self.feature_param_change)
+        # self.edgeMinSlider.setSingleStep(2)
+        self.lineLength = QSpinBox(self)
+        self.lineLength.setRange(1, 999)
+        self.lineLength.setValue(self.lineLengthSlider.value())
+        self.lineLength.setSingleStep(1)
+        self.lineLength.valueChanged.connect(self.feature_param_change)
+
+        lineGapLabel = QLabel("Line Gap:", self) 
+        self.lineGapSlider = QSlider(Qt.Horizontal, self)
+        self.lineGapSlider.setMinimum(1)
+        self.lineGapSlider.setMaximum(999)
+        self.lineGapSlider.setValue(200)
+        # self.edgeMinSlider.setTickInterval(5)
+        self.lineGapSlider.setTickPosition(QSlider.TicksBelow)
+        self.lineGapSlider.valueChanged.connect(self.feature_param_change)
+        # self.edgeMinSlider.setSingleStep(2)
+        self.lineGap = QSpinBox(self)
+        self.lineGap.setRange(1, 999)
+        self.lineGap.setValue(self.lineGapSlider.value())
+        self.lineGap.setSingleStep(1)
+        self.lineGap.valueChanged.connect(self.feature_param_change)
+        
+        #Image Segment settings
         
         self.useDistTransfrom = QCheckBox('Distance Transform', self) #apply distance transform
         self.useDistTransfrom.stateChanged.connect(self.segment_param_change)
@@ -315,19 +430,19 @@ class MainWidgets:
         self.showSegment = QPushButton("Display Segment", self) #display segment
         self.showSegment.setCheckable(True)
         self.showSegment.clicked.connect(self.segment_show)
-        self.showSegment.setEnabled(False)
+        # self.showSegment.setEnabled(False)
         
         #display foreground
         self.segmentFGButton = QPushButton("Disply Foreground", self)
         self.segmentFGButton.setCheckable(True)
         self.segmentFGButton.clicked.connect(self.segment_show_fg)
-        self.segmentFGButton.setEnabled(False)
+        # self.segmentFGButton.setEnabled(False)
 
         #display background
         self.segmentBGButton = QPushButton("Display Background", self) #segment background parameter
         self.segmentBGButton.setCheckable(True)
         self.segmentBGButton.clicked.connect(self.segment_show_bg)
-        self.segmentBGButton.setEnabled(False)
+        # self.segmentBGButton.setEnabled(False)
         
         #segment foreground parameter
         self.segmentFGLabel = QLabel("Foreground:\t", self)  
@@ -339,13 +454,13 @@ class MainWidgets:
         self.segmentFGSlider.setTickPosition(QSlider.TicksBelow)
         self.segmentFGSlider.valueChanged.connect(self.segment_param_change)
         self.segmentFGSlider.setSingleStep(2)
-        self.segmentFGSlider.setEnabled(False)
+        # self.segmentFGSlider.setEnabled(False)
         self.segmentFGSpinBox = QSpinBox(self)
         self.segmentFGSpinBox.setRange(1, 100)
         self.segmentFGSpinBox.setValue(self.segmentFGSlider.value())
         self.segmentFGSpinBox.setSingleStep(1)
         self.segmentFGSpinBox.valueChanged.connect(self.segment_param_change)
-        self.segmentFGSpinBox.setEnabled(False)
+        # self.segmentFGSpinBox.setEnabled(False)
         
         #segment background parameter
         self.segmentBGLabel = QLabel("Background:\t", self) 
@@ -357,13 +472,13 @@ class MainWidgets:
         self.segmentBGSlider.setTickPosition(QSlider.TicksBelow)
         self.segmentBGSlider.valueChanged.connect(self.segment_param_change)
         self.segmentBGSlider.setSingleStep(2)
-        self.segmentBGSlider.setEnabled(False)
+        # self.segmentBGSlider.setEnabled(False)
         self.segmentBGSpinBox = QSpinBox(self)
         self.segmentBGSpinBox.setRange(1, 100)
         self.segmentBGSpinBox.setValue(self.segmentBGSlider.value())
         self.segmentBGSpinBox.setSingleStep(1)
         self.segmentBGSpinBox.valueChanged.connect(self.segment_param_change)
-        self.segmentBGSpinBox.setEnabled(False)
+        # self.segmentBGSpinBox.setEnabled(False)
 
         self.brightnessLabel = QLabel("Brightness:\t", self) #brightness
         self.brightnessSlider = QSlider(Qt.Horizontal, self) 
@@ -632,10 +747,16 @@ class MainWidgets:
         self.bgblendROISpinBox.setSingleStep(0.01)
         self.bgblendROISpinBox.valueChanged.connect(self.bg_blend_roi_change)
         self.bgblendROISpinBox.setEnabled(False)
+
+        self.analysisMode = QComboBox(self) #change analysis type
+        self.analysisMode.addItem("Contact Area Analysis")
+        self.analysisMode.addItem("Contact Angle Analysis")
+        self.analysisMode.currentIndexChanged.connect(self.video_analysis)
+        self.analysisMode.setStyleSheet("QComboBox { font-weight: bold; font-size: 14px;} ")
         
-        self.effectContrast = QCheckBox('Enhance Contrast', self) #enhance effect contrast
-        self.effectContrast.stateChanged.connect(self.video_analysis)
-        self.effectContrast.setStyleSheet("QCheckBox { font-weight: bold; font-size: 14px;} ")
+        # self.effectContrast = QCheckBox('Enhance Contrast', self) #enhance effect contrast
+        # self.effectContrast.stateChanged.connect(self.video_analysis)
+        # self.effectContrast.setStyleSheet("QCheckBox { font-weight: bold; font-size: 14px;} ")
 
         self.showPlot = QPushButton("Live Plot", self) #Show Plot
         self.showPlot.clicked.connect(self.plot_data)
@@ -829,6 +950,7 @@ class MainWidgets:
         # threshVbox.addWidget(self.applySegment, 0, 0, 1, 1)
         # threshVbox.addWidget(self.showSegment, 0, 1, 1, 1)
         threshVbox.addWidget(self.threshType, 0, 0, 1, 1)
+        threshVbox.addWidget(self.binaryInvert, 0, 1, 1, 1)
         threshVbox.addWidget(self.thresh1Label, 1, 0, 1, 1)
         threshVbox.addWidget(self.threshSlider1, 1, 1, 1, 8)
         threshVbox.addWidget(self.threshSpinBox1, 1, 9, 1, 1)
@@ -854,6 +976,7 @@ class MainWidgets:
         segmentVbox.addWidget(self.showSegment, 0, 1, 1, 1)
         segmentVbox.addWidget(self.segmentFGButton, 0, 2, 1, 1)
         segmentVbox.addWidget(self.segmentBGButton, 0, 3, 1, 1)
+        # segmentVbox.addWidget(chooseTemplateBtn, 0, 4, 1, 1)
         segmentVbox.addWidget(self.segmentFGLabel, 1, 0, 1, 1)
         segmentVbox.addWidget(self.segmentFGSlider, 1, 1, 1, 8)
         segmentVbox.addWidget(self.segmentFGSpinBox, 1, 9, 1, 1)
@@ -861,6 +984,39 @@ class MainWidgets:
         segmentVbox.addWidget(self.segmentBGSlider, 2, 1, 1, 8)
         segmentVbox.addWidget(self.segmentBGSpinBox, 2, 9, 1, 1)
 
+
+        self.featuresGroupBox = QGroupBox()
+        # self.featuresGroupBox.setCheckable(True)
+        # self.featuresGroupBox.setChecked(False)        
+        # self.featuresGroupBox.toggled.connect(self.video_analysis)
+        featuresVbox = QGridLayout(self)
+        self.featuresGroupBox.setLayout(featuresVbox)
+        featuresVbox.addWidget(topTemplateLabel, 0, 0, 1, 1)
+        featuresVbox.addWidget(topTemplateBtn, 0, 1, 1, 1)
+        featuresVbox.addWidget(lineTypeTopLabel, 0, 2, 1, 1)
+        featuresVbox.addWidget(self.lineTypeTop, 0, 3, 1, 1)
+        featuresVbox.addWidget(markerWindowTopLabel, 0, 4, 1, 1)
+        featuresVbox.addWidget(self.markerWindowTop, 0, 5, 1, 1)
+        featuresVbox.addWidget(self.displayFeatureEdgesTop, 0, 6, 1, 1)
+        featuresVbox.addWidget(self.displayFeatureLinesTop, 0, 7, 1, 1)
+        featuresVbox.addWidget(bottomTemplateLabel, 1, 0, 1, 1)
+        featuresVbox.addWidget(bottomTemplateBtn, 1, 1, 1, 1)
+        featuresVbox.addWidget(lineTypeBottomLabel, 1, 2, 1, 1)
+        featuresVbox.addWidget(self.lineTypeBottom, 1, 3, 1, 1)
+        featuresVbox.addWidget(markerWindowBottomLabel, 1, 4, 1, 1)
+        featuresVbox.addWidget(self.markerWindowBottom, 1, 5, 1, 1)
+        featuresVbox.addWidget(self.displayFeatureEdgesBottom, 1, 6, 1, 1)
+        featuresVbox.addWidget(self.displayFeatureLinesBottom, 1, 7, 1, 1)
+        featuresVbox.addWidget(lineThreshLabel, 2, 0, 1, 1)
+        featuresVbox.addWidget(self.lineThreshSlider, 2, 1, 1, 1)
+        featuresVbox.addWidget(self.lineThresh, 2, 2, 1, 1)
+        featuresVbox.addWidget(lineLengthLabel, 2, 3, 1, 1)
+        featuresVbox.addWidget(self.lineLengthSlider, 2, 4, 1, 1)
+        featuresVbox.addWidget(self.lineLength, 2, 5, 1, 1)
+        featuresVbox.addWidget(lineGapLabel, 2, 6, 1, 1)
+        featuresVbox.addWidget(self.lineGapSlider, 2, 7, 1, 1)
+        featuresVbox.addWidget(self.lineGap, 2, 8, 1, 1)
+        
         self.threshROIGroupBox = QGroupBox("Enable")
         # self.threshROIGroupBox.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
         # self.threshROIGroupBox.setStyleSheet("QGroupBox { font-weight: bold; } ")
@@ -911,7 +1067,7 @@ class MainWidgets:
         dataVbox.addWidget(self.analyzeVideo, 0, 0, 1, 1)
         dataVbox.addWidget(self.roiBtn, 0, 1, 1, 1)
         dataVbox.addWidget(self.saveBtn, 0, 2, 1, 1)
-        dataVbox.addWidget(self.effectContrast, 1, 0, 1, 1)
+        dataVbox.addWidget(self.analysisMode, 1, 0, 1, 1)
         dataVbox.addWidget(self.showPlot, 1, 1, 1, 1)
         dataVbox.addWidget(self.clearData, 1, 2, 1, 1)
         
@@ -925,6 +1081,7 @@ class MainWidgets:
         thresholdTab.addTab(self.threshGroupBox,"Threshold")
         thresholdTab.addTab(self.threshROIGroupBox,"Auto ROI detect")
         thresholdTab.addTab(self.segmentGroupBox,"Segment")
+        thresholdTab.addTab(self.featuresGroupBox,"Features")
         thresholdTab.setStyleSheet("QTabWidget { font-weight: bold; } ")
 
         self.middleleftGroupBox = QGroupBox()
@@ -941,7 +1098,7 @@ class MainWidgets:
         # self.layout.addWidget(toprightGroupBox, 0, 1, 1, 1)
         
         self.rawViewDict = {"Original":self.rawView1, 
-                            "Contours":self.rawView2,
+                            "Processed":self.rawView2,
                             "Transformed":self.rawView3}
         self.rawViewTab = QTabWidget() #B&C and flitering tabs
         for key in self.rawViewDict.keys():
@@ -952,7 +1109,7 @@ class MainWidgets:
         
         self.effectViewDict = {"Binary":self.effectView1, 
                             "Masked":self.effectView2,
-                            "Contours":self.effectView3,
+                            "Processed":self.effectView3,
                             "Transformed":self.effectView4,
                             "Auto ROI":self.effectView5,
                             "Plot":self.effectView6}

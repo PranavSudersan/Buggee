@@ -7,6 +7,7 @@ Created on Mon Jun 29 22:49:51 2020
 import matplotlib.pyplot as plt
 import numpy as np
 import source.analysis.fitting as fitting
+import pickle
 
 class Plotting:
     
@@ -421,4 +422,8 @@ class Plotting:
         print("save plot")
         self.fig1.savefig(filepath, orientation='landscape',
                           transparent = True)
+        #save figure object as pickle file
+        with open(filepath[:-4] + '.pickle', 'wb') as f:
+            pickle.dump(self.fig1, f, pickle.HIGHEST_PROTOCOL)
+        
     

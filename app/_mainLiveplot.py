@@ -33,11 +33,13 @@ class MainLivePlot:
                 self.curve1 = QScatterSeries()#initialise live plot curves
                 self.initialise_live_plot(self.curve1, Qt.blue) #contact area plot
                 print(self.frameTime.shape)
+                data_ind = 7 if self.analysisMode.currentText() == "Contact Angle Analysis" else 0
+                
                 for k in self.roiDict.keys():
                     if len(self.roiDict.keys()) > 1 and k == "Default":
                         continue
                     self.curve1.append(self.series_to_polyline(self.frameTime,
-                                                              self.dataDict[k][0]))
+                                                              self.dataDict[k][data_ind]))
                 self.plotWindow.liveChart.addSeries(self.curve1)
                 if self.roi_auto == True: # roi area plot
                     self.curve2 = QScatterSeries()

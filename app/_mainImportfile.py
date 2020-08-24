@@ -44,9 +44,11 @@ class MainImportFile:
             roiLength = np.zeros(1, np.float64)
             self.frameTime = np.zeros(1, np.float64)
             eccAvg = np.zeros(1, np.float64)
+            contactAngle =  np.zeros(1, np.float64)
             self.dataDict = {"Default" : [contactArea, contactLength,
                                         contourNumber, roiArea,
-                                        roiLength, eccAvg, [(0,0),(0,0),0,1]]}
+                                        roiLength, eccAvg, [(0,0),(0,0),0,1],
+                                        contactAngle]}
             self.effectChain = [1, 1, 1, 1] #b/c, bg sub, filter, tresh
 ##            self.roi_auto = self.threshROIGroupBox.isChecked()
             self.distinct_roi = self.distinctAutoROI.isChecked()
@@ -190,9 +192,12 @@ class MainImportFile:
             roiArea = np.zeros(int(self.frameCount), np.float64)
             roiLength = np.zeros(int(self.frameCount), np.float64)
             eccAvg = np.zeros(int(self.frameCount), np.float64) #median eccentricity
+            contactAngle = np.zeros(int(self.frameCount), np.float64)
             self.dataDict = {"Default" : [contactArea, contactLength,
                                         contourNumber, roiArea,
-                                        roiLength, eccAvg] + [[[(0,0),(0,0),0,1]]*int(self.frameCount)]}
+                                        roiLength, eccAvg] + 
+                             [[[(0,0),(0,0),0,1]]*int(self.frameCount)] +
+                             [contactAngle]}
             self.frameTime = np.linspace(0,
                                          self.frameCount/self.frameRate,
                                          int(self.frameCount), dtype = np.float64)

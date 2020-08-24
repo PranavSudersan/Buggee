@@ -35,9 +35,9 @@ class ImageSegment:
             
         return frame_bin
 
-    def getContours(self, tresh_type, tresh_size, tresh_cst, 
-                    resize_factor = 1, dist_trans= False, seg_fg = 3, 
-                    seg_bg = 3, min_area = 25, max_area = 1000000):
+    def getContours(self, tresh_type, tresh_size, tresh_cst, invert,
+                    resize_factor = 1, dist_trans= False, seg_bg = 3, 
+                    seg_fg = 3, min_area = 25, max_area = 1000000):
     #    global filename, ms_type, roi_corners
     #    frame = cv2.imread(filename)
         print("getContours")
@@ -73,7 +73,8 @@ class ImageSegment:
         #     ret, frame_bin = cv2.threshold(frame_gray, 0, 255,
         #                                    cv2.THRESH_BINARY+cv2.THRESH_OTSU)
      
-        frame_bin = self.binarize(frame_gray, tresh_type, tresh_size, tresh_cst)
+        frame_bin = self.binarize(frame_gray, tresh_type, tresh_size, 
+                                  tresh_cst, invert)
         
         print("treshold", time.time() * 1000)
         
@@ -180,23 +181,7 @@ class ImageSegment:
         frame_masked = cv2.bitwise_or(frame_bin, mask_full)
         
         if self.segment == True:
-            if self.show_fg == True:
-                cv2.imshow("Sure Foreground", sure_fg)
-            else:
-                cv2.destroyWindow("Sure Foreground")
-            if self.show_bg == True:
-                cv2.imshow("Sure Background", sure_bg)
-            else:
-                cv2.destroyWindow("Sure Background")
-            if self.show_segment == True:
-                # cv2.imshow("Segmented", segm)
-                plt.imshow(mk)
-                plt.pause(0.05)
-                plt.draw()
-                plt.show()
-            else:
-                # plt.clf()
-                plt.close()
+            self.displayWatershed(mk, sure_fg, sure_bg)
 
                 
 ##        frame_masked = cv2.bitwise_not(frame_masked)
@@ -311,15 +296,48 @@ class ImageSegment:
         markers[unknown==255] = 0
         
         markers = cv2.watershed(frame,markers)
+        
+        markers_norm = markers.copy()
+        markers_norm[markers == -1] = 0
+        markers_norm = np.uint8(markers_norm*255/markers_norm.max())
+        markers_colored = cv2.applyColorMap(markers_norm, cv2.COLORMAP_VIRIDIS)
         # plt.imshow(markers)
-        return markers, sure_fg, sure_bg
-
+        return markers, markers_colored, sure_fg, sure_bg
+    
+    #display foreground/background or markers  of watershed segmentation
+    def displayWatershed(self, markers, sure_fg, sure_bg):
+        
+        if self.show_fg == True:
+            cv2.imshow("Sure Foreground", sure_fg)
+        else:
+            cv2.destroyWindow("Sure Foreground")
+        if self.show_bg == True:
+            cv2.imshow("Sure Background", sure_bg)
+        else:
+            cv2.destroyWindow("Sure Background")
+        if self.show_segment == True:
+            # # cv2.imshow("Segmented", segm)
+            # plt.imshow(markers)
+            # plt.pause(0.05)
+            # plt.draw()
+            # plt.show()
+            # markers_norm = markers.copy()
+            # markers_norm[markers == -1] = 0
+            # markers_norm = np.uint8(markers_norm*255/markers_norm.max())
+            # markers_colored = cv2.applyColorMap(markers_norm, cv2.COLORMAP_VIRIDIS)
+            cv2.imshow("Segments", markers)
+        else:
+            # plt.close()
+            cv2.destroyWindow("Segments")
+    
+    
     #image segmentation by watershed algorithm and contour analysis
     def segmentWatershed(self, key, frame, frame_contour, frame_bin, 
                      min_area, max_area, dist_trans,  k_size, dist_fr):
 
-        markers, sure_fg, sure_bg = self.watershed(frame, frame_bin, 
-                                                   dist_trans, k_size, dist_fr)
+        markers, markers_colored, sure_fg, sure_bg = self.watershed(frame, frame_bin, 
+                                                                    dist_trans, 
+                                                                    k_size, dist_fr)
         
         markers[:,0] = 1 #clean up borders
         markers[:,-1] = 1
@@ -431,7 +449,7 @@ class ImageSegment:
         #     cv2.destroyWindow("Segmented: " + key)
         # cv2.imshow("frame", frame)
         # cv2.imshow("frame_seg", frame_seg)
-        return frame_contour, cpt, contours, sure_fg, sure_bg, markers     
+        return frame_contour, cpt, contours, sure_fg, sure_bg, markers_colored     
 
     #Contour analysis from inbuilt contour property functions
     def segmentContour(self, key, frame, frame_masked, contours, min_area, max_area): 

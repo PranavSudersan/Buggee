@@ -1827,6 +1827,10 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                                                self.threshSpinBox1.value(),
                                                self.threshSpinBox2.value(),
                                                self.binaryInvert.isChecked(),
+                                               self.applyMorph.isChecked(),
+                                               self.morphType.currentText(),
+                                               self.morphSize.value(),
+                                               self.morphIterations.value(),
                                                self.resizeROISpinBox.value(),
                                                self.useDistTransfrom.isChecked(),
                                                self.segmentBGSpinBox.value(),
@@ -1841,6 +1845,10 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                                         self.threshSpinBox1.value(),
                                         self.threshSpinBox2.value(),
                                         self.binaryInvert.isChecked(),
+                                        self.applyMorph.isChecked(),
+                                        self.morphType.currentText(),
+                                        self.morphSize.value(),
+                                        self.morphIterations.value(),
                                         self.useDistTransfrom.isChecked(),
                                         self.segmentBGSpinBox.value(),
                                         self.segmentFGSpinBox.value(),
@@ -3359,6 +3367,10 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         self.settingsDict["Invert"] = self.binaryInvert
         self.settingsDict["Threshold Size"] = self.threshSpinBox1
         self.settingsDict["Threshold Constant"] = self.threshSpinBox2
+        self.settingsDict["Apply Morph"] = self.applyMorph
+        self.settingsDict["Morph Type"] = self.morphType
+        self.settingsDict["Morph Size"] = self.morphSize
+        self.settingsDict["Morph Iterations"] = self.morphIterations
         self.settingsDict["Apply Segment"] = self.segmentGroupBox
         self.settingsDict["Use Distance Transform"] = self.useDistTransfrom
         self.settingsDict["Segment FG"] = self.segmentFGSpinBox

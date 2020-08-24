@@ -265,10 +265,12 @@ class MainWidgets:
         self.bgAlphaSpinBox.setSingleStep(0.01)
         self.bgAlphaSpinBox.valueChanged.connect(self.bg_change)
         
+        threshTypeLabel = QLabel("Threshold Type:\t", self) #threshold cutoff
         self.threshType = QComboBox(self) #threshold type
         self.threshType.addItem("Global")
         self.threshType.addItem("Adaptive")
         self.threshType.addItem("Otsu")
+        self.threshType.addItem("Canny")
 ##        self.threshType.move(900, 35)
 ##        self.threshType.resize(self.threshType.minimumSizeHint())
         self.threshType.currentIndexChanged.connect(self.threshold_change)
@@ -277,7 +279,7 @@ class MainWidgets:
         self.binaryInvert =  QCheckBox('Invert', self) #invert binary
         self.binaryInvert.stateChanged.connect(self.threshold_change)
         
-        self.thresh1Label = QLabel("Cutoff:\t", self) #threshold cutoff
+        self.thresh1Label = QLabel("Threshold:\t", self) #threshold cutoff
         self.threshSlider1 = QSlider(Qt.Horizontal, self) 
 ##        self.threshSlider1.setGeometry(800, 60, 200, 30)
         self.threshSlider1.setMinimum(3)
@@ -312,6 +314,37 @@ class MainWidgets:
         self.threshSpinBox2.valueChanged.connect(self.threshold_change)
 ##        self.threshSpinBox2.move(1010, 90)
 ##        self.threshSpinBox2.resize(45, 20)
+
+        self.applyMorph = QCheckBox('Morph', self) #Morph 
+        self.applyMorph.setChecked(False)
+        self.applyMorph.stateChanged.connect(self.video_analysis)
+        
+        morphTypeLabel = QLabel("Morph Type: ", self) 
+        self.morphType = QComboBox(self) #morph type
+        self.morphType.addItem("Erosion")
+        self.morphType.addItem("Dilation")
+        self.morphType.addItem("Opening")
+        self.morphType.addItem("Closing")
+        self.morphType.addItem("Gradient")
+        self.morphType.addItem("Top Hat")
+        self.morphType.addItem("Black Hat")
+        self.morphType.currentIndexChanged.connect(self.video_analysis)
+        
+        morphSizeLabel = QLabel("Size: ", self)
+        self.morphSize = QSpinBox(self) #morph kernel size (square)
+        self.morphSize.setRange(1, 1000)
+        self.morphSize.setValue(5)
+        self.morphSize.setSingleStep(1)
+        self.morphSize.valueChanged.connect(self.video_analysis)
+        # self.morphXSpinBox.setEnabled(False)
+
+        morphIterationsLabel = QLabel("Iterations: ", self)
+        self.morphIterations = QSpinBox(self) #morph iterations
+        self.morphIterations.setRange(1, 1000)
+        self.morphIterations.setValue(1)
+        self.morphIterations.setSingleStep(1)
+        self.morphIterations.valueChanged.connect(self.video_analysis)
+        # self.morphYSpinBox.setEnabled(False)
 
         # Features Settings  
         
@@ -948,21 +981,22 @@ class MainWidgets:
         threshVbox = QGridLayout(self)
         self.threshGroupBox.setLayout(threshVbox)
         # threshVbox.addWidget(self.applySegment, 0, 0, 1, 1)
-        # threshVbox.addWidget(self.showSegment, 0, 1, 1, 1)
-        threshVbox.addWidget(self.threshType, 0, 0, 1, 1)
-        threshVbox.addWidget(self.binaryInvert, 0, 1, 1, 1)
+        threshVbox.addWidget(threshTypeLabel, 0, 0, 1, 1)
+        threshVbox.addWidget(self.threshType, 0, 1, 1, 1)
+        threshVbox.addWidget(self.binaryInvert, 0, 2, 1, 1)
         threshVbox.addWidget(self.thresh1Label, 1, 0, 1, 1)
         threshVbox.addWidget(self.threshSlider1, 1, 1, 1, 8)
         threshVbox.addWidget(self.threshSpinBox1, 1, 9, 1, 1)
         threshVbox.addWidget(self.thresh2Label, 2, 0, 1, 1)
         threshVbox.addWidget(self.threshSlider2, 2, 1, 1, 8)
         threshVbox.addWidget(self.threshSpinBox2, 2, 9, 1, 1)
-        # threshVbox.addWidget(self.segmentFGButton, 3, 0, 1, 1)
-        # threshVbox.addWidget(self.segmentFGSlider, 3, 1, 1, 8)
-        # threshVbox.addWidget(self.segmentFGSpinBox, 3, 9, 1, 1)
-        # threshVbox.addWidget(self.segmentBGButton, 4, 0, 1, 1)
-        # threshVbox.addWidget(self.segmentBGSlider, 4, 1, 1, 8)
-        # threshVbox.addWidget(self.segmentBGSpinBox, 4, 9, 1, 1)
+        threshVbox.addWidget(self.applyMorph, 3, 0, 1, 1)
+        threshVbox.addWidget(morphTypeLabel, 3, 1, 1, 1)
+        threshVbox.addWidget(self.morphType, 3, 2, 1, 1)
+        threshVbox.addWidget(morphSizeLabel, 3, 4, 1, 1)
+        threshVbox.addWidget(self.morphSize, 3, 5, 1, 1)
+        threshVbox.addWidget(morphIterationsLabel, 3, 7, 1, 1)
+        threshVbox.addWidget(self.morphIterations, 3, 8, 1, 1)
 
         self.segmentGroupBox = QGroupBox("Enable")
         # self.threshGroupBox.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
@@ -1078,7 +1112,7 @@ class MainWidgets:
         effectsTab.setStyleSheet("QTabWidget { font-weight: bold; } ")
         
         thresholdTab = QTabWidget() #manual and auto threshold function tabs
-        thresholdTab.addTab(self.threshGroupBox,"Threshold")
+        thresholdTab.addTab(self.threshGroupBox,"Binarize")
         thresholdTab.addTab(self.threshROIGroupBox,"Auto ROI detect")
         thresholdTab.addTab(self.segmentGroupBox,"Segment")
         thresholdTab.addTab(self.featuresGroupBox,"Features")

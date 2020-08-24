@@ -174,14 +174,16 @@ class TemplateMatch:
         return frame, angle, line_endpoints
 
     def getMarkers(self, frame, tresh_type, tresh_size, 
-                 tresh_cst = 0, invert = True, dist_trans=True, 
-                 k_size=10, dist_fr=36, segment = False,
+                 tresh_cst = 0, invert = True, morph = False,
+                  morph_type = "Erosion", morph_size = 5, morph_iter = 1,
+                 dist_trans=True, k_size=10, dist_fr=36, segment = False,
                  show_fg = False, show_bg = False, show_segment = False): #segment image and find markers
         
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         #watershed algorithm (inherited from ImageSegment class)            
-        thresh = self.binarize(gray, tresh_type, tresh_size,tresh_cst,invert)
+        thresh = self.binarize(gray, tresh_type, tresh_size,tresh_cst,invert,
+                               morph, morph_type, morph_size, morph_iter)
         markers,markers_colored,sure_fg,sure_bg = self.watershed(frame, thresh,
                                                                  dist_trans, k_size, 
                                                                  dist_fr)

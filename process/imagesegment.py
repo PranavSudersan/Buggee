@@ -7,7 +7,7 @@ Created on Sat May  4 11:56:24 2019
 
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import source.app.drawroi as drawroi
 import source.process.imagetransform as imagetransform
 import time
@@ -17,7 +17,8 @@ class ImageSegment:
     
     #binarize frame by image thresholding
     def binarize(self, frame_gray, tresh_type, tresh_size, 
-                 tresh_cst = 0, invert = False):
+                 tresh_cst = 0, invert = False, morph = False,
+                  morph_type = "Erosion", morph_size = 5, morph_iter = 1):
         # frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         print("gray", time.time() * 1000)
 
@@ -30,12 +31,46 @@ class ImageSegment:
         elif tresh_type == "Otsu":
             ret, frame_bin = cv2.threshold(frame_gray, 0, 255,
                                            cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+        elif tresh_type == "Canny":
+                frame_bin = cv2.Canny(frame_gray, tresh_size, tresh_cst, 
+                                      L2gradient = False)
+            
         if invert == True:
             frame_bin = cv2.bitwise_not(frame_bin)
-            
+        
+        if morph == True:
+            frame_bin = self.morphTransform(frame_bin, morph_type, 
+                                            morph_size, morph_iter)
         return frame_bin
-
+    
+    #apply morphological transformations
+    def morphTransform(self, frame_bin, morph_type, k_size, n_iter):
+        
+        kernel = np.ones((k_size,k_size),np.uint8)
+        if morph_type == 'Erosion':
+            frame_morphed = cv2.erode(frame_bin, kernel,iterations = n_iter)
+        elif morph_type == 'Dilation':
+            frame_morphed = cv2.dilate(frame_bin, kernel,iterations = n_iter)
+        elif morph_type == 'Opening':
+            frame_morphed = cv2.morphologyEx(frame_bin, cv2.MORPH_OPEN, 
+                                       kernel,iterations = n_iter)
+        elif morph_type == 'Closing':
+            frame_morphed = cv2.morphologyEx(frame_bin, cv2.MORPH_CLOSE, 
+                                       kernel,iterations = n_iter)
+        elif morph_type == 'Gradient':
+            frame_morphed = cv2.morphologyEx(frame_bin, cv2.MORPH_GRADIENT, 
+                                       kernel,iterations = n_iter)
+        elif morph_type == 'Top Hat':
+            frame_morphed = cv2.morphologyEx(frame_bin, cv2.MORPH_TOPHAT, 
+                                       kernel,iterations = n_iter)
+        elif morph_type == 'Black Hat':
+            frame_morphed = cv2.morphologyEx(frame_bin, cv2.MORPH_BLACKHAT, 
+                                       kernel,iterations = n_iter)
+        return frame_morphed
+    
+    
     def getContours(self, tresh_type, tresh_size, tresh_cst, invert,
+                    morph, morph_type, morph_size, morph_iter,
                     resize_factor = 1, dist_trans= False, seg_bg = 3, 
                     seg_fg = 3, min_area = 25, max_area = 1000000):
     #    global filename, ms_type, roi_corners
@@ -74,7 +109,8 @@ class ImageSegment:
         #                                    cv2.THRESH_BINARY+cv2.THRESH_OTSU)
      
         frame_bin = self.binarize(frame_gray, tresh_type, tresh_size, 
-                                  tresh_cst, invert)
+                                  tresh_cst, invert, morph, morph_type, 
+                                  morph_size, morph_iter)
         
         print("treshold", time.time() * 1000)
         

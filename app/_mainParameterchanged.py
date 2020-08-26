@@ -159,12 +159,12 @@ class MainParameterChanged:
             if self.playStatus == False:
                 roi = self.roiBound
                 if self.dftGroupBox.isChecked() == True:
-                    self.effectChain = [1, 1, 1, 0] #order: b/c, bg sub, filter, tresh
+                    self.effectChain[3] = True #order: b/c, hist, bg sub, filter
                     self.video_effect(self.frame_current[roi[1]:roi[3], roi[0]:roi[2]])
                     self.video_analysis()
                 elif changed_object.__class__.__name__ == "QGroupBox":
                     self.frame = self.frame_current[roi[1]:roi[3], roi[0]:roi[2]].copy()
-                    self.effectChain = [1, 1, 0, 0]
+                    self.effectChain[3] = False
                     self.video_effect(self.frame)
                     self.video_analysis()
 
@@ -237,7 +237,7 @@ class MainParameterChanged:
             if self.playStatus == False:
                 print("bc anal")
                 roi = self.roiBound
-                self.effectChain = [1, 1, 1, 1]
+                self.effectChain[0] = True
                 self.video_effect(self.frame_current[roi[1]:roi[3], roi[0]:roi[2]])
                 self.video_analysis()
 
@@ -406,15 +406,43 @@ class MainParameterChanged:
             if self.playStatus == False:
                 roi = self.roiBound
                 if self.bgGroupBox.isChecked() == True:
-                    self.effectChain = [1, 1, 1, 0] #order: b/c, bg sub, filter, tresh
+                    self.effectChain[2] = True #order: b/c, hist, bg sub, filter
                     self.video_effect(self.frame_current[roi[1]:roi[3], roi[0]:roi[2]])
                     self.video_analysis()
                 elif changed_object.__class__.__name__ == "QGroupBox":
                     self.frame = self.frame_current[roi[1]:roi[3], roi[0]:roi[2]].copy()
-                    self.effectChain = [1, 0, 1, 0]
+                    self.effectChain[2] = False
                     self.video_effect(self.frame)
                     self.video_analysis()
 
+
+    def slider_spinbox_change(self, slider, spinbox):
+        changed_object = self.sender() #signal source
+
+        if changed_object.__class__.__name__ == "QSlider":
+            spinbox.blockSignals(True)
+            spinbox.setValue(slider.value())
+            spinbox.blockSignals(False)
+        elif changed_object.__class__.__name__ in ["QSpinBox", "QDoubleSpinBox"]:
+            slider.blockSignals(True)
+            slider.setValue(spinbox.value())
+            slider.blockSignals(False)
+            
+    def histogram_change(self):
+        # changed_object = self.sender() #signal source
+        if len(self.frame) != 0:
+            if self.playStatus == False:
+                roi = self.roiBound
+                if self.histogramCorrectType.currentText() != 'None':
+                    self.effectChain[1] = True #order: b/c, hist, bg sub, filter
+                    self.video_effect(self.frame_current[roi[1]:roi[3], roi[0]:roi[2]])
+                    self.video_analysis()
+                else:
+                    self.frame = self.frame_current[roi[1]:roi[3], roi[0]:roi[2]].copy()
+                    self.effectChain[1] = False
+                    self.video_effect(self.frame)
+                    self.video_analysis()
+            
     def anal_change(self): #analysis video/ contour change
         print("anal change")
         if len(self.frame) != 0:
@@ -428,7 +456,7 @@ class MainParameterChanged:
                 # self.showEffect.setEnabled(True)
             roi = self.roiBound
             if self.playStatus == False:
-                self.effectChain = [1, 1, 1, 0] #order: b/c, bg sub, filter, tresh
+                # self.effectChain = [1, 1, 1, 1] #order: b/c, hist, bg sub, filter
                 self.video_effect(self.frame_current[roi[1]:roi[3], roi[0]:roi[2]])
                 self.video_analysis()
         else:

@@ -49,7 +49,7 @@ class MainImportFile:
                                         contourNumber, roiArea,
                                         roiLength, eccAvg, [(0,0),(0,0),0,1],
                                         contactAngle]}
-            self.effectChain = [1, 1, 1, 1] #b/c, bg sub, filter, tresh
+            self.effectChain = [True, False, False, False] #b/c, hist, bg sub, filter
 ##            self.roi_auto = self.threshROIGroupBox.isChecked()
             self.distinct_roi = self.distinctAutoROI.isChecked()
             self.roi_hull = self.applyHullROI.isChecked()
@@ -201,7 +201,7 @@ class MainImportFile:
             self.frameTime = np.linspace(0,
                                          self.frameCount/self.frameRate,
                                          int(self.frameCount), dtype = np.float64)
-            self.effectChain = [1, 1, 1, 1] #b/c, bg sub, filter, tresh
+            self.effectChain = [True, False, False, False] #b/c, hist, bg sub, filter
 ##            self.roi_auto = self.threshROIGroupBox.isChecked()
             self.distinct_roi = self.distinctAutoROI.isChecked()
             self.roi_hull = self.applyHullROI.isChecked()

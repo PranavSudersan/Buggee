@@ -16,6 +16,7 @@ import pandas as pd
 # import openpyxl
 import copy
 import ast
+import pickle
 from cv2_rolling_ball import subtract_background_rolling_ball
 # import gc
 from PyQt5.QtGui import QPixmap, QImage#, QIcon, QPolygonF, QBrush
@@ -184,9 +185,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
 
         self.statusBar = QStatusBar() #status bar
         self.setStatusBar(self.statusBar)
-        
-        self.home()
-        
+
         #initialize parameters
         self.frame = []
         self.frameAction = "Stop"
@@ -195,6 +194,10 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         self.msrmnt_num = None
         self.comb = False
         self.bgframeNumber = 0
+        
+        self.home()
+        
+
         
         #initialization routines
         self.definePaths()
@@ -1732,75 +1735,86 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
 
     def video_effect(self, frame): #apply effects in effects chain on self.frame
         print("video effect", self.effectChain)
-        if self.effectChain[0] == 1: #1: brightness/contrast
-            self.frame = imagetransform.applyBrightnessContrast(
+        frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) 
+        if self.effectChain[0] == True: #1: brightness/contrast
+            frame_gray = imagetransform.applyBrightnessContrast(
                             self.brightnessSlider.value(),
-                            self.contrastSlider.value(), frame)
-            frame = self.frame
+                            self.contrastSlider.value(), frame_gray)
+            # frame_gray = self.frame
+        
+        if self.effectChain[1] == True: #2: histogram correction
+            frame_gray = imagetransform.histogramCorrection(frame_gray,
+                            self.histogramCorrectType.currentText(),
+                            self.histogramLimit.value(),
+                            self.histogramSize.value())
+            # frame_gray = self.frame
                 
-        if self.bgGroupBox.isChecked() == True and \
-           self.effectChain[1] == 1: #2: background subtraction
+        if self.effectChain[2] == True: #3: background subtraction
 ##                self.subtract = True #CHECK
 ##                self.frameBackground = self.frameBackground #CHECK
-            print(frame.shape, self.frameBackground.shape)
+            print(frame_gray.shape, self.frameBackground.shape)
             if self.backgroundCorrection.currentText()== "Rolling Ball":
-                frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                frame_corr, self.frameBackground = subtract_background_rolling_ball(frame_gray,
+                # frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                frame_gray, self.frameBackground = subtract_background_rolling_ball(frame_gray,
                                                                           self.bgSlider.value(),
                                                                      light_background=True,
                                                                      use_paraboloid=False,
                                                                      do_presmooth=True)
-                self.frame = cv2.cvtColor(frame_corr, cv2.COLOR_GRAY2BGR)
+                # self.frame = cv2.cvtColor(frame_corr, cv2.COLOR_GRAY2BGR)
             elif self.backgroundCorrection.currentText()== "Rolling Paraboloid":
-                frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                frame_corr, self.frameBackground = subtract_background_rolling_ball(frame_gray,
+                # frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                frame_gray, self.frameBackground = subtract_background_rolling_ball(frame_gray,
                                                                           self.bgSlider.value(),
                                                                      light_background=True,
                                                                      use_paraboloid=True,
                                                                      do_presmooth=True)
-                self.frame = cv2.cvtColor(frame_corr, cv2.COLOR_GRAY2BGR)
+                # frame_gray = cv2.cvtColor(frame_corr, cv2.COLOR_GRAY2BGR)
             elif self.backgroundCorrection.currentText()== "Direct Subtract":
                 frameBackground2 = imagetransform.applyBrightnessContrast(
                                         self.brightnessSlider.value(),
                                         self.contrastSlider.value(), 
                                         self.frameBackground)
-                self.frame = imagetransform.backgroundSubtract(frame,
-                                                     frameBackground2,
+                frame_gray = imagetransform.backgroundSubtract(frame_gray,
+                                                     cv2.cvtColor(frameBackground2, 
+                                                                  cv2.COLOR_BGR2GRAY),
                                                      self.bgAlphaSpinBox.value())
             elif self.backgroundCorrection.currentText()== "Gaussian Correction":
                 kernal = (self.bgSlider.value(), self.bgSlider.value())
-                self.frameBackground = cv2.GaussianBlur(frame, kernal,0)
-                self.frame = imagetransform.backgroundSubtract(frame, self.frameBackground,
+                self.frameBackground = cv2.GaussianBlur(frame_gray, kernal,0)
+                frame_gray = imagetransform.backgroundSubtract(frame_gray, self.frameBackground,
                                                      self.bgAlphaSpinBox.value())
             elif self.backgroundCorrection.currentText()== "Average Correction":
                 kernal = (self.bgSlider.value(), self.bgSlider.value())
-                self.frameBackground = cv2.blur(frame, kernal)
-                self.frame = imagetransform.backgroundSubtract(frame, self.frameBackground,
+                self.frameBackground = cv2.blur(frame_gray, kernal)
+                frame_gray = imagetransform.backgroundSubtract(frame_gray, self.frameBackground,
                                                      self.bgAlphaSpinBox.value())
 
-            frame = self.frame
+            # frame_gray = self.frame
             
-        if self.dftGroupBox.isChecked() == True and \
-           self.effectChain[2] == 1: #3: dft filter
+        if self.effectChain[3] == True: #4: dft filter
             if self.filterType.currentText() == "Fourier Filter":
-                self.frame, _ = imagetransform.dftFilter(self.lowPassSlider.value(),
+                frame_gray, _ = imagetransform.dftFilter(self.lowPassSlider.value(),
                                                self.highPassSlider.value(),
-                                               frame)
+                                               frame_gray)
             else:
                 print("filter start", self.filterType.currentText())
-                self.frame = imagetransform.imageFilter(self.filterType.currentText(),
+                frame_gray = imagetransform.imageFilter(self.filterType.currentText(),
                                               self.lowPassSlider.value(),
                                               self.highPassSlider.value(),
-                                              frame)
-            print("filtered", self.frame.shape)
+                                              frame_gray)
+            print("filtered", frame_gray.shape)
+            
+        self.frame = cv2.cvtColor(frame_gray, cv2.COLOR_GRAY2BGR)
 ##            frame = self.frame
 
     def selectTemplateImage(self, template_type): #select templates for matching
-        roi = self.roiBound
         if template_type == "Top":
             self.template_top, w, h = self.selectTemplate(self.frame) # Top
         elif template_type == "Bottom":
             self.template_bottom, w, h = self.selectTemplate(self.frame) # Bottom
+            
+        if len(self.frame) != 0:
+            self.video_analysis()
 
     def video_analysis(self):
         if self.videoPath != "":
@@ -3277,7 +3291,10 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                                                    self.msrmnt_num, self.summaryPath) #save summary data
 
             if self.configPathWindow.contourGroupBox.isChecked() == True:
-                #save contour data
+                #save contour data list as pickle file
+                with open(self.contourDataPath[:-5] + '.pickle', 'wb') as f:
+                    pickle.dump(self.contour_data, f, pickle.HIGHEST_PROTOCOL)
+                #save contour data as excel
                 contour_header = ["Frame_no", "ROI_Label", "Contour_ID", "Area",
                                   "Length", "Eccentricity", "Moments", "Array"]
                 contour_datadict = dict(zip(contour_header, self.contour_data))
@@ -3401,6 +3418,9 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         self.settingsDict["Line Gap"] = self.lineGap 
         self.settingsDict["Brightness"] = self.brightnessSpinBox
         self.settingsDict["Contrast"] = self.contrastSpinBox
+        self.settingsDict["Histogram Correction Type"] = self.histogramCorrectType
+        self.settingsDict["Histogram Clip Limit"] = self.histogramLimit
+        self.settingsDict["Histogram Grid Size"] = self.histogramSize
         self.settingsDict["Minimum Area"] = self.minAreaFilter
         self.settingsDict["Maximum Area"] = self.maxAreaFilter
         self.settingsDict["Apply Filter"] = self.dftGroupBox

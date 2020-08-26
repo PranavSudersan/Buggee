@@ -42,12 +42,24 @@ def applyBrightnessContrast(brightness, contrast, frame):
         f = 131*(contrast + 127)/(127*(131-contrast))
         alpha_c = f
         gamma_c = 127*(1-f)
-
         buf = cv2.addWeighted(buf, alpha_c, buf, 0, gamma_c)
-
-##        self.frame = buf #CHECK
+    
     print("brightness")
     return buf
+    
+#histogram correction
+def histogramCorrection(frame, correction_type = 'None', clip_lim = 2, tile_size = 8):
+    if correction_type == 'None':
+        return frame
+    elif correction_type == 'Global':
+        frame_corrected = cv2.equalizeHist(frame)
+    elif correction_type == 'Adaptive':
+        clahe = cv2.createCLAHE(clipLimit=clip_lim, tileGridSize=(tile_size,
+                                                                  tile_size))
+        frame_corrected = clahe.apply(frame)
+
+    print("histogram correct")
+    return frame_corrected
 
 ##    def window_show(window_name, frame, posx, posy, resize_fraction):
 ##        cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
@@ -92,7 +104,7 @@ def imageFilter(ftype, param1, param2, frame): #image filtering
     return frame_filtered
         
 
-def dftFilter(r_lp, r_hp, frame): #DFT Filter (Gaussian Bandpass)
+def dftFilter(r_lp, r_hp, frame_gray): #DFT Filter (Gaussian Bandpass)
     mask_gauss, img_back, img_back_gauss, img_back_scaled, \
         img_filtered, magnitude_spectrum, spectrum_masked = (None,)*7
     #DFT
@@ -103,8 +115,8 @@ def dftFilter(r_lp, r_hp, frame): #DFT Filter (Gaussian Bandpass)
     # print("roi")
     # frame1 = frame[roi[1]:roi[3], roi[0]:roi[2]].copy()
     print("dft")
-    frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    del frame
+    # frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    # del frame
     print(frame_gray.shape)
 
     dft = cv2.dft(np.float32(frame_gray),flags = cv2.DFT_COMPLEX_OUTPUT)
@@ -164,8 +176,9 @@ def dftFilter(r_lp, r_hp, frame): #DFT Filter (Gaussian Bandpass)
     spectrum_masked = magnitude_spectrum * mask_gauss
 ##        img_back_scaled = None
     img_back_scaled = 255*img_back_gauss/img_back_gauss.max()
-    img_filtered = cv2.cvtColor(img_back_scaled.astype(np.uint8),
-                                cv2.COLOR_GRAY2BGR)
+    img_filtered = img_back_scaled.astype(np.uint8)
+    # img_filtered = cv2.cvtColor(img_back_scaled.astype(np.uint8),
+    #                             cv2.COLOR_GRAY2BGR)
     print("dft end")
     # h, w, s  = frame.shape
     # l, r, t, d = roi[0], w - roi[2], roi[1], h - roi[3]

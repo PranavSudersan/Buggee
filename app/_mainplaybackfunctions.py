@@ -17,7 +17,7 @@ class MainPlaybackFunctions:
             self.playStatus = not self.playStatus
             self.frameAction = "Play"
             self.playBtn.setIcon(QIcon('images/pause.png'))
-            self.effectChain = [1, 1, 1, 1] #b/c, bg sub, filter, tresh
+
             print("play")
             while True:
                 print("Loop start", time.time())
@@ -53,8 +53,12 @@ class MainPlaybackFunctions:
                 roi = self.roiBound
                 self.frame = self.frame_current[roi[1]:roi[3], roi[0]:roi[2]].copy() #filter inside roi
                 print("Frame copy", time.time())
+                self.effectChain = [True, 
+                                    True if self.histogramCorrectType.currentText() != 'None' else False, 
+                                    self.bgGroupBox.isChecked(), 
+                                    self.dftGroupBox.isChecked()] #order: b/c, hist, bg sub, filter                
                 
-                self.video_effect(self.frame) #apply filter, b/c, bg subtract effects
+                self.video_effect(self.frame) #apply  b/c, hist, bg sub, filter effects
                 print("Video Effect", time.time())
                 
                 self.roi_auto = self.threshROIGroupBox.isChecked()
@@ -84,7 +88,7 @@ class MainPlaybackFunctions:
                             self.frameAction = "Pause"
                             print(self.cap.get(cv2.CAP_PROP_POS_FRAMES),
                                   self.framePos)
-                            self.effectChain = [1, 1, 1, 1]
+                            # self.effectChain = [1, 1, 1, 1]
                             break
                         if self.frameAction == "Previous": #previous frame
                             #change below to consider last two frames as well.CHECK
@@ -99,7 +103,7 @@ class MainPlaybackFunctions:
                             self.frameAction = "Pause"
                             print(self.cap.get(cv2.CAP_PROP_POS_FRAMES),
                                   self.framePos)
-                            self.effectChain = [1, 1, 1, 1]
+                            # self.effectChain = [1, 1, 1, 1]
                             break
                         if self.frameAction == "Stop": #stop
                             print("stop")
@@ -128,7 +132,7 @@ class MainPlaybackFunctions:
                     self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
                     self.playStatus = False
                     # self.frame_current = self.frame.copy()
-                    self.effectChain = [1, 1, 1, 1]
+                    # self.effectChain = [1, 1, 1, 1]
                     self.recordStatus = False
 
                     self.statusBar.showMessage("Frame number: " + str(int(self.framePos-1)) + "\t("
@@ -194,6 +198,10 @@ class MainPlaybackFunctions:
 ##                                       "%)")
             roi = self.roiBound
             self.frame = self.frame_current[roi[1]:roi[3], roi[0]:roi[2]].copy() #filter inside roi
+            self.effectChain = [True, 
+                                True if self.histogramCorrectType.currentText() != 'None' else False, 
+                                self.bgGroupBox.isChecked(), 
+                                self.dftGroupBox.isChecked()] #order: b/c, hist, bg sub, filter                
             
             self.video_effect(self.frame) #apply filter, b/c, bg subtract effects
             

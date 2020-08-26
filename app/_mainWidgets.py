@@ -360,6 +360,7 @@ class MainWidgets:
         self.lineTypeTop.addItem("Top most")
         self.lineTypeTop.addItem("Bottom most")
         self.lineTypeTop.addItem("Best fit")
+        self.lineTypeTop.setCurrentIndex(3)
         self.lineTypeTop.currentIndexChanged.connect(self.video_analysis)
         
         markerWindowTopLabel = QLabel("Marker Window:", self) 
@@ -391,6 +392,7 @@ class MainWidgets:
         self.lineTypeBottom.addItem("Top most")
         self.lineTypeBottom.addItem("Bottom most")
         self.lineTypeBottom.addItem("Best fit")
+        self.lineTypeBottom.setCurrentIndex(2)
         self.lineTypeBottom.currentIndexChanged.connect(self.video_analysis)
         
         markerWindowBottomLabel = QLabel("Marker Window:", self) 
@@ -546,12 +548,26 @@ class MainWidgets:
         self.contrastSpinBox.setValue(self.contrastSlider.value())
         self.contrastSpinBox.setSingleStep(1)
         self.contrastSpinBox.valueChanged.connect(self.bc_change)
-##        self.contrastSpinBox.move(250, 630)
-##        self.contrastSpinBox.resize(45, 20)
 
-##        self.applyFilter = QCheckBox('Apply Filter', self) #apply filter
-##        self.applyFilter.move(700, 525)
-##        self.applyFilter.stateChanged.connect(self.dft_change)
+        #histogram correction
+        histogramCorrectLabel = QLabel("Histogram Correction:\t", self)
+        self.histogramCorrectType =  QComboBox(self) #correction type
+        self.histogramCorrectType.addItem("None")
+        self.histogramCorrectType.addItem("Global")
+        self.histogramCorrectType.addItem("Adaptive")
+        self.histogramCorrectType.currentIndexChanged.connect(self.histogram_change)
+        
+        self.histogramLimit = QSpinBox(self)
+        self.histogramLimit.setRange(0, 100)
+        self.histogramLimit.setValue(2)
+        self.histogramLimit.setSingleStep(1)
+        self.histogramLimit.valueChanged.connect(self.histogram_change)
+        
+        self.histogramSize = QSpinBox(self)
+        self.histogramSize.setRange(1, 100)
+        self.histogramSize.setValue(8)
+        self.histogramSize.setSingleStep(1)
+        self.histogramSize.valueChanged.connect(self.histogram_change)
 
         self.minAreaFilter = QSpinBox(self)
         self.minAreaFilter.setRange(1, 10000)
@@ -935,6 +951,10 @@ class MainWidgets:
         bcVbox.addWidget(self.contrastLabel, 1, 0, 1, 1)
         bcVbox.addWidget(self.contrastSlider, 1, 1, 1, 1)
         bcVbox.addWidget(self.contrastSpinBox, 1, 3, 1, 1)
+        bcVbox.addWidget(histogramCorrectLabel, 2, 0, 1, 1)
+        bcVbox.addWidget(self.histogramCorrectType , 2, 1, 1, 1)
+        bcVbox.addWidget(self.histogramLimit, 2, 2, 1, 1)
+        bcVbox.addWidget(self.histogramSize, 2, 3, 1, 1)
 
         self.dftGroupBox = QGroupBox("Enable")
         # self.dftGroupBox.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)

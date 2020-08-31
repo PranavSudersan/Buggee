@@ -57,6 +57,8 @@ from source.process.imagesegment import ImageSegment
 from source.process import imagetransform
 from source.process.templatematch import TemplateMatch
 
+from source.analysis.fitting2 import FitDataWindow
+
 
 
 # %% Main Application Window
@@ -79,6 +81,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         self.configRecWindow = ConfigRecWindow() #record configuration window
         self.configPlotWindow = ConfigPlotWindow() #plot configuration window
         self.plotWindow = PlotWindow() #live plot window
+        self.fitWindow = FitDataWindow() #fit data window
 
         quitWindow = QAction("&Quit", self) #quit program
 ##        quitWindow.setShortcut("Ctrl+Q") 
@@ -137,6 +140,11 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         paths.setStatusTip("Configure Filepaths")
         paths.triggered.connect(self.showPathWindow)
         self.configPathWindow.okBtn.clicked.connect(self.setPaths)
+        
+        fitData = QAction("&Fit..", self) #data fitting options
+        fitData.setStatusTip("Fit data")
+        fitData.triggered.connect(self.showFitWindow)
+        # self.configPathWindow.okBtn.clicked.connect(self.setPaths)
 
         showSummary = QAction("&Display Summary Plots", self) #show summary Plots
         showSummary.setStatusTip("Displays summary plots based on summary data file")
@@ -176,12 +184,16 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         configureMenu.addAction(recordVideo)
         configureMenu.addAction(plot)
         configureMenu.addAction(paths)
+        
+        fileMenu = mainMenu.addMenu("&Analysis") #Analysis menu
+        fileMenu.addAction(fitData)
 
         plotMenu = mainMenu.addMenu("&Summarize") #Plot menu
         plotMenu.addAction(configureSummary)
         plotMenu.addAction(showSummary)
         plotMenu.addAction(exportSummary)
 ##        plotMenu.addAction(combineSummary)
+
 
         self.statusBar = QStatusBar() #status bar
         self.setStatusBar(self.statusBar)
@@ -3348,6 +3360,8 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                 else:                    
                     wid.setValue(ast.literal_eval(val))
             self.statusBar.showMessage("Settings set!")
+            
+            self.plotSequence()
         
     #save current settings
     def save_settings(self):
@@ -3763,6 +3777,23 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
 #         plt.close()
 #         gc.collect()
 #         self.statusBar.showMessage("Reset!")
+
+    def showFitWindow(self):
+        # self.updateFitDict()
+        self.fitWindow.plotSequence()
+        self.fitWindow.show()
+        
+    def updateFitDict(self):
+        if self.forceData.force_filepath != "":
+            self.fitWindow.xDict = {'Vertical Position (μm)': np.array(self.forceData.dist_vert1),
+                     'Lateral Position (μm)':np.array(self.forceData.dist_lat1),
+                     'Deformation (μm)':np.array(self.forceData.deform_vert),
+                     'Time (s)':np.array(self.forceData.time1),
+                     'Index':np.linspace(0,len(self.forceData.dist_vert1)-1,
+                                         len(self.forceData.dist_vert1), 
+                                         dtype = np.uint)}
+            self.fitWindow.yDict = {'Vertical Force (μN)':np.array(self.forceData.force_vert1_shifted),
+                         'Lateral Force (μN)':np.array(self.forceData.force_lat1_shifted)}
     
     def resizeEvent(self, event): #resize view
         self.rawViewTab.resize(self.width()/2, self.rawViewTab.height())

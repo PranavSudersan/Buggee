@@ -354,6 +354,7 @@ class MainImportFile:
 ##            self.videoEffect.model().item(6).setEnabled(True)
             plt.close()
             self.plotSequence()
+            self.updateFitDict()
             # self.init_plotconfig()
             # self.forceData.dataClean()
             # self.forceData.calcData()

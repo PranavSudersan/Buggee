@@ -68,7 +68,7 @@ class MainRecordFunctions:
                     else:
                         frame2 = self.frame_contour.copy()
                         ret, frame3 = self.cap2.read()
-                        # self.forceData.getArea(self.frameTime, self.dataDict)
+                        self.forceData.getArea(self.frameTime, self.dataDict)
                         self.forceData.plotData(self.lengthUnit.currentText()) #prepare plot
                         frame4 = cv2.resize(cv2.cvtColor(self.forceData.convertPlot(), cv2.COLOR_RGB2BGR),
                                                               (w, h), interpolation = cv2.INTER_AREA)

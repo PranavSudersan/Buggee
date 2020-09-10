@@ -57,7 +57,7 @@ from source.process.imagesegment import ImageSegment
 from source.process import imagetransform
 from source.process.templatematch import TemplateMatch
 
-from source.analysis.fitting2 import FitDataWindow
+from source.analysis.fitting import FitDataWindow
 
 
 
@@ -69,7 +69,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
     def __init__(self, wd, ht):
         super().__init__()
         self.setGeometry(0, 0, wd, ht)
-        self.appVersion = "AdheSee v1.2"
+        self.appVersion = "AdheSee v1.3"
         self.setWindowTitle(self.appVersion)
         self.layout = QGridLayout()
         self.layout.setColumnMinimumWidth(0,650)
@@ -2914,15 +2914,17 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         self.forceData.fontSize = self.configPlotWindow.fontSize.value()        
         self.forceData.noiseSteps = self.configPlotWindow.noiseSteps.text()
         self.forceData.legendPos = self.configPlotWindow.legendPos.text()
-        self.forceData.flag_fit = self.configPlotWindow.fittingGroupBox.isChecked()
-        self.forceData.fit_x = self.configPlotWindow.xFit.currentText()
-        self.forceData.fit_y = self.configPlotWindow.yFit.currentText()
-        self.forceData.startFit = self.configPlotWindow.fitStart.value()
-        self.forceData.endFit = self.configPlotWindow.fitStop.value()
+        # self.forceData.flag_fit = self.configPlotWindow.fittingGroupBox.isChecked()
+        # self.forceData.fit_x = self.configPlotWindow.xFit.currentText()
+        # self.forceData.fit_y = self.configPlotWindow.yFit.currentText()
+        # self.forceData.startFit = self.configPlotWindow.fitStart.value()
+        # self.forceData.endFit = self.configPlotWindow.fitStop.value()
         self.forceData.fit_pos = self.configPlotWindow.fitPos.text()
         self.forceData.fit_show = self.configPlotWindow.showFitEq.isChecked()
         self.forceData.k_beam = self.configPlotWindow.kBeam.text()
         self.forceData.deform_tol = self.configPlotWindow.deformStart.value()
+        
+        self.updateFitDict()
         
 #     def roiDraw(self): #draw roi
 #         if len(self.frame) != 0:
@@ -3385,6 +3387,8 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                     f.write(key + "\t" + str(wid.currentText()) + "\n")
                 elif widtype in ["QLineEdit"]:
                     f.write(key + "\t" + str(wid.text()) + "\n") 
+                elif widtype in ["slice"]: #slice
+                    f.write(key + "\t" + str([wid.start, wid.stop]) + "\n") 
                 else:                    
                     f.write(key + "\t" + str(wid.value()) + "\n")
         self.statusBar.showMessage("Settings saved!")
@@ -3469,11 +3473,12 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         self.settingsDict["Plot End"] = self.configPlotWindow.endFull
         self.settingsDict["Font Size"] = self.configPlotWindow.fontSize
         self.settingsDict["Legend Position"] = self.configPlotWindow.legendPos
-        self.settingsDict["Fit data"] = self.configPlotWindow.fittingGroupBox
-        self.settingsDict["Fit Start"] = self.configPlotWindow.fitStart
-        self.settingsDict["Fit End"] = self.configPlotWindow.fitStop
-        self.settingsDict["Fit X-param"] = self.configPlotWindow.xFit
-        self.settingsDict["Fit Y-param"] = self.configPlotWindow.yFit
+        self.settingsDict["Fit data"] = self.fitWindow.enableFitting
+        # self.settingsDict["Fit Start"] = self.configPlotWindow.fitStart
+        # self.settingsDict["Fit End"] = self.configPlotWindow.fitStop
+        self.settingsDict["Fit Range"] = self.fitWindow.fit_slice
+        self.settingsDict["Fit X-param"] = self.fitWindow.xFit
+        self.settingsDict["Fit Y-param"] = self.fitWindow.yFit
         self.settingsDict["Fit position"] = self.configPlotWindow.fitPos
         self.settingsDict["Show Fit Slope"] = self.configPlotWindow.showFitEq
             
@@ -3794,6 +3799,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                                          dtype = np.uint)}
             self.fitWindow.yDict = {'Vertical Force (μN)':np.array(self.forceData.force_vert1_shifted),
                          'Lateral Force (μN)':np.array(self.forceData.force_lat1_shifted)}
+            self.fitWindow.plotSequence()
     
     def resizeEvent(self, event): #resize view
         self.rawViewTab.resize(self.width()/2, self.rawViewTab.height())

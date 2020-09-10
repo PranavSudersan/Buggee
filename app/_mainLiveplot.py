@@ -5,7 +5,6 @@ Created on Wed Jun 24 22:05:47 2020
 @author: adwait
 """
 import numpy as np
-import matplotlib.pyplot as plt
 from tkinter import messagebox, Tk
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPolygonF
@@ -55,22 +54,23 @@ class MainLivePlot:
                 self.plotWindow.liveChartScene.addItem(self.plotWindow.liveChart)
                 self.plotWindow.liveChartView.setScene(self.plotWindow.liveChartScene)
                 print("live plot end")
-        elif self.forceData.fig1_close == False: #area and force plot
+        elif self.forceData.plotWidget.fig_close == False: #area and force plot
             self.forceData.getArea(self.frameTime, self.dataDict)
             self.forceData.plotData(self.lengthUnit.currentText())
-            self.forceData.showPlot()
+
         
     def plot_data(self): #plot graph
         if self.forceData.force_filepath == "":
             self.plotWindow.home() #live area data show
         else:
-            if self.playStatus == True: #pause video if running (bug)
-                self.playBtn.click() 
-            self.forceData.fig1_close = False #area data show
+            # if self.playStatus == True: #pause video if running (bug)
+            #     self.playBtn.click() 
+            self.forceData.plotWidget.fig_close = False #area data show
             self.forceData.getArea(self.frameTime, self.dataDict)
             self.forceData.plotData(self.lengthUnit.currentText())
-            self.forceData.showPlot()
-            plt.show()
+
+            self.forceData.plotWidget.show()
+
         
     def initialise_live_plot(self, curve, color): #initalise live plot
         pen = curve.pen()

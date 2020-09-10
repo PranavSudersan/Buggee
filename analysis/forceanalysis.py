@@ -20,8 +20,9 @@ from source.analysis.plotting import Plotting
 
 class ForceAnal(Plotting):
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, fitWindow = None):
+        super().__init__(fitWindow)
+        
         self.force_filepath = ""
         self.force_vert1 = [0,0,0]
         self.time1 = [0,0,0]

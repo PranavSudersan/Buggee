@@ -39,7 +39,7 @@ class MainMeasurementDialog:
         self.load_video()
 
     def load_measurement_data(self): #load force data of measurement
-        self.forceData = ForceAnal()
+        self.forceData = ForceAnal(self.fitWindow)
         self.forceData.force_filepath = self.folderPath +  \
                                         "/Force curves/" + \
                                         self.forcedataList[self.msrmnt_num_current-1]

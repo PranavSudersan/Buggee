@@ -113,7 +113,7 @@ class MainImportFile:
             
             self.init_dict() #initialise dictionaries
                         
-            self.forceData = ForceAnal()
+            self.forceData = ForceAnal(self.fitWindow)
             self.zeroForceData = ForceAnal() #initalise
             self.correctZeroForce.setEnabled(False)
             self.clearData.setEnabled(True)
@@ -268,7 +268,7 @@ class MainImportFile:
             # self.showEffect.setEnabled(False)
             
             
-            self.forceData = ForceAnal()
+            self.forceData = ForceAnal(self.fitWindow)
             self.zeroForceData = ForceAnal() #initalise
             self.correctZeroForce.setEnabled(False)
             self.clearData.setEnabled(True)
@@ -332,7 +332,7 @@ class MainImportFile:
 
     def import_force_data(self): #import force data
         if self.msrListMode == False:
-            self.forceData = ForceAnal()
+            self.forceData = ForceAnal(self.fitWindow)
         self.zeroForceData = ForceAnal() #initalise
         self.correctZeroForce.blockSignals(True)
         self.correctZeroForce.setChecked(False)

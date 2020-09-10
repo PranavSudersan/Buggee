@@ -211,32 +211,32 @@ class ConfigPlotWindow(QWidget):
         self.prl2Range2.setRange(0, 100)
         self.prl2Range2.valueChanged.connect(self.update_dict)
 
-        self.startFitLabel = QLabel("Start (%):", self)
-        self.endFitLabel = QLabel("End (%):", self)
+        # self.startFitLabel = QLabel("Start (%):", self)
+        # self.endFitLabel = QLabel("End (%):", self)
 
-        self.fitStart = QDoubleSpinBox(self) #fitting range start
-        self.fitStart.setValue(0)
-        self.fitStart.setSingleStep(1)
-        self.fitStart.setRange(0, 100)
+        # self.fitStart = QDoubleSpinBox(self) #fitting range start
+        # self.fitStart.setValue(0)
+        # self.fitStart.setSingleStep(1)
+        # self.fitStart.setRange(0, 100)
 
-        self.fitStop = QDoubleSpinBox(self) #fitting range end
-        self.fitStop.setValue(100)
-        self.fitStop.setSingleStep(1)
-        self.fitStop.setRange(0, 100)
+        # self.fitStop = QDoubleSpinBox(self) #fitting range end
+        # self.fitStop.setValue(100)
+        # self.fitStop.setSingleStep(1)
+        # self.fitStop.setRange(0, 100)
 
-        self.xFitLabel = QLabel("X Parameter:", self)
-        self.yFitLabel = QLabel("Y Parameter:", self)
+        # self.xFitLabel = QLabel("X Parameter:", self)
+        # self.yFitLabel = QLabel("Y Parameter:", self)
 
-        self.xFit = QComboBox(self) #x param
-        self.xFit.addItems(['Deformation (μm)',
-                            'Vertical Position (μm)',
-                            'Lateral Position (μm)',
-                            'Time (s)'])
-        self.xFit.setCurrentIndex(0)
+        # self.xFit = QComboBox(self) #x param
+        # self.xFit.addItems(['Deformation (μm)',
+        #                     'Vertical Position (μm)',
+        #                     'Lateral Position (μm)',
+        #                     'Time (s)'])
+        # self.xFit.setCurrentIndex(0)
 
-        self.yFit = QComboBox(self) #x param
-        self.yFit.addItems(['Vertical Force (μN)', 'Lateral Force (μN)'])
-        self.yFit.setCurrentIndex(0)
+        # self.yFit = QComboBox(self) #x param
+        # self.yFit.addItems(['Vertical Force (μN)', 'Lateral Force (μN)'])
+        # self.yFit.setCurrentIndex(0)
 
         self.fitPosLabel = QLabel("Fit Position\n(x,y):", self) #fit eq. position        
         self.fitPos = QLineEdit(self)
@@ -270,8 +270,8 @@ class ConfigPlotWindow(QWidget):
         flagGroupBox.setStyleSheet("QGroupBox { font-weight: bold; } ")
         self.latCalibGroupBox.setStyleSheet("QGroupBox { font-weight: bold; } ")
         self.fittingGroupBox.setStyleSheet("QGroupBox { font-weight: bold; } ")
-        self.fittingGroupBox.setCheckable(True)
-        self.fittingGroupBox.setChecked(False)
+        # self.fittingGroupBox.setCheckable(True)
+        # self.fittingGroupBox.setChecked(False)
 
         self.layout.addWidget(self.roiChoice, 0, 0, 1, 2)
         self.layout.addWidget(self.zeroGroupBox, 1, 0)
@@ -369,14 +369,14 @@ class ConfigPlotWindow(QWidget):
 
         fittingVbox = QGridLayout()
         self.fittingGroupBox.setLayout(fittingVbox)
-        fittingVbox.addWidget(self.startFitLabel, 0, 0, 1, 1)
-        fittingVbox.addWidget(self.endFitLabel, 1, 0, 1, 1)
-        fittingVbox.addWidget(self.fitStart, 0, 1, 1, 1)
-        fittingVbox.addWidget(self.fitStop, 1, 1, 1, 1)
-        fittingVbox.addWidget(self.xFitLabel, 0, 2, 1, 1)
-        fittingVbox.addWidget(self.yFitLabel, 1, 2, 1, 1)
-        fittingVbox.addWidget(self.xFit, 0, 3, 1, 1)
-        fittingVbox.addWidget(self.yFit, 1, 3, 1, 1)
+        # fittingVbox.addWidget(self.startFitLabel, 0, 0, 1, 1)
+        # fittingVbox.addWidget(self.endFitLabel, 1, 0, 1, 1)
+        # fittingVbox.addWidget(self.fitStart, 0, 1, 1, 1)
+        # fittingVbox.addWidget(self.fitStop, 1, 1, 1, 1)
+        # fittingVbox.addWidget(self.xFitLabel, 0, 2, 1, 1)
+        # fittingVbox.addWidget(self.yFitLabel, 1, 2, 1, 1)
+        # fittingVbox.addWidget(self.xFit, 0, 3, 1, 1)
+        # fittingVbox.addWidget(self.yFit, 1, 3, 1, 1)
         fittingVbox.addWidget(self.fitPosLabel, 0, 4, 1, 1)
         fittingVbox.addWidget(self.fitPos, 0, 5, 1, 1)
         fittingVbox.addWidget(self.showFitEq, 1, 4, 1, 2)

@@ -4,14 +4,23 @@ Created on Mon Jun 29 22:49:51 2020
 
 @author: adwait
 """
+import matplotlib
+matplotlib.use('Qt5Agg')
+from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 import numpy as np
-import source.analysis.fitting as fitting
+# import source.analysis.fitting as fitting
 import pickle
+
+from source.analysis.plot2widget import PlotWidget
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+
+from PyQt5.QtWidgets import QWidget, QGroupBox, QGridLayout
 
 class Plotting:
     
-    def __init__(self):
+    def __init__(self, fitWindow):
+        self.fitWindow = fitWindow
         #plot display flags
         self.flag_ca = True
         self.flag_ra = False
@@ -28,20 +37,31 @@ class Plotting:
         self.flag_zd = False
         self.x_var = 'Time' #x axis default parameter
         self.legendPos = "upper right"
-        self.fig1_close = True
+        # self.fig1_close = True
         self.show_title = True
         self.showLegend2 = True
         self.fontSize = 12
         #fitting
-        self.flag_fit = False
-        self.fit_x = 'Vertical Position (μm)'
-        self.fit_y = 'Vertical Force'
-        self.startFit = 0
-        self.endFit = 100
+        # self.flag_fit = False
+        # self.fit_x = 'Vertical Position (μm)'
+        # self.fit_y = 'Vertical Force'
+        # self.startFit = 0
+        # self.endFit = 100
         self.fit_pos = '0.5,0.5'
         self.fit_show = False
         self.slope = ''
         self.slope_unit = ''
+        
+        #initialize figure with random data
+        self.fig1 = Figure(figsize=(11, 5), dpi=100)
+        ax = self.fig1.add_subplot(111)
+        xdata = np.linspace(0, 4, 50)
+        ydata = np.sin(xdata)
+        ax.plot(xdata, ydata, 'r-', linewidth=1, markersize=1)
+        
+        self.plotWidget = PlotWidget(fig = self.fig1,
+                                         cursor1_init=2,
+                                         cursor2_init=6)
         
     def plotData(self, unit): #prepare plot
 
@@ -56,9 +76,24 @@ class Plotting:
         
         plt.rcParams.update({'font.size': self.fontSize})
         
-        self.fig1 = plt.figure(num="Force/Area vs Time", figsize = [11, 5])
-        self.fig1.canvas.mpl_connect('close_event', self.handle_close)
+        # self.fig1 = plt.figure(num="Force/Area vs Time", figsize = [11, 5])
+        # self.fig1 = Figure(figsize=(11, 5), dpi=100)
+        
+        # self.fig1.canvas.mpl_connect('close_event', self.handle_close)
+        
         print("fig1")
+        
+        #store cursor position values before clearing plot
+        if self.plotWidget.wid.cursor1 == None:
+            c1_init = None
+        else:
+            c1_init = self.plotWidget.wid.cursor1.get_xdata()[0]
+        
+        if self.plotWidget.wid.cursor2 == None:
+            c2_init = None
+        else:
+            c2_init = self.plotWidget.wid.cursor2.get_xdata()[0]
+            
         self.fig1.clear()
         ax1 = self.fig1.add_subplot(1,1,1)
         lns = []
@@ -69,7 +104,10 @@ class Plotting:
         p1, = ax1.plot(xAxisData[self.plot_slice], self.force_vert1_shifted[self.plot_slice], 'ro',
                      alpha=0.5, linewidth=1, markersize=1, label="Vertical Force")
         lns.append(p1)
+        
 
+        # self.plotWidget.mpl_connect('close_event', self.handle_close)
+        
         if self.ptsnumber != 0:
 ##            ptsperstep = int(self.ptsnumber/self.step_num)
             i = 0
@@ -143,7 +181,7 @@ class Plotting:
         if self.showLegend2 == True:
             dict_reg = dict(zip(lab_reg, lns_reg)) #legend dictionary (remove dup)
             self.fig1.legend(dict_reg.values(), dict_reg.keys(), loc='lower right',
-                             ncol=len(lns_reg))
+                              ncol=len(lns_reg))
         
         if self.flag_ap == True: #show adhesion calc
             #fill adhesion energy region 
@@ -375,42 +413,77 @@ class Plotting:
 
         ax1.legend(handles=lns, loc = self.legendPos)
 
-        if self.flag_fit == True:
+        if self.fitWindow.enableFitting.isChecked() == True:
             axDict = {'Vertical Force (μN)':ax1, 'Lateral Force (μN)':ax3}
-            yDict = {'Vertical Force (μN)':self.force_vert1_shifted,
-                     'Lateral Force (μN)':self.force_lat1_shifted}
-            fit_slice = slice(int(self.startFit * self.ptsnumber/100),
-                              int(self.endFit * self.ptsnumber/100))
-            self.slope_unit = self.fit_y.split('(')[1].split(')')[0] + '/' +\
-                              self.fit_x.split('(')[1].split(')')[0]
+            # yDict = {'Vertical Force (μN)':self.force_vert1_shifted,
+            #          'Lateral Force (μN)':self.force_lat1_shifted}
+            # fit_slice = slice(int(self.startFit * self.ptsnumber/100),
+            #                   int(self.endFit * self.ptsnumber/100))
+            self.slope_unit = self.fitWindow.yFit.currentText().split('(')[1].split(')')[0] + '/' +\
+                              self.fitWindow.xFit.currentText().split('(')[1].split(')')[0]
             text_pos = self.fit_pos.split(",")
             
-            self.slope = fitting.polyfitData(xDict.get(self.fit_x)[fit_slice], yDict.get(self.fit_y)[fit_slice],
-                                     axDict.get(self.fit_y), xAxisData[fit_slice], unit = self.slope_unit,
-                                     eq_pos = text_pos, fit_order = 1, fit_show = self.fit_show)
+            # self.slope = fitting.polyfitData(xDict.get(self.fit_x)[fit_slice], yDict.get(self.fit_y)[fit_slice],
+            #                          axDict.get(self.fit_y), xAxisData[fit_slice], unit = self.slope_unit,
+            #                          eq_pos = text_pos, fit_order = 1, fit_show = self.fit_show)
+            ax_fit = axDict.get(self.fitWindow.yFit.currentText())
+            ax_fit.plot(xAxisData[self.fitWindow.fit_slice], 
+                        self.fitWindow.fit_ydata, color = 'black',
+                        linewidth=2, linestyle='dashed')
+            
+        ##        print(eq_pos)
+            if self.fit_show == True and \
+                self.fitWindow.fittingFunctionType.currentText() == 'Linear':
+                    self.slope = self.fitWindow.fitParams['m']
+                    slope_label = "Slope: " + "%.4f"%(self.slope) + \
+                        ' (' + self.slope_unit + ')'
+                    ax_fit.text(float(text_pos[0]), float(text_pos[1]),
+                                slope_label, ha = 'right',
+                                transform=ax_fit.transAxes, 
+                                color = 'black',
+                                bbox=dict(facecolor='white', 
+                                edgecolor = 'black', 
+                                alpha=0.5),
+                                picker = 5)
         else:
             self.slope = ''
             self.slope_unit = ''
-        self.fig1.tight_layout()
-
-##            print(e)
-##            messagebox.showinfo("Plot Error!", "Check force file/video file\n" +
-##                                "Exception: " + str(e))
         
-    def showPlot(self): #show plot
-##        self.fig1.show()
-        try:
-            plt.pause(0.05)
-            self.fig1.canvas.draw()
-        except Exception as e:
-            print(e)
+        
+        
+        self.fig1.tight_layout()
+        self.fig1.canvas.draw()
+        
+        self.plotWidget.wid.axes = self.fig1.get_axes()[-1]
+            
+        self.plotWidget.wid.add_cursors(cursor1_init=c1_init,
+                                        cursor2_init=c2_init)
+        # self.plotWidget.wid.draw_idle()
+        
+        # self.fig1.tight_layout()
+        # self.fig1.canvas.draw()
+    
+#     def showPlot(self): #show plot
+# ##        self.fig1.show()
+#         try:
+#             # plt.pause(0.05)
+#             # self.axes.relim()
+#             # self.axes.autoscale()
+#             self.fig1.tight_layout()
+#             self.fig1.canvas.draw()
+#             # self.plotWidget
+#             # self.plotWidget.show()
+#         except Exception as e:
+#             print(e)
             
 ##        plt.show(block=False)
 ##        plt.draw()
 
-    def handle_close(self, evt): #figure closed event
-        self.fig1_close = True
-    
+    # def handle_close(self, evt): #figure closed event
+    #     self.fig1_close = True
+    #     print("close")
+
+            
     def convertPlot(self): #convert plot to numpy
         self.fig1.canvas.draw()
         data = np.fromstring(self.fig1.canvas.tostring_rgb(),
@@ -426,4 +499,29 @@ class Plotting:
         with open(filepath[:-4] + '.pickle', 'wb') as f:
             pickle.dump(self.fig1, f, pickle.HIGHEST_PROTOCOL)
         
-    
+
+# class PlotWindow(QWidget):
+#     def __init__(self, fig, *args, **kwargs):
+# ##        super(QWidget, self).__init__(*args, **kwargs)
+#         super().__init__()
+#         self.setGeometry(100, 100, 1000, 500)
+#         self.setWindowTitle("Plot")
+#         self.fig = fig
+#         self.home()
+        
+#     def home(self):
+#         self.plotWidget = Plot2Widget(self.fig,cursor1_init=2,cursor2_init=6)
+#         plotToolbar = NavigationToolbar(self.plotWidget, self)
+        
+#         plotGroupBox = QGroupBox()
+#         plotlayout=QGridLayout()
+#         plotGroupBox.setLayout(plotlayout)
+#         plotlayout.addWidget(plotToolbar, 0, 0, 1, 1)
+#         plotlayout.addWidget(self.plotWidget, 1, 0, 1, 1)
+        
+#         layout=QGridLayout()
+#         layout.addWidget(plotGroupBox, 0, 0, 1, 1)
+        
+#         self.setLayout(layout)
+        # self.show()
+        # startFitLabel = QLabel("Start (%):")

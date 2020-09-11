@@ -51,34 +51,50 @@ class Plot2Widget(FigureCanvasQTAgg):
     
     def clickonline(self, event):
         print("click event")
-        print(event.artist)
-        #detect cursor
-        if event.artist in [self.cursor1, self.cursor2] and event.mouseevent.button == 1 \
-            and self.clickState == False:
-            print("line selected ", event.artist)
+        # print(event.artist)
+        if self.clickState == False and event.mouseevent.button == 1:
             self.clickState = True
-            self.follower = self.mpl_connect("motion_notify_event",
-                                               lambda event, artist=event.artist: self.followmouse(event,artist))
-            self.releaser = self.mpl_connect("button_release_event",self.releaseonclick)
-        #detect text box
-        elif event.artist.__class__.__name__ == "Text" and event.mouseevent.button == 1:
-            self.follower = self.mpl_connect("motion_notify_event",
-                                               lambda event, artist=event.artist: self.followmouse(event,artist))
-            self.releaser = self.mpl_connect("button_release_event",self.releaseonclick)
-            # event.artist.set_position([2,1])
-            # self.draw_idle()
-            # self.releaser2 = self.mpl_connect("button_press_event",self.releaseonclick2)
+            #detect cursor
+            if event.artist in [self.cursor1, self.cursor2]:
+                print("line selected ", event.artist)
+                
+                self.follower = self.mpl_connect("motion_notify_event",
+                                                   lambda event, artist=event.artist: self.followmouse(event,artist))
+                self.releaser = self.mpl_connect("button_release_event",
+                                                 lambda event, artist=event.artist: self.releaseonclick(event,artist))
+            #detect text box
+            elif event.artist.__class__.__name__ == "Text":
+                self.follower = self.mpl_connect("motion_notify_event",
+                                                   lambda event, artist=event.artist: self.followmouse(event,artist))
+                self.releaser = self.mpl_connect("button_release_event",
+                                                 lambda event, artist=event.artist: self.releaseonclick(event,artist))
+                # event.artist.set_position([2,1])
+                # self.draw_idle()
+                # self.releaser2 = self.mpl_connect("button_press_event",self.releaseonclick2)
+            #blitting for faster updates
+            event.artist.set_animated(True)
+            self.draw()
+            self.background = self.copy_from_bbox(self.axes.bbox)
 
     def followmouse(self, event, artist):
-        print(event.xdata, artist)
+        print(event.xdata, event.ydata, artist)
         if event.xdata != None:
             x = event.xdata
             y = event.ydata
             if artist.__class__.__name__ == 'Line2D':
                 artist.set_xdata([x, x])
             elif artist.__class__.__name__ == 'Text':
-                artist.set_position([x,y])
-            self.draw_idle()
+                #using axes coordinates to set position
+                artist.set_position(self.axes.transLimits.transform((x,y)))
+            
+            # restore the background region
+            self.restore_region(self.background)
+            # redraw just the current rectangle
+            self.axes.draw_artist(artist)
+            # blit just the redrawn area
+            self.blit(self.axes.bbox)
+
+            # self.draw_idle()
             # indx = np.searchsorted(self.xdata, [event.xdata])[0]
             # if indx != self.xdata.shape[0]: 
             #     x = self.xdata[indx] #restrict cursor to data points
@@ -86,7 +102,7 @@ class Plot2Widget(FigureCanvasQTAgg):
             #     line.set_xdata([x, x])
             #     self.draw_idle()
 
-    def releaseonclick(self, event):
+    def releaseonclick(self, event, artist):
         if event.button == 1:
             # print(self.cursor1.get_xdata(),self.cursor2.get_xdata())
             # if self.cursor1.get_xdata()[0] == self.cursor2.get_xdata()[0]:
@@ -97,10 +113,16 @@ class Plot2Widget(FigureCanvasQTAgg):
 ##            self.xval = line.get_xdata()[0]
 ##
 ##            print (self.xval)
+            
             print(event.button)
             self.mpl_disconnect(self.follower)
             self.mpl_disconnect(self.releaser)
             self.clickState = False
+            # turn off the rect animation property and reset the background
+            artist.set_animated(False)
+            self.background = None
+            # redraw the full figure
+            self.draw()
             
 #complete figure widget with toolbar
 class PlotWidget(QWidget):

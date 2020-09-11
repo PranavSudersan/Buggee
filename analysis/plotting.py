@@ -221,6 +221,7 @@ class Plotting:
                                    '-' + markerlist[i], alpha=0.5,
                                    linewidth=1, markersize=2,
                                    label="Contact Area: " + k)
+                    # p2.set_animated(True) #BLIT THIS CHECK!!!
                     lns.append(p2)
                     if self.flag_ap == True: #adhesion calc
                         ax2.plot(self.indDict["time1_max"][i],
@@ -387,7 +388,7 @@ class Plotting:
                 lns.append(p10)
                 i += 1
         
-        if self.flag_st == True or self.flag_lf_filter == True: #stress
+        if self.flag_st == True or self.flag_lf_filter == True: #stress CHECK!
             ax6 = ax1.twinx() 
             ax6.set_ylabel('Stress (μN/$' + unit + '^2$)', color = 'c')
             ax6.spines['left'].set_position(('outward', int(6*self.fontSize)))
@@ -437,9 +438,10 @@ class Plotting:
                     self.slope = self.fitWindow.fitParams['m']
                     slope_label = "Slope: " + "%.4f"%(self.slope) + \
                         ' (' + self.slope_unit + ')'
-                    ax_fit.text(float(text_pos[0]), float(text_pos[1]),
+                    ax_top = self.fig1.get_axes()[-1]
+                    ax_top.text(float(text_pos[0]), float(text_pos[1]),
                                 slope_label, ha = 'right',
-                                transform=ax_fit.transAxes, 
+                                transform=ax_top.transAxes, 
                                 color = 'black',
                                 bbox=dict(facecolor='white', 
                                 edgecolor = 'black', 
@@ -458,6 +460,8 @@ class Plotting:
             
         self.plotWidget.wid.add_cursors(cursor1_init=c1_init,
                                         cursor2_init=c2_init)
+        
+        print("plot finish")
         # self.plotWidget.wid.draw_idle()
         
         # self.fig1.tight_layout()

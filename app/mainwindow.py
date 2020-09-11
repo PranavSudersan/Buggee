@@ -2867,8 +2867,10 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                     self.forceData.calcData()
                     self.forceData.getArea(self.frameTime, self.dataDict)
                 #self.effect_change()
-                self.video_analysis()
-            self.plot_live_data()
+                # self.video_analysis() #CHECK!
+            # self.plot_live_data() #CHECK!
+                    if self.forceData.plotWidget.fig_close == False: #area and force plot
+                        self.forceData.plotData(self.lengthUnit.currentText())
 
     def plotSequence(self): #sequence of plot calculations
         if self.forceData.force_filepath != "":
@@ -2876,6 +2878,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
             self.defl_vert1_raw = self.forceData.defl_vert1.copy() #copy of raw vert data
         self.zero_force_correct()
         self.updatePlot()
+        print("end plot sequence")
     
     def init_plotconfig(self): #initialize plot configuration window
         self.forceData.flag_ca = self.configPlotWindow.showContactArea.isChecked()
@@ -2924,7 +2927,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         self.forceData.k_beam = self.configPlotWindow.kBeam.text()
         self.forceData.deform_tol = self.configPlotWindow.deformStart.value()
         
-        self.updateFitDict()
+        self.updateFitDict() #CHECK!!
         
 #     def roiDraw(self): #draw roi
 #         if len(self.frame) != 0:

@@ -121,7 +121,7 @@ class ConfigPlotWindow(QWidget):
         self.zero2Range2.setRange(0, 100)
         self.zero2Range2.valueChanged.connect(self.update_dict)
 
-        self.filterLatF = QCheckBox('Filter cyan curve', self) #filter
+        self.filterLatF = QCheckBox('Filter stress curve', self) #filter
         
         self.filter_wind = QSpinBox(self) #filter window
         self.filter_wind.setValue(43)

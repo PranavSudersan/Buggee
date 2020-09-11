@@ -236,8 +236,11 @@ class ForceAnal(Plotting):
                 tstart = self.time1[int((y+1)*self.ptsnumber/self.step_num)] #CHANGE TO DIRECT DATA
 
         #noise filter lateral force
-        self.force_lat1_filtered = savgol_filter(self.force_lat1, self.window_length,
-                                                 self.polyorder).tolist()
+        if self.flag_lf_filter == True:
+            self.force_lat1_filtered = savgol_filter(self.force_lat1, self.window_length,
+                                                     self.polyorder).tolist()
+        else:
+            self.force_lat1_filtered = []
 
         self.forceDict["force_adhesion1"] = []
         self.forceDict["force_preload1"] = []
@@ -580,20 +583,27 @@ class ForceAnal(Plotting):
             #calculate full area
             area2_full = [area2_full[i] + area2[i] for i in range(len(area2))]
             i += 1
- 
-        area_interpol = [self.interpolData(self.time1[i], area2_full) \
-                            for i in range(len(self.time1))]
-        #local stress dF/dA #CHECK
-##        stress_local = np.diff(np.array(self.force_vert1))/np.diff(np.array(area_interpol))
-##        self.stress = np.append(stress_local, stress_local[-1]) #make array size same as time1
-        #stress F/A
-        self.stress = [(self.force_vert1[i]-self.forceDict["zero1"][0])/
-                       (self.interpolData(self.time1[i], area2_full)-
-                        self.interpolData(self.time1[0], area2_full)) for i \
-                  in range(len(self.time1))]
-        #noise filter stress
-        k_size = self.window_length+1 if self.window_length % 2 == 0 else self.window_length
-        self.stress_filtered = medfilt(self.stress, kernel_size=k_size).tolist()
+            
+        #interpolate area data
+        # area_interpol = [self.interpolData(self.time1[i], area2_full) \
+        #                     for i in range(len(self.time1))]
+        
+        if self.flag_st == True or self.flag_lf_filter == True: #stress    
+            #local stress dF/dA #CHECK
+    ##        stress_local = np.diff(np.array(self.force_vert1))/np.diff(np.array(area_interpol))
+    ##        self.stress = np.append(stress_local, stress_local[-1]) #make array size same as time1
+            
+            
+            #stress F/A
+            self.stress = [(self.force_vert1[i]-self.forceDict["zero1"][0])/
+                           (self.interpolData(self.time1[i], area2_full)-
+                            self.interpolData(self.time1[0], area2_full)) for i \
+                      in range(len(self.time1))]
+            #noise filter stress
+            k_size = self.window_length+1 if self.window_length % 2 == 0 else self.window_length
+            self.stress_filtered = medfilt(self.stress, kernel_size=k_size).tolist()
+        
+        print("get area finished")
 
 
 #     def polyfitData(self, xdata, ydata, ax, x_plot, unit,

@@ -52,16 +52,26 @@ class Plotting:
         self.slope = ''
         self.slope_unit = ''
         
+        self.markerlist = ["o", "v", "^", "s", "P", "*", "D", "<", "X", ">"]
+        self.linelist = [":", "-.", "--", "-", ":", "-.", "--", "-", ":", "-."]
+        # num = len(self.rangeDict.keys())
+        self.colorDict =  {'Green':plt.cm.Greens([0.7, 0.5, 0.9, 0.3, 1]),
+                           'Blue':plt.cm.Blues([0.7, 0.5, 0.9, 0.3, 1]),
+                           'Copper':plt.cm.copper([0.3, 0.9, 0.5, 0.7, 1]),
+                           'Wistia':plt.cm.Wistia([0.7, 0.5, 0.9, 0.3, 1])}
+        
         #initialize figure with random data
         self.fig1 = Figure(figsize=(11, 5), dpi=100)
         ax = self.fig1.add_subplot(111)
         xdata = np.linspace(0, 4, 50)
         ydata = np.sin(xdata)
+        self.fixYLimits = True
         ax.plot(xdata, ydata, 'r-', linewidth=1, markersize=1)
         
         self.plotWidget = PlotWidget(fig = self.fig1,
-                                         cursor1_init=2,
-                                         cursor2_init=6)
+                                         cursor1_init=0,
+                                         cursor2_init=None,
+                                         fixYLimits = self.fixYLimits)
         
     def plotData(self, unit): #prepare plot
 
@@ -71,8 +81,9 @@ class Plotting:
                  'Time (s)':self.time1}
         xAxisData = xDict.get(self.x_var)
         
-        markerlist = ["o", "v", "^", "s", "P", "*", "D", "<", "X", ">"]
-        linelist = [":", "-.", "--", "-", ":", "-.", "--", "-", ":", "-."]
+        # markerlist = ["o", "v", "^", "s", "P", "*", "D", "<", "X", ">"]
+        
+        
         
         plt.rcParams.update({'font.size': self.fontSize})
         
@@ -96,6 +107,7 @@ class Plotting:
             
         self.fig1.clear()
         ax1 = self.fig1.add_subplot(1,1,1)
+        ax1.spines['left'].set_position(('outward', 0))
         lns = []
                 
         # ax1.set_title('Speed = ' + str(self.speed_um) + ' μm/s')
@@ -176,8 +188,11 @@ class Plotting:
                 i += 1
         
         if self.show_title == True:
-            ax1.set_title('Speed = ' + str(speed_inview).replace('[','').replace(']','') 
-                          + ' μm/s')
+            title = 'Speed = ' + str(speed_inview).replace('[','').replace(']','') + ' μm/s'
+            ax1.text(0.5, 1.05, title, ha = 'center', transform=ax1.transAxes, 
+                     fontsize = 'large', color = 'black', picker = 5)
+            # ax1.set_title('Speed = ' + str(speed_inview).replace('[','').replace(']','') 
+            #               + ' μm/s')
         if self.showLegend2 == True:
             dict_reg = dict(zip(lab_reg, lns_reg)) #legend dictionary (remove dup)
             self.fig1.legend(dict_reg.values(), dict_reg.keys(), loc='lower right',
@@ -194,57 +209,59 @@ class Plotting:
                 if len(self.rangeDict.keys()) > 1 and k == "Default":
                     continue
                 ax1.axhline(y=self.forceDict["zero1"][i], color='y',
-                            alpha=1, linestyle=linelist[i], linewidth=1)                
+                            alpha=1, linestyle=self.linelist[i], linewidth=1)                
                 ax1.axhline(y=self.forceDict["force_min1"][i], color='y',
-                            alpha=1, linestyle=linelist[i], linewidth=1)
+                            alpha=1, linestyle=self.linelist[i], linewidth=1)
                 ax1.axhline(y=self.forceDict["force_max1"][i], color='y',
-                            alpha=1, linestyle=linelist[i], linewidth=1)
+                            alpha=1, linestyle=self.linelist[i], linewidth=1)
                 ax1.axvline(x=xAxisData[self.time1.index(self.indDict["time1_max"][i])], 
-                            color='y', alpha=1, linestyle=linelist[i], linewidth=1)
+                            color='y', alpha=1, linestyle=self.linelist[i], linewidth=1)
                 i += 1
 
-        if self.flag_ca == True or self.flag_ra == True:
-            ax2 = ax1.twinx() #secondary axis
-##                cmap = plt.cm.get_cmap("Reds")  # type: matplotlib.colors.ListedColormap
-            num = len(self.rangeDict.keys())
-##                colors = plt.cm.Reds(np.linspace(0.3,1,num))
-            colors = plt.cm.Greens([0.7, 0.5, 0.9, 0.3, 1])
-            ax2.set_prop_cycle(color=colors)
-            ax2.set_ylabel('Area ($' + unit + '^2$)', color = 'g')
-            if self.flag_ca == True:
-                i = 0
-                for k in self.rangeDict.keys():
-                    if len(self.rangeDict.keys()) > 1 and k == "Default":
-                        continue
-                    p2, = ax2.plot(self.time2[self.plot_slice2],
-                                   self.dataDict[k][0][self.plot_slice2],
-                                   '-' + markerlist[i], alpha=0.5,
-                                   linewidth=1, markersize=2,
-                                   label="Contact Area: " + k)
-                    # p2.set_animated(True) #BLIT THIS CHECK!!!
-                    lns.append(p2)
-                    if self.flag_ap == True: #adhesion calc
-                        ax2.plot(self.indDict["time1_max"][i],
-                                 self.areaDict["area2_pulloff"][i],
-                                 'y' + markerlist[i], alpha=0.8)
-                    if self.flag_fp == True: #friction calc
-                        ax2.plot(self.indDict["time1_lat_avg"][i],
-                                 self.areaDict["area_friction"][i],
-                                 'g' + markerlist[i], alpha=0.8)
-                    i += 1
-            if self.flag_ra == True: #consider first key since auto roi is same for all keys
-                colors = plt.cm.Blues([0.7, 0.5, 0.9, 0.3, 1])
-                ax2.set_prop_cycle(color=colors)
-                j = 0
-                for k in self.rangeDict.keys():
-                    if len(self.rangeDict.keys()) > 1 and k == "Default":
-                        continue                
-                    p3, = ax2.plot(self.time2[self.plot_slice2],
-                                   self.dataDict[k][3][self.plot_slice2],
-                                   '-' + markerlist[j], alpha=0.5, linewidth=1, markersize=2,
-                                   label="ROI Area: " + k)
-                    lns.append(p3)
-                    j += 1
+        # if self.flag_ca == True or self.flag_ra == True:                
+                
+#             ax2 = ax1.twinx() #secondary axis
+# ##                cmap = plt.cm.get_cmap("Reds")  # type: matplotlib.colors.ListedColormap
+#             num = len(self.rangeDict.keys())
+# ##                colors = plt.cm.Reds(np.linspace(0.3,1,num))
+#             colors = plt.cm.Greens([0.7, 0.5, 0.9, 0.3, 1])
+#             # colors = plt.cm.Greens(np.linspace(0.2,0.7,num))
+#             ax2.set_prop_cycle(color=colors)
+#             ax2.set_ylabel('Area ($' + unit + '^2$)', color = 'g')
+#             if self.flag_ca == True:
+#                 i = 0
+#                 for k in self.rangeDict.keys():
+#                     if len(self.rangeDict.keys()) > 1 and k == "Default":
+#                         continue
+#                     p2, = ax2.plot(self.time2[self.plot_slice2],
+#                                    self.dataDict[k][0][self.plot_slice2],
+#                                    '-' + markerlist[i], alpha=0.5,
+#                                    linewidth=1, markersize=2,
+#                                    label="Contact Area: " + k)
+#                     # p2.set_animated(True) #BLIT THIS CHECK!!!
+#                     lns.append(p2)
+#                     if self.flag_ap == True: #adhesion calc
+#                         ax2.plot(self.indDict["time1_max"][i],
+#                                  self.areaDict["area2_pulloff"][i],
+#                                  'y' + markerlist[i], alpha=0.8)
+#                     if self.flag_fp == True: #friction calc
+#                         ax2.plot(self.indDict["time1_lat_avg"][i],
+#                                  self.areaDict["area_friction"][i],
+#                                  'g' + markerlist[i], alpha=0.8)
+#                     i += 1
+#             if self.flag_ra == True: #consider first key since auto roi is same for all keys
+#                 colors = plt.cm.Blues([0.7, 0.5, 0.9, 0.3, 1])
+#                 ax2.set_prop_cycle(color=colors)
+#                 j = 0
+#                 for k in self.rangeDict.keys():
+#                     if len(self.rangeDict.keys()) > 1 and k == "Default":
+#                         continue                
+#                     p3, = ax2.plot(self.time2[self.plot_slice2],
+#                                    self.dataDict[k][3][self.plot_slice2],
+#                                    '-' + markerlist[j], alpha=0.5, linewidth=1, markersize=2,
+#                                    label="ROI Area: " + k)
+#                     lns.append(p3)
+#                     j += 1
 
         
         if self.flag_lf == True:
@@ -271,23 +288,23 @@ class Plotting:
                         continue
                     ax3.axhline(y=self.forceDict["force_lat_max"][i],
                                 color='g', alpha=1,
-                                linestyle=linelist[i], linewidth=1)
+                                linestyle=self.linelist[i], linewidth=1)
                     ax3.axhline(y=self.forceDict["force_lat_min"][i],
                                 color='g', alpha=1,
-                                linestyle=linelist[i], linewidth=1)
+                                linestyle=self.linelist[i], linewidth=1)
                     ax1.axhline(y=self.forceDict["force_max2"][i],
                                 color='g', alpha=1,
-                                linestyle=linelist[i], linewidth=1)
+                                linestyle=self.linelist[i], linewidth=1)
                     ax3.axvline(x=xAxisData[self.time1.index(self.indDict["time1_lat_avg"][i])],
                                 color='g', alpha=1,
-                                linestyle=linelist[i], linewidth=1)
+                                linestyle=self.linelist[i], linewidth=1)
                     # ax2.plot(self.indDict["time1_lat_avg"][i],
                     #          self.areaDict["area_friction"][i],
                     #          'g' + markerlist[i], alpha=0.8)
                     i += 1
                 ax3.axhline(y=self.forceDict["zero2"],
                             color='g', alpha=0.5,
-                            linestyle=linelist[0], linewidth=1)                
+                            linestyle=self.linelist[0], linewidth=1)                
             lns.append(p4)
         else:
             ax3 = None
@@ -316,77 +333,191 @@ class Plotting:
                     ax1.axvline(x=xAxisData[self.deform_tol], color='violet', 
                                 alpha=1, linestyle=":", linewidth=1)
                 lns.append(p12)
+        
+        
+        # image analysis data plotting
+        self.imageAxisDict = {} #active axes of image analysis data
+
+        if self.flag_ca == True: #contact area
+            ax2 ,lns, p = self.plotImageData(ax_primary = ax1, 
+                                         ax_secondary = None,
+                                         spine_type = 'right',
+                                         spine_position= 0, 
+                                         yaxis_label = 'Area ($' + unit + '^2$)', 
+                                         ylabel = 'Contact Area', 
+                                         y_index = 0, 
+                                         color = 'Green', 
+                                         legend = lns)
+            self.imageAxisDict[0] = p
+            i = 0
+            for k in self.rangeDict.keys():
+                if len(self.rangeDict.keys()) > 1 and k == "Default":
+                    continue
+                if self.flag_ap == True: #adhesion calc
+                    ax2.plot(self.indDict["time1_max"][i],
+                              self.areaDict["area2_pulloff"][i],
+                              'y' + self.markerlist[i], alpha=0.8)
+                if self.flag_fp == True: #friction calc
+                    ax2.plot(self.indDict["time1_lat_avg"][i],
+                              self.areaDict["area_friction"][i],
+                              'g' + self.markerlist[i], alpha=0.8)
+                i += 1
+            if self.flag_ra == True: #roi area
+                ax2 ,lns, p = self.plotImageData(ax_primary = ax1, 
+                                         ax_secondary = ax2,
+                                         spine_type = 'right',
+                                         spine_position= 0, 
+                                         yaxis_label = 'Area ($' + unit + '^2$)', 
+                                         ylabel = 'ROI Area', 
+                                         y_index = 3, 
+                                         color = 'Blue', 
+                                         legend = lns)
+                self.imageAxisDict[3] = p
+        elif self.flag_ra == True: #roi area
+                ax2 ,lns, p = self.plotImageData(ax_primary = ax1, 
+                                         ax_secondary = None,
+                                         spine_type = 'right',
+                                         spine_position= 0, 
+                                         yaxis_label = 'Area ($' + unit + '^2$)', 
+                                         ylabel = 'ROI Area', 
+                                         y_index = 3, 
+                                         color = 'Blue', 
+                                         legend = lns)
+                self.imageAxisDict[3] = p
                 
-        if self.flag_cl == True or self.flag_rl == True:
-            ax5 = ax1.twinx()
-            num = len(self.rangeDict.keys())
-            colors = plt.cm.copper(np.linspace(0.2,0.7,num))
-            ax5.set_prop_cycle(color=colors)
-            ax5.set_ylabel('Length ($' + unit + '$)', color = 'brown')
-            if self.flag_ca == True or self.flag_ra == True: 
-                ax5.spines['right'].set_position(('outward', int(7*self.fontSize)))            
-            if self.flag_cl == True: #contact length
-                i = 0
-                for k in self.rangeDict.keys():
-                    if len(self.rangeDict.keys()) > 1 and k == "Default":
-                        continue                    
-                    p7, = ax5.plot(self.time2[self.plot_slice2],
-                                   self.dataDict[k][1][self.plot_slice2],
-                                   '-' + markerlist[i], alpha=0.5, linewidth=1,
-                                   markersize=2, label="Contact Length: " + k)
-                    lns.append(p7)
-                    i += 1
+        # if self.flag_cl == True or self.flag_rl == True:
+        if self.flag_ca == True or self.flag_ra == True:
+            spine_pos = 7
+        else:
+            spine_pos = 0
+        
+        if self.flag_cl == True: #contact length 
+            ax2 ,lns, p = self.plotImageData(ax_primary = ax1, 
+                                         ax_secondary = None,
+                                         spine_type = 'right',
+                                         spine_position= spine_pos, 
+                                         yaxis_label = 'Length ($' + unit + '$)', 
+                                         ylabel = 'Contact Length', 
+                                         y_index = 1, 
+                                         color = 'Copper', 
+                                         legend = lns)
+            self.imageAxisDict[1] = p
             if self.flag_rl == True: #roi length
-##                ax5 = ax1.twinx()
-                num = len(self.rangeDict.keys())
-                colors = plt.cm.Wistia(np.linspace(0.2,0.7,num))
-                ax5.set_prop_cycle(color=colors)
-##                ax5.spines['right'].set_position(('outward', 70))
-                j = 0
-                for k in self.rangeDict.keys():
-                    if len(self.rangeDict.keys()) > 1 and k == "Default":
-                        continue
-##                    ax5.set_ylabel('Length ($' + unit + '$)', color = 'brown')
-                    p8, = ax5.plot(self.time2[self.plot_slice2],
-                                   self.dataDict[k][4][self.plot_slice2],
-                                   '-' + markerlist[j], alpha=0.5, linewidth=1,
-                                   markersize=2, label="ROI Length: " + k)
-                    lns.append(p8)
-                    j += 1
+                ax2 ,lns, p = self.plotImageData(ax_primary = ax1, 
+                                         ax_secondary = ax2,
+                                         spine_type = 'right',
+                                         spine_position= spine_pos, 
+                                         yaxis_label = 'Length ($' + unit + '$)', 
+                                         ylabel = 'ROI Length', 
+                                         y_index = 4, 
+                                         color = 'Wistia', 
+                                         legend = lns)
+                self.imageAxisDict[4] = p
+        elif self.flag_rl == True: #roi length
+            ax2 ,lns, p = self.plotImageData(ax_primary = ax1, 
+                                         ax_secondary = None,
+                                         spine_type = 'right',
+                                         spine_position= spine_pos, 
+                                         yaxis_label = 'Length ($' + unit + '$)', 
+                                         ylabel = 'ROI Length', 
+                                         y_index = 4, 
+                                         color = 'Wistia', 
+                                         legend = lns)
+            self.imageAxisDict[4] = p
+                
+
+
+#             ax5 = ax1.twinx()
+#             num = len(self.rangeDict.keys())
+#             colors = plt.cm.copper(np.linspace(0.2,0.7,num))
+#             ax5.set_prop_cycle(color=colors)
+#             ax5.set_ylabel('Length ($' + unit + '$)', color = 'brown')
+#             if self.flag_ca == True or self.flag_ra == True: 
+#                 ax5.spines['right'].set_position(('outward', int(7*self.fontSize)))            
+#             if self.flag_cl == True: #contact length
+#                 i = 0
+#                 for k in self.rangeDict.keys():
+#                     if len(self.rangeDict.keys()) > 1 and k == "Default":
+#                         continue                    
+#                     p7, = ax5.plot(self.time2[self.plot_slice2],
+#                                     self.dataDict[k][1][self.plot_slice2],
+#                                     '-' + markerlist[i], alpha=0.5, linewidth=1,
+#                                     markersize=2, label="Contact Length: " + k)
+#                     lns.append(p7)
+#                     i += 1
+#             if self.flag_rl == True: #roi length
+# ##                ax5 = ax1.twinx()
+#                 num = len(self.rangeDict.keys())
+#                 colors = plt.cm.Wistia(np.linspace(0.2,0.7,num))
+#                 ax5.set_prop_cycle(color=colors)
+# ##                ax5.spines['right'].set_position(('outward', 70))
+#                 j = 0
+#                 for k in self.rangeDict.keys():
+#                     if len(self.rangeDict.keys()) > 1 and k == "Default":
+#                         continue
+# ##                    ax5.set_ylabel('Length ($' + unit + '$)', color = 'brown')
+#                     p8, = ax5.plot(self.time2[self.plot_slice2],
+#                                     self.dataDict[k][4][self.plot_slice2],
+#                                     '-' + markerlist[j], alpha=0.5, linewidth=1,
+#                                     markersize=2, label="ROI Length: " + k)
+#                     lns.append(p8)
+#                     j += 1
         if self.flag_cn == True: #contact number
-            ax5 = ax1.twinx()
-            num = len(self.rangeDict.keys())
-            colors = plt.cm.copper(np.linspace(0.2,0.7,num))
-            ax5.set_prop_cycle(color=colors)
-            ax5.spines['right'].set_position(('outward', int(7*self.fontSize)))
-            i = 0
-            for k in self.rangeDict.keys():
-                if len(self.rangeDict.keys()) > 1 and k == "Default":
-                    continue
-                ax5.set_ylabel('Number', color = 'brown')
-                p9, = ax5.plot(self.time2[self.plot_slice2],
-                               self.dataDict[k][2][self.plot_slice2],
-                               '-' + markerlist[i], alpha=0.5, linewidth=1,
-                               markersize=2, label="Contact Number: " + k)
-                lns.append(p9)
-                i += 1
+            # num = len(self.rangeDict.keys())
+            # colors = plt.cm.copper(np.linspace(0.2,0.7,num))
+            ax2 ,lns, p = self.plotImageData(ax_primary = ax1, 
+                                        ax_secondary = None,
+                                        spine_type = 'right',
+                                        spine_position=7, 
+                                        yaxis_label = 'Number', 
+                                        ylabel = 'Contact Number', 
+                                        y_index = 2, 
+                                        color = 'Copper', 
+                                        legend = lns)
+            self.imageAxisDict[2] = p
+            # ax5 = ax1.twinx()
+            # num = len(self.rangeDict.keys())
+            # colors = plt.cm.copper(np.linspace(0.2,0.7,num))
+            # ax5.set_prop_cycle(color=colors)
+            # ax5.spines['right'].set_position(('outward', int(7*self.fontSize)))
+            # i = 0
+            # for k in self.rangeDict.keys():
+            #     if len(self.rangeDict.keys()) > 1 and k == "Default":
+            #         continue
+            #     ax5.set_ylabel('Number', color = 'brown')
+            #     p9, = ax5.plot(self.time2[self.plot_slice2],
+            #                    self.dataDict[k][2][self.plot_slice2],
+            #                    '-' + markerlist[i], alpha=0.5, linewidth=1,
+            #                    markersize=2, label="Contact Number: " + k)
+            #     lns.append(p9)
+            #     i += 1
         if self.flag_ecc == True: #contact eccentricity
-            ax5 = ax1.twinx()
-            num = len(self.rangeDict.keys())
-            colors = plt.cm.copper(np.linspace(0.2,0.7,num))
-            ax5.set_prop_cycle(color=colors)
-            ax5.spines['right'].set_position(('outward', int(7*self.fontSize)))
-            i = 0
-            for k in self.rangeDict.keys():
-                if len(self.rangeDict.keys()) > 1 and k == "Default":
-                    continue
-                ax5.set_ylabel('Eccentricity' + unit + '$)', color = 'brown')
-                p10, = ax5.plot(self.time2[self.plot_slice2],
-                                self.dataDict[k][5][self.plot_slice2],
-                                '-' + markerlist[i], alpha=0.5, linewidth=1,
-                                markersize=2, label="Median Eccentricity: " + k)
-                lns.append(p10)
-                i += 1
+            ax2 ,lns, p = self.plotImageData(ax_primary = ax1,
+                                        ax_secondary = None,
+                                        spine_type = 'right',
+                                        spine_position = 7, 
+                                        yaxis_label = 'Eccentricity', 
+                                        ylabel = 'Median Eccentricity', 
+                                        y_index = 5, 
+                                        color = 'Copper', 
+                                        legend = lns)
+            self.imageAxisDict[5] = p
+            # ax5 = ax1.twinx()
+            # num = len(self.rangeDict.keys())
+            # colors = plt.cm.copper(np.linspace(0.2,0.7,num))
+            # ax5.set_prop_cycle(color=colors)
+            # ax5.spines['right'].set_position(('outward', int(7*self.fontSize)))
+            # i = 0
+            # for k in self.rangeDict.keys():
+            #     if len(self.rangeDict.keys()) > 1 and k == "Default":
+            #         continue
+            #     ax5.set_ylabel('Eccentricity' + unit + '$)', color = 'brown')
+            #     p10, = ax5.plot(self.time2[self.plot_slice2],
+            #                     self.dataDict[k][5][self.plot_slice2],
+            #                     '-' + markerlist[i], alpha=0.5, linewidth=1,
+            #                     markersize=2, label="Median Eccentricity: " + k)
+            #     lns.append(p10)
+            #     i += 1
         
         if self.flag_st == True or self.flag_lf_filter == True: #stress CHECK!
             ax6 = ax1.twinx() 
@@ -456,37 +587,98 @@ class Plotting:
         self.fig1.tight_layout()
         self.fig1.canvas.draw()
         
+        
         self.plotWidget.wid.axes = self.fig1.get_axes()[-1]
             
+        
         self.plotWidget.wid.add_cursors(cursor1_init=c1_init,
                                         cursor2_init=c2_init)
         
+        # self.toggleAnimation(True)
+        self.plotWidget.wid.fixYLimits = self.fixYLimits
+        self.plotWidget.wid.updateBackground()        
+        # self.toggleAnimation(False)
+        
+        self.axesUnique = set([])
+        for ind in self.imageAxisDict.keys():
+            self.axesUnique.add(self.imageAxisDict[ind][0].axes)
+            
+        # self.fig1.canvas.draw()
         print("plot finish")
         # self.plotWidget.wid.draw_idle()
-        
-        # self.fig1.tight_layout()
-        # self.fig1.canvas.draw()
+
     
-#     def showPlot(self): #show plot
-# ##        self.fig1.show()
-#         try:
-#             # plt.pause(0.05)
-#             # self.axes.relim()
-#             # self.axes.autoscale()
-#             self.fig1.tight_layout()
-#             self.fig1.canvas.draw()
-#             # self.plotWidget
-#             # self.plotWidget.show()
-#         except Exception as e:
-#             print(e)
+    def plotImageAnimate(self, frame_pos): 
+        self.plotWidget.wid.toggleAnimation(True)
+        # restore the background region
+        self.fig1.canvas.restore_region(self.plotWidget.wid.background)
+        for ind in self.imageAxisDict.keys():
+            i = 0
+            for k in self.rangeDict.keys():
+                if len(self.rangeDict.keys()) > 1 and k == "Default":
+                    continue
+                self.imageAxisDict[ind][i].set_ydata(self.dataDict[k][ind][self.plot_slice2])
+
+                if self.fixYLimits == True:
+                    # redraw just the current rectangle
+                    self.imageAxisDict[ind][i].axes.draw_artist(self.imageAxisDict[ind][i])
+
+                i += 1
+
             
-##        plt.show(block=False)
-##        plt.draw()
+        self.plotWidget.wid.updateCursor(self.plotWidget.wid.cursor1, 
+                                         self.time2[frame_pos-1])
+        self.plotWidget.wid.axes.draw_artist(self.plotWidget.wid.cursor1)
 
-    # def handle_close(self, evt): #figure closed event
-    #     self.fig1_close = True
-    #     print("close")
+        if self.fixYLimits == True:
+            for ind in self.imageAxisDict.keys():
+                self.fig1.canvas.blit(self.imageAxisDict[ind][0].axes.bbox)
+        else:
+            for axes in self.axesUnique:
+                axes.relim()
+                axes.autoscale_view()
+                self.fig1.draw_artist(axes) 
+            for ind in self.imageAxisDict.keys():
+                self.fig1.canvas.blit(self.imageAxisDict[ind][0].axes.get_tightbbox(self.fig1.canvas.get_renderer()))
 
+        self.plotWidget.wid.toggleAnimation(False)
+
+    def plotImageData(self, ax_primary, ax_secondary, spine_type, spine_position, 
+                      yaxis_label, ylabel, y_index, color, legend, y_bound = [50000, 100000]):
+        
+        if ax_secondary == None:
+            ax_secondary = ax_primary.twinx()
+            ax_secondary.spines[spine_type].set_position(('outward', 
+                                                 int(spine_position*self.fontSize)))
+            ax_secondary.set_ylabel(yaxis_label, color = self.colorDict[color][0])
+
+            if self.fixYLimits == True:
+                ax_secondary.set_ylim(y_bound)
+            else:
+                self.plotWidget.wid.artistDict[yaxis_label] = ax_secondary
+                ax_secondary.set_animated(True)
+        
+        ax_secondary.set_prop_cycle(color=self.colorDict[color])
+        
+        i = 0
+        lines = []
+        for k in self.rangeDict.keys():
+            if len(self.rangeDict.keys()) > 1 and k == "Default":
+                continue
+            
+            p, = ax_secondary.plot(self.time2[self.plot_slice2],
+                            self.dataDict[k][y_index][self.plot_slice2],
+                            '-' + self.markerlist[i], alpha=0.5, linewidth=1,
+                            markersize=2, label= ylabel + ": " + k)
+            if self.fixYLimits == True:
+                self.plotWidget.wid.artistDict[ylabel + ": " + k] = p
+                p.set_animated(True) #BLIT THIS CHECK!!!
+
+            legend.append(p)
+            lines.append(p)
+            i += 1
+
+        return ax_secondary, legend, lines
             
     def convertPlot(self): #convert plot to numpy
         self.fig1.canvas.draw()

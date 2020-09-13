@@ -2067,6 +2067,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                                            "%)" + "\tTime: " +
                                            "{0:.2f}".format(self.frameTime[int(self.framePos-1)]) + " s")
                 self.plot_live_data()
+                # self.pauseAnimation()
             else:
                 # roi = self.roiBound
                 # frame_disp = self.frame[roi[1]:roi[3], roi[0]:roi[2]].copy()

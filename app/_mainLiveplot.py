@@ -56,8 +56,15 @@ class MainLivePlot:
                 print("live plot end")
         elif self.forceData.plotWidget.fig_close == False: #area and force plot
             self.forceData.getArea(self.frameTime, self.dataDict)
-            self.forceData.plotData(self.lengthUnit.currentText())
-
+            # self.forceData.plotData(self.lengthUnit.currentText())
+            # self.forceData.toggleAnimation(True)
+            self.forceData.plotImageAnimate(int(self.framePos))
+    
+    def pauseAnimation(self):
+        if self.forceData.plotWidget.fig_close == False and \
+            self.forceData.force_filepath != "" and \
+                self.playStatus == False:
+            self.forceData.toggleAnimation(False)
         
     def plot_data(self): #plot graph
         if self.forceData.force_filepath == "":

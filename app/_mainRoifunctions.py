@@ -114,7 +114,7 @@ class MainRoiFunctions:
 
         self.plotSequence()
         self.video_effect(self.frame_current[roi[1]:roi[3], roi[0]:roi[2]])
-        self.video_analysis()
+        # self.video_analysis()
         self.configROIWindow.close()
 
     def init_dict(self): #initialise roi dictionaries/roi labels

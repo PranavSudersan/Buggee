@@ -43,7 +43,7 @@ class ConfigRecWindow(QWidget):
         self.codecLabel = QLabel("Codec:", self)
 
         self.fps = QSpinBox(self) #playback fps of recorded file
-        self.fps.setValue(1)
+        self.fps.setValue(20)
         self.fps.setSingleStep(1)
         self.fps.setRange(1, 100)
         self.fpsLabel = QLabel("Frames per second:", self)

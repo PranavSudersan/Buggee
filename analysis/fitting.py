@@ -77,14 +77,13 @@ class FitDataWindow(QWidget):
         # self.fitStop.setValue(100)
         # self.fitStop.setSingleStep(1)
         # self.fitStop.setRange(0, 100)
-
+        
+        params_list = ["Index", "Time", "Vertical piezo", "Lateral piezo",
+                       "Deformation", "Vertical force", "Lateral force"]
+        
         xPlotLabel = QLabel("X Axis:", self)
         self.xPlot = QComboBox(self) #x param
-        self.xPlot.addItems(['Index',
-                             'Deformation (μm)',
-                            'Vertical Position (μm)',
-                            'Lateral Position (μm)',
-                            'Time (s)'])
+        self.xPlot.addItems(params_list)
         self.xPlot.setCurrentIndex(0)
         self.xPlot.currentIndexChanged.connect(self.plotSequence)
         
@@ -95,25 +94,23 @@ class FitDataWindow(QWidget):
         yFitLabel = QLabel("Y Parameter:", self)
 
         self.xFit = QComboBox(self) #x param
-        self.xFit.addItems(['Deformation (μm)',
-                            'Vertical Position (μm)',
-                            'Lateral Position (μm)',
-                            'Time (s)'])
-        self.xFit.setCurrentIndex(0)
+        self.xFit.addItems(params_list)
+        self.xFit.setCurrentIndex(4)
         self.xFit.currentIndexChanged.connect(self.plotSequence)
 
         self.yFit = QComboBox(self) #x param
-        self.yFit.addItems(['Vertical Force (μN)', 'Lateral Force (μN)'])
-        self.yFit.setCurrentIndex(0)
+        self.yFit.addItems(params_list)
+        self.yFit.setCurrentIndex(5)
         self.yFit.currentIndexChanged.connect(self.plotSequence)
         
-        self.xDict = {'Vertical Position (μm)':None,
-                 'Lateral Position (μm)':None,
-                 'Deformation (μm)':None,
-                 'Time (s)':None,
-                 'Index':None}
-        self.yDict = {'Vertical Force (μN)':None,
-                     'Lateral Force (μN)':None}
+        # self.xDict = {'Vertical piezo':None,
+        #          'Lateral piezo':None,
+        #          'Deformation':None,
+        #          'Time':None,
+        #          'Index':None}
+        # self.yDict = {'Vertical force':None,
+        #              'Lateral force':None}
+        self.fileDataDict = {}
         
         fitparamLabel = QLabel("Fit Parameters:", self)
         self.fittingParams = QLineEdit(self)
@@ -149,7 +146,7 @@ class FitDataWindow(QWidget):
         #standard functions: equation, params, guess, l_bound, u_bound
         self.functionDict = {'Linear': ['m*x+c', 'm,c', '0,0', ',', ','],
                              'Quadratic': ['a*x**2+b*x+c', 'a,b,c', '0,0,0', ',,', ',,'],
-                             'Custom': ['', '', '', '', '']}
+                             'Custom': ['a*x', 'a', '0', '', '']}
         
         self.fittingFunctionText = QTextEdit(self)
         self.fittingFunctionText.setText('m*x+c')
@@ -160,7 +157,7 @@ class FitDataWindow(QWidget):
         self.fittingFunctionTEX = MathTextLabel(self.mathText, self)
         
         self.applyFitBtn = QPushButton("Fit!", self)
-        self.applyFitBtn.clicked.connect(lambda: self.fitData(True))
+        # self.applyFitBtn.clicked.connect(lambda: self.fitData(True))
 
         self.fitResult = QTextEdit(self)
         self.fitResult.setText("Result:\n")
@@ -224,7 +221,7 @@ class FitDataWindow(QWidget):
         
         self.setLayout(layout)
         # self.show()
-        
+      
             
     def updateFitFunction(self):
         print('test0')
@@ -263,11 +260,11 @@ class FitDataWindow(QWidget):
         if self.mathText != None:
             self.fittingFunctionTEX.drawFigure(self.mathText)
             #below optional, remove later: CHECK!
-            self.plotRawData()
+            # self.plotRawData()
             # self.plotWidget.cursor1.set_ydata(self.axes.get_ybound()) #CHECK
             # self.plotWidget.cursor2.set_ydata(self.axes.get_ybound()) #CHECK
     ##        self.plotWidget.add_cursors()
-            self.fitData(False)
+            # self.fitData(False)
             # self.updatePlot()
         
 
@@ -310,7 +307,7 @@ class FitDataWindow(QWidget):
             self.func = sp.lambdify(list(var),eval(equation_fit))
             print(self.mathText)
         except Exception as e:
-            print(e)
+            print('error', e)
             self.mathText = None
 
     def plotInitialize(self):
@@ -323,23 +320,23 @@ class FitDataWindow(QWidget):
 
         # #generate random data (for testing)
         xdata = np.linspace(0, 4, 50)
-        self.xDict[self.xFit.currentText()] = xdata
-        self.xDict[self.xPlot.currentText()] = xdata
+        self.fileDataDict[self.xFit.currentText()] = xdata
+        self.fileDataDict[self.xPlot.currentText()] = xdata
         y = self.func(xdata, 2.5, 1.3)
         np.random.seed(1729)
         y_noise = 0.2 * np.random.normal(size=xdata.size)
-        self.yDict[self.yFit.currentText()] = y + y_noise
+        self.fileDataDict[self.yFit.currentText()] = y + y_noise
         
         self.plotRawData()
         self.updatePlot()
-        self.fit_slice = None
+        self.fit_range = [None,None]
 
     def plotRawData(self):
                 
-        self.plotxdata= self.xDict[self.xPlot.currentText()]
+        self.plotxdata= self.fileDataDict[self.xPlot.currentText()]
 
-        self.xdata = self.xDict[self.xFit.currentText()]
-        self.ydata = self.yDict[self.yFit.currentText()]
+        self.xdata = self.fileDataDict[self.xFit.currentText()]
+        self.ydata = self.fileDataDict[self.yFit.currentText()]
 
         if self.ax_raw != None: #check
             self.axes.lines.remove(self.ax_raw)
@@ -369,22 +366,23 @@ class FitDataWindow(QWidget):
         # self.updatePlot()
 
     def update_cursor(self):
-        if self.fit_slice ==  None:
-            self.fit_slice = slice(0,len(self.plotxdata)-1)
+        if self.fit_range ==  [None,None]:
+            self.fit_range[:] = [0,len(self.plotxdata)-1]
         if self.plotWidget.cursor1 != None:
             # x = self.plotxdata.min()
-            x = self.plotxdata[self.fit_slice.start]
+            x = self.plotxdata[self.fit_range[0]]
             y = [self.ydata.min(), self.ydata.max()]
             self.plotWidget.cursor1.set_xdata([x,x])
             self.plotWidget.cursor1.set_ydata(y) #CHECK
         if self.plotWidget.cursor2 != None:
             # x = self.plotxdata.max()
-            x = self.plotxdata[self.fit_slice.stop-1]
+            x = self.plotxdata[self.fit_range[1]-1]
             y = [self.ydata.min(), self.ydata.max()]
             self.plotWidget.cursor2.set_xdata([x,x])
             self.plotWidget.cursor2.set_ydata(y) #CHECK
-        self.axes.relim()
-        self.axes.autoscale()
+        # self.axes.relim()
+        # self.axes.autoscale()
+        self.updatePlot()
         self.plotWidget.draw_idle()
         
             
@@ -393,6 +391,10 @@ class FitDataWindow(QWidget):
         print("fit data")
         if self.enableFitting.isChecked() == True:
             self.generateFunction()
+            #draw equation
+            # if self.mathText != None:
+            #     self.fittingFunctionTEX.drawFigure(self.mathText)
+            # self.updateTEX()
             
             if update_slice == True:
                 xlim1 = min([self.plotWidget.cursor1.get_xdata()[0],
@@ -400,9 +402,12 @@ class FitDataWindow(QWidget):
                 xlim2 = max([self.plotWidget.cursor1.get_xdata()[0],
                              self.plotWidget.cursor2.get_xdata()[0]])
         
-                self.fit_slice = slice(np.searchsorted(self.plotxdata, [xlim1])[0],
-                                  np.searchsorted(self.plotxdata, [xlim2])[0]+1)
-                print(xlim1, xlim2, self.fit_slice)
+                self.fit_range[:] = [np.searchsorted(self.plotxdata, [xlim1])[0],
+                                  np.searchsorted(self.plotxdata, [xlim2])[0]+1]
+                print("inside")
+            
+            fit_slice = slice(*self.fit_range)
+            print(fit_slice)
             
             guess_vals = self.guessValues.text()
             l_bounds = self.lowBound.text()
@@ -439,19 +444,19 @@ class FitDataWindow(QWidget):
                 #                          label= labeltext % tuple(popt))
                 
                 #contrained fit
-                popt, pcov = curve_fit(self.func, self.xdata[self.fit_slice],
-                                       self.ydata[self.fit_slice],
+                popt, pcov = curve_fit(self.func, self.xdata[fit_slice],
+                                       self.ydata[fit_slice],
                                        [float(_x) for _x in guess_vals.split(',')],
                                        bounds=(l_bounds_val,u_bounds_val))
                 print("constrained", popt)
                 
-                self.fit_ydata = self.func(self.xdata[self.fit_slice], *popt)
+                self.fit_ydata = self.func(self.xdata[fit_slice], *popt)
                 fit_label = labeltext % tuple(popt)
-                self.ax_constr, = self.axes.plot(self.plotxdata[self.fit_slice],
+                self.ax_constr, = self.axes.plot(self.plotxdata[fit_slice],
                                                  self.fit_ydata, 'g--',
                                                  label= fit_label)
-    
-                self.fitResult.setText('Result:\n' + fit_label)
+                error_label = 'Std. Dev. Error:\n' + labeltext % tuple(np.sqrt(np.diag(pcov)))
+                self.fitResult.setText('Fit values:\n' + fit_label + '\n' + error_label)
                 self.fitParams = dict(zip(self.fittingParams.text().split(','),
                                           popt))
                 print(self.fitParams)
@@ -473,7 +478,7 @@ class FitDataWindow(QWidget):
                 self.axes.lines.remove(self.ax_constr)
                 self.ax_constr = None
             self.fitParams = {}
-            self.fitResult.setText('Result:\n')
+            self.fitResult.setText('Fit values:\n')
         
         self.updatePlot()
     ##        plt.show()

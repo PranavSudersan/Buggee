@@ -25,6 +25,7 @@ class MainImportFile:
             self.ret = True
             self.playStatus = False
             self.recordStatus = False
+            self.frameCount = 1
             self.frameHeight, self.frameWidth = self.frame.shape[:2]
             roiCorners = np.array([[0, 0],[self.frameWidth, 0], 
                                         [self.frameWidth, self.frameHeight], 
@@ -37,18 +38,25 @@ class MainImportFile:
             self.frame_current = self.frame.copy()
             #Frame no. ROI label, contour id, area, length, ecc, array
             self.contour_data = [[], [], [], [], [], [], [], []] 
-            contactArea = np.zeros(1, np.float64)
-            contactLength = np.zeros(1, np.float64)
-            contourNumber = np.zeros(1, np.uint64)
-            roiArea = np.zeros(1, np.float64)
-            roiLength = np.zeros(1, np.float64)
-            self.frameTime = np.zeros(1, np.float64)
-            eccAvg = np.zeros(1, np.float64)
-            contactAngle =  np.zeros(1, np.float64)
-            self.dataDict = {"Default" : [contactArea, contactLength,
-                                        contourNumber, roiArea,
-                                        roiLength, eccAvg, [(0,0),(0,0),0,1],
-                                        contactAngle]}
+            # contactArea = np.zeros(1, np.float64)
+            # contactLength = np.zeros(1, np.float64)
+            # contourNumber = np.zeros(1, np.uint64)
+            # roiArea = np.zeros(1, np.float64)
+            # roiLength = np.zeros(1, np.float64)
+            # self.frameTime = np.zeros(1, np.float64)
+            # eccAvg = np.zeros(1, np.float64)
+            # contactAngle =  np.zeros(1, np.float64)
+            # self.dataDict = {"Default" : {"Contact area": contactArea, 
+            #                               "Contact length": contactLength,
+            #                               "Contact number": contourNumber, 
+            #                               "ROI area": roiArea,
+            #                               "ROI length": roiLength, 
+            #                               "Eccentricity": eccAvg,
+            #                               "Ellipse fit": [(0,0),(0,0),0,1],
+            #                               "Contact angle": contactAngle}
+            #                  }
+            self.dataDict = {}
+            self.init_datadict("Default") #initialize self.dataDict
             self.effectChain = [True, False, False, False] #b/c, hist, bg sub, filter
 ##            self.roi_auto = self.threshROIGroupBox.isChecked()
             self.distinct_roi = self.distinctAutoROI.isChecked()
@@ -62,7 +70,6 @@ class MainImportFile:
             self.bg_blur_size_roi = self.bgblurROISpinBox.value()
             self.bg_blend_roi = self.bgblendROISpinBox.value()
             self.framePos = 0
-            self.frameCount = 1
             self.roi_min_area = self.roiMinSpinBox.value()
             self.epsilon_fraction = 10**(self.epsilonSpinBox.value())
             self.roi_morph = self.morphROI.isChecked()
@@ -105,17 +112,20 @@ class MainImportFile:
 ##            self.distinctAutoROI.setChecked(False)
 ##            self.distinctAutoROI.blockSignals(False)
 
-            self.correctZeroForce.blockSignals(True)
-            self.correctZeroForce.setChecked(False)
-            self.correctZeroForce.blockSignals(False)
+            # self.correctZeroForce.blockSignals(True)
+            # self.correctZeroForce.setChecked(False)
+            # self.correctZeroForce.blockSignals(False)
 
+            self.analyzeDataWindow.zero_subtract.setChecked(False)     
+            self.analyzeDataWindow.zero_subtract.setEnabled(False)
 
             
             self.init_dict() #initialise dictionaries
                         
-            self.forceData = ForceAnal(self.fitWindow)
+            self.forceData = ForceAnal(self.fitWindow, self.configPlotWindow,
+                                       self.analyzeDataWindow)
             self.zeroForceData = ForceAnal() #initalise
-            self.correctZeroForce.setEnabled(False)
+            # self.correctZeroForce.setEnabled(False)
             self.clearData.setEnabled(True)
             # self.videoEffect.setCurrentIndex(0) CHECK TAB DISABLE!
             # self.videoEffect.model().item(5).setEnabled(False)
@@ -186,18 +196,24 @@ class MainImportFile:
             self.frame_current = self.frame.copy()
             #Frame no. ROI label, contour id, area, length, ecc, array
             self.contour_data = [[], [], [], [], [], [], [], []]
-            contactArea = np.zeros(int(self.frameCount), np.float64)
-            contactLength = np.zeros(int(self.frameCount), np.float64)
-            contourNumber = np.zeros(int(self.frameCount), np.uint64)
-            roiArea = np.zeros(int(self.frameCount), np.float64)
-            roiLength = np.zeros(int(self.frameCount), np.float64)
-            eccAvg = np.zeros(int(self.frameCount), np.float64) #median eccentricity
-            contactAngle = np.zeros(int(self.frameCount), np.float64)
-            self.dataDict = {"Default" : [contactArea, contactLength,
-                                        contourNumber, roiArea,
-                                        roiLength, eccAvg] + 
-                             [[[(0,0),(0,0),0,1]]*int(self.frameCount)] +
-                             [contactAngle]}
+            # contactArea = np.zeros(int(self.frameCount), np.float64)
+            # contactLength = np.zeros(int(self.frameCount), np.float64)
+            # contourNumber = np.zeros(int(self.frameCount), np.uint64)
+            # roiArea = np.zeros(int(self.frameCount), np.float64)
+            # roiLength = np.zeros(int(self.frameCount), np.float64)
+            # eccAvg = np.zeros(int(self.frameCount), np.float64) #median eccentricity
+            # contactAngle = np.zeros(int(self.frameCount), np.float64)
+            # self.dataDict = {"Default" : {"Contact area": contactArea, 
+            #                               "Contact length": contactLength,
+            #                               "Contact number": contourNumber, 
+            #                               "ROI area": roiArea,
+            #                               "ROI length": roiLength, 
+            #                               "Eccentricity": eccAvg,
+            #                               "Ellipse fit": [[(0,0),(0,0),0,1]]*int(self.frameCount),
+            #                               "Contact angle": contactAngle}
+            #                  }
+            self.dataDict = {}
+            self.init_datadict("Default") #initialize self.dataDict
             self.frameTime = np.linspace(0,
                                          self.frameCount/self.frameRate,
                                          int(self.frameCount), dtype = np.float64)
@@ -258,9 +274,12 @@ class MainImportFile:
 ##            self.distinctAutoROI.setChecked(False)
 ##            self.distinctAutoROI.blockSignals(False)
 
-            self.correctZeroForce.blockSignals(True)
-            self.correctZeroForce.setChecked(False)
-            self.correctZeroForce.blockSignals(False)
+            # self.correctZeroForce.blockSignals(True)
+            # self.correctZeroForce.setChecked(False)
+            # self.correctZeroForce.blockSignals(False)
+            
+            self.analyzeDataWindow.zero_subtract.setChecked(False)     
+            self.analyzeDataWindow.zero_subtract.setEnabled(False)
             
 
             self.rawViewTab.setTabEnabled(1,False)
@@ -268,9 +287,10 @@ class MainImportFile:
             # self.showEffect.setEnabled(False)
             
             
-            self.forceData = ForceAnal(self.fitWindow)
+            self.forceData = ForceAnal(self.fitWindow, self.configPlotWindow,
+                                       self.analyzeDataWindow)
             self.zeroForceData = ForceAnal() #initalise
-            self.correctZeroForce.setEnabled(False)
+            # self.correctZeroForce.setEnabled(False)
             self.clearData.setEnabled(True)
             # self.videoEffect.setCurrentIndex(0) CHECK TAB DISABLE!
             # self.videoEffect.model().item(5).setEnabled(False)
@@ -332,18 +352,25 @@ class MainImportFile:
 
     def import_force_data(self): #import force data
         if self.msrListMode == False:
-            self.forceData = ForceAnal(self.fitWindow)
+            self.forceData = ForceAnal(self.fitWindow, self.configPlotWindow,
+                                       self.analyzeDataWindow)
         self.zeroForceData = ForceAnal() #initalise
-        self.correctZeroForce.blockSignals(True)
-        self.correctZeroForce.setChecked(False)
-        self.correctZeroForce.blockSignals(False)        
-        self.correctZeroForce.setEnabled(False)
+        # self.correctZeroForce.blockSignals(True)
+        # self.correctZeroForce.setChecked(False)
+        # self.correctZeroForce.blockSignals(False)        
+        # self.correctZeroForce.setEnabled(False)
+        self.analyzeDataWindow.zero_subtract.setChecked(False)     
+        self.analyzeDataWindow.zero_subtract.setEnabled(False)
         self.zeroForceFileNameLabel.setText("Select zero-force data from file menu")
         
         self.forceData.importData(self.msrListMode)
         if self.forceData.force_filepath != "":
-            self.defl_vert1_raw = self.forceData.defl_vert1.copy() #copy of raw vert data
-            self.defl_vert1_actual = self.forceData.defl_vert1.copy() #copy of raw vert data
+            self.forceData.calcData()
+            # self.defl_vert1_raw = self.forceData.defl_vert1.copy() #copy of raw vert data
+            # self.defl_vert1_actual = self.forceData.defl_vert1.copy() #copy of raw vert data
+            self.configPlotWindow.plotDict['plot settings']['plot range']\
+                .setText(str(0) + ',' + str(self.forceData.ptsnumber-1))
+            # self.forceData.plot_slice = self.configPlotWindow.plotDict['plot settings']['plot range']
             self.openZeroForceFile.setEnabled(True)
             self.fpsSpinBox.blockSignals(True)
             self.fpsSpinBox.setValue(self.forceData.fps)
@@ -354,27 +381,32 @@ class MainImportFile:
 ##            self.videoEffect.model().item(6).setEnabled(True)
             plt.close()
             self.plotSequence()
-            self.updateFitDict()
+            # self.updateFitDict()
             # self.init_plotconfig()
             # self.forceData.dataClean()
             # self.forceData.calcData()
             print(self.frameRate)
 
     def import_zero_force(self): #import zero force line
-        self.zeroForceData = ForceAnal()
-        self.correctZeroForce.setEnabled(True)
-        self.zeroForceData.noiseSteps = ','.join(map(str,range(1,self.forceData.step_num + 1)))
+        self.zeroForceData = ForceAnal(analyzeDataWindow = self.analyzeDataWindow)
+        # self.correctZeroForce.setEnabled(True)
+        self.analyzeDataWindow.zero_subtract.setEnabled(True)
+        self.analyzeDataWindow.zero_subtract.setChecked(False)             
+        # self.zeroForceData.noiseSteps = ','.join(map(str,range(1,self.forceData.step_num + 1)))
         self.zeroForceData.importData(False)
         if self.zeroForceData.force_filepath != "":
+            self.zeroForceData.dataClean()
+            self.zeroForceData.evaluateForce()
+            self.forceData.zeroDataDict = self.zeroForceData.fileDataDict.copy()
             self.zeroForceFileNameLabel.setText("<b>Zero force data:</b>\n" +
-                                                self.zeroForceData.force_filepath)
-            self.zero_force_calc()
+                                                self.zeroForceData.force_filepath)            
+            # self.zero_force_calc()
 
-    def zero_force_calc(self): #calculate vertical force correction wrt zero
-        zero_shift = self.zeroForceData.defl_vert1[0] - self.forceData.defl_vert1[0]
-        self.zeroForceData.defl_vert1_corrected = [x-zero_shift for x in self.zeroForceData.defl_vert1]
-##        self.defl_vert1_raw = self.forceData.defl_vert1.copy()
-        self.defl_vert1_actual = [self.forceData.defl_vert1[0] +
-                                 self.forceData.defl_vert1[i] -
-                                 self.zeroForceData.defl_vert1_corrected[i] \
-                                 for i in range(len(self.forceData.defl_vert1))]
+#     def zero_force_calc(self): #calculate vertical force correction wrt zero
+#         zero_shift = self.zeroForceData.defl_vert1[0] - self.forceData.defl_vert1[0]
+#         self.zeroForceData.defl_vert1_corrected = [x-zero_shift for x in self.zeroForceData.defl_vert1]
+# ##        self.defl_vert1_raw = self.forceData.defl_vert1.copy()
+#         self.defl_vert1_actual = [self.forceData.defl_vert1[0] +
+#                                  self.forceData.defl_vert1[i] -
+#                                  self.zeroForceData.defl_vert1_corrected[i] \
+#                                  for i in range(len(self.forceData.defl_vert1))]

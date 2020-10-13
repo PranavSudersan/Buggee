@@ -517,8 +517,15 @@ class MainParameterChanged:
                     continue
                 # calibFactorOld = self.calibFactor
                 self.calibFactor = self.lengthValue.value()/self.pixelValue.value()
-                self.dataDict[k][0][int(self.framePos-1)] *= self.calibFactor**2
-                self.dataDict[k][1][int(self.framePos-1)] *= self.calibFactor
-                self.dataDict[k][3][int(self.framePos-1)] *= self.calibFactor**2
-                self.dataDict[k][4][int(self.framePos-1)] *= self.calibFactor
+                self.dataDict[k]["Contact area"][int(self.framePos-1)] *= self.calibFactor**2
+                self.dataDict[k]["Contact length"][int(self.framePos-1)] *= self.calibFactor
+                self.dataDict[k]["ROI area"][int(self.framePos-1)] *= self.calibFactor**2
+                self.dataDict[k]["ROI length"][int(self.framePos-1)] *= self.calibFactor
+                
+                unit = self.lengthUnit.currentText() #update unit dictionary
+                self.imageDataUnitDict["Contact area"] = ' $[' + unit + '^2]$'
+                self.imageDataUnitDict["ROI area"] = ' $[' + unit + '^2]$'
+                self.imageDataUnitDict["Contact length"] = ' [' + unit + ']'
+                self.imageDataUnitDict["ROI length"] = ' [' + unit + ']'
+              
             self.plotSequence()

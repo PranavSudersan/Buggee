@@ -203,9 +203,9 @@ class MainWidgets:
         self.analyzeVideo.stateChanged.connect(self.anal_change)
         self.analyzeVideo.setStyleSheet("QCheckBox { font-weight: bold; font-size: 14px;} ")
 
-        self.correctZeroForce = QCheckBox('Zero-force correct', self) #Perform Analysis
-        self.correctZeroForce.stateChanged.connect(self.plotSequence)
-        self.correctZeroForce.setEnabled(False)
+        # self.correctZeroForce = QCheckBox('Zero-force correct', self) #Perform Analysis
+        # self.correctZeroForce.stateChanged.connect(self.plotSequence)
+        # self.correctZeroForce.setEnabled(False)
 
 #         self.showContours = QCheckBox('Show Contours', self) #show contours
 # ##        self.showContours.move(300, 60)
@@ -938,7 +938,7 @@ class MainWidgets:
         fpsGroupBox.setLayout(fpsVbox)
         fpsVbox.addWidget(self.fpsLabel, 0, 0, 1, 1)
         fpsVbox.addWidget(self.fpsSpinBox, 0, 1, 1, 1)
-        fpsVbox.addWidget(self.correctZeroForce, 1, 0, 1, 2)
+        # fpsVbox.addWidget(self.correctZeroForce, 1, 0, 1, 2)
 
         self.bcGroupBox = QGroupBox()
         # self.bcGroupBox.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)

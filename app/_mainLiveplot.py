@@ -32,7 +32,9 @@ class MainLivePlot:
                 self.curve1 = QScatterSeries()#initialise live plot curves
                 self.initialise_live_plot(self.curve1, Qt.blue) #contact area plot
                 print(self.frameTime.shape)
-                data_ind = 7 if self.analysisMode.currentText() == "Contact Angle Analysis" else 0
+                data_ind = "Contact angle" \
+                    if self.analysisMode.currentText() == "Contact Angle Analysis" \
+                        else "Contact area"
                 
                 for k in self.roiDict.keys():
                     if len(self.roiDict.keys()) > 1 and k == "Default":
@@ -47,7 +49,7 @@ class MainLivePlot:
                         if len(self.roiDict.keys()) > 1 and k == "Default":
                             continue
                             self.curve2.append(self.series_to_polyline(self.frameTime,
-                                                                      self.dataDict[k][3]))
+                                                                      self.dataDict[k]["ROI area"]))
                     self.plotWindow.liveChart.addSeries(self.curve2)
                 
                 self.plotWindow.liveChart.createDefaultAxes()
@@ -73,11 +75,12 @@ class MainLivePlot:
             # if self.playStatus == True: #pause video if running (bug)
             #     self.playBtn.click() 
             self.forceData.plotWidget.fig_close = False #area data show
-            self.forceData.getArea(self.frameTime, self.dataDict)
-            self.forceData.plotData(self.lengthUnit.currentText())
+            # self.forceData.getArea(self.frameTime, self.dataDict)
+            # self.forceData.plotData(self.imageDataUnitDict)
+            self.plotSequence()
 
-            self.forceData.plotWidget.show()
-
+            self.forceData.plotWidget.showWindow()
+            # self.forceData.plotWidget.resize(self.forceData.plotWidget.minimumSizeHint())
         
     def initialise_live_plot(self, curve, color): #initalise live plot
         pen = curve.pen()

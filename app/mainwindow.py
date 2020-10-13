@@ -19,13 +19,14 @@ import ast
 import pickle
 from cv2_rolling_ball import subtract_background_rolling_ball
 # import gc
-from PyQt5.QtGui import QPixmap, QImage#, QIcon, QPolygonF, QBrush
+from PyQt5.QtGui import QPixmap, QImage, QColor#, QIcon, QPolygonF, QBrush
 # from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication, QMainWindow, \
      QMessageBox, QAction, QStatusBar, \
      QGridLayout, QFileDialog
 # from PyQt5.QtChart import QChart, QScatterSeries
-
+from matplotlib.figure import Figure
+from source.analysis.plot2widget import PlotWidget
 ##import qdarkstyle
 ##from style import breeze_resources
 
@@ -57,7 +58,9 @@ from source.process.imagesegment import ImageSegment
 from source.process import imagetransform
 from source.process.templatematch import TemplateMatch
 
+from source.analysis.forceanalysis import ForceAnal
 from source.analysis.fitting import FitDataWindow
+from source.analysis.analyzedatawindow import AnalyizeDataWindow
 
 
 
@@ -81,8 +84,13 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         self.configRecWindow = ConfigRecWindow() #record configuration window
         self.configPlotWindow = ConfigPlotWindow() #plot configuration window
         self.plotWindow = PlotWindow() #live plot window
+        self.analyzeDataWindow = AnalyizeDataWindow()
         self.fitWindow = FitDataWindow() #fit data window
-
+        
+        #initialize force data classes
+        self.forceData = ForceAnal()
+        self.zeroForceData = ForceAnal()
+        
         quitWindow = QAction("&Quit", self) #quit program
 ##        quitWindow.setShortcut("Ctrl+Q") 
         quitWindow.setStatusTip('Quit Program')
@@ -129,10 +137,11 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         recordVideo.triggered.connect(self.showRecWindow)
         self.configRecWindow.okBtn.clicked.connect(self.configureRecord)
 
-        plot = QAction("&Plot/Force", self) #configure plot
+        plot = QAction("&Plot", self) #configure plot
 ##        plot.setShortcut("Ctrl+P")
         plot.setStatusTip("Configure plot and force curves")
         plot.triggered.connect(self.configPlotWindow.show_window)
+        self.configPlotWindow.plotRangeButton.clicked.connect(self.setPlotRange)
         self.configPlotWindow.okBtn.clicked.connect(self.configurePlot)
         self.configPlotWindow.updateBtn.clicked.connect(self.plotSequence)
 
@@ -141,9 +150,29 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         paths.triggered.connect(self.showPathWindow)
         self.configPathWindow.okBtn.clicked.connect(self.setPaths)
         
+        analyzeData = QAction("&Datafile..", self) #datafile analyze
+        analyzeData.setStatusTip("Analyze datafile")
+        analyzeData.triggered.connect(self.showAnalysisWindow)
+        self.analyzeDataWindow.updateBtn.clicked.connect(self.plotSequence)
+        self.analyzeDataWindow.okBtn.clicked.connect(self.configureDataAnal)
+        self.analyzeDataWindow.zeroBtn.clicked.connect(lambda: 
+                                                       self.updateCursorRange(
+                                                           self.analyzeDataWindow.zeroLabel))
+        self.analyzeDataWindow.forceBtn.clicked.connect(lambda: 
+                                                   self.updateCursorRange(
+                                                       self.analyzeDataWindow.forceLabel))
+        self.analyzeDataWindow.preloadBtn.clicked.connect(lambda: 
+                                                       self.updateCursorRange(
+                                                           self.analyzeDataWindow.preloadLabel))
+        self.analyzeDataWindow.deformBtn.clicked.connect(lambda: 
+                                                       self.updateCursorRange(
+                                                           self.analyzeDataWindow.deformLabel))
+        
+        
         fitData = QAction("&Fit..", self) #data fitting options
         fitData.setStatusTip("Fit data")
         fitData.triggered.connect(self.showFitWindow)
+        self.fitWindow.applyFitBtn.clicked.connect(lambda: self.performFit(True))
         # self.configPathWindow.okBtn.clicked.connect(self.setPaths)
 
         showSummary = QAction("&Display Summary Plots", self) #show summary Plots
@@ -186,6 +215,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         configureMenu.addAction(paths)
         
         fileMenu = mainMenu.addMenu("&Analysis") #Analysis menu
+        fileMenu.addAction(analyzeData)
         fileMenu.addAction(fitData)
 
         plotMenu = mainMenu.addMenu("&Summarize") #Plot menu
@@ -1932,14 +1962,14 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
 
                     #use deepcopy to avoid referencing issue
                     data = copy.deepcopy(self.dataDict[k])
-                    contactArea = copy.deepcopy(data[0])
-                    contactLength = copy.deepcopy(data[1])
-                    contourNumber = copy.deepcopy(data[2])
-                    roiArea = copy.deepcopy(data[3])
-                    roiLength = copy.deepcopy(data[4])
-                    eccAvg = copy.deepcopy(data[5])
-                    ellipse = copy.deepcopy(data[6])
-                    contactAngle = copy.deepcopy(data[7])
+                    contactArea = copy.deepcopy(data["Contact area"])
+                    contactLength = copy.deepcopy(data["Contact length"])
+                    contourNumber = copy.deepcopy(data["Contact number"])
+                    roiArea = copy.deepcopy(data["ROI area"])
+                    roiLength = copy.deepcopy(data["ROI length"])
+                    eccAvg = copy.deepcopy(data["Eccentricity"])
+                    ellipse = copy.deepcopy(data["Ellipse fit"])
+                    contactAngle = copy.deepcopy(data["Contact angle"])
                     # cpt = self.contourProperty(k, self.minAreaFilter.value(),
                     #                            self.maxAreaFilter.value())                                    
                     if self.analysisMode.currentText() == "Contact Area Analysis": #OPTIMIZE!! CHECK!
@@ -1962,10 +1992,19 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                     roiArea[int(self.framePos-1)] *= self.calibFactor**2
                     roiLength[int(self.framePos-1)] *= self.calibFactor
 
-                    self.dataDict[k] = [contactArea, contactLength,
-                                        contourNumber, roiArea,
-                                        roiLength, eccAvg, ellipse,
-                                        contactAngle]
+                    # self.dataDict[k] = [contactArea, contactLength,
+                    #                     contourNumber, roiArea,
+                    #                     roiLength, eccAvg, ellipse,
+                    #                     contactAngle]
+                    self.dataDict[k]["Contact area"] = contactArea
+                    self.dataDict[k]["Contact length"] = contactLength
+                    self.dataDict[k]["Contact number"] = contourNumber
+                    self.dataDict[k]["ROI area"] = roiArea
+                    self.dataDict[k]["ROI length"] = roiLength
+                    self.dataDict[k]["Eccentricity"] = eccAvg
+                    self.dataDict[k]["Ellipse fit"] = ellipse
+                    self.dataDict[k]["Contact angle"] = contactAngle
+                    
                     
                     cv2.drawContours(self.frame_contour, [self.roiDict[k][3]],
                                      -1, (0,0,255), 2) #roi 
@@ -2012,7 +2051,8 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                 if effecttabname == "Plot":
                 # if self.videoEffect.currentText() == "Force/Area Plot":
                     self.forceData.getArea(self.frameTime, self.dataDict)
-                    self.forceData.plotData(self.lengthUnit.currentText()) #prepare plot
+                    # self.forceData.plotData(self.imageDataUnitDict) #prepare plot
+                    self.forceData.plotImageAnimate(int(self.framePos))
                     self.w = self.roiBound[2] - self.roiBound[0]
                     self.h = self.roiBound[3] - self.roiBound[1]
                     # dim = (1280, 1024) #CHECK!
@@ -2847,15 +2887,46 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
     #             self.dataDict[k][4][int(self.framePos-1)] *= self.calibFactor
     #         self.plotSequence()
 
-    def zero_force_correct(self): #correct vertical force wrt zero
-        if self.forceData.force_filepath != "":
-            if self.correctZeroForce.isChecked() == True:
-                self.zero_force_calc()
-                self.forceData.defl_vert1 = self.defl_vert1_actual.copy()
-            else:
-                self.forceData.defl_vert1 = self.defl_vert1_raw.copy()
+    def init_datadict(self, key): #initialize image data dictionary
+        empty_array = np.zeros(int(self.frameCount), np.float64)
+        self.dataDict[key] = {"Contact area": empty_array,
+                              "Contact length": empty_array,
+                              "Contact number": empty_array,
+                              "ROI area": empty_array,
+                              "ROI length": empty_array,
+                              "Eccentricity": empty_array,
+                              "Ellipse fit": [[(0,0),(0,0),0,1]]*int(self.frameCount),
+                              "Contact angle": empty_array}
+        unit = self.lengthUnit.currentText() #initialize unit dictionary
+        #use '$' carefully for latex formatting in plots
+        self.imageDataUnitDict = {'Time': ' [s]',
+                                 'Index': '',
+                                 "Contact area": ' $[' + unit + '^2]$',
+                                 "ROI area":  ' $[' + unit + '^2]$',
+                                 "Contact length":  ' [' + unit + ']',
+                                 "ROI length":  ' [' + unit + ']',
+                                 "Contact number": '',
+                                 "Eccentricity": '',
+                                 'Contact angle': ' [°]'}
+
+    def zero_data_update(self): #update zeroDataDict
+        if self.zeroForceData.force_filepath != "":
+            self.zeroForceData.dataClean()
+            self.zeroForceData.evaluateForce()
+            self.forceData.zeroDataDict = self.zeroForceData.fileDataDict.copy()
+        
+        # if self.forceData.force_filepath != "":
+        #     if self.correctZeroForce.isChecked() == True:
+        #         self.zero_force_calc()
+        #         self.forceData.defl_vert1 = self.defl_vert1_actual.copy()
+        #     else:
+        #         self.forceData.defl_vert1 = self.defl_vert1_raw.copy()
 ##        self.updatePlot(clean = False)
-            
+    
+    def configureDataAnal(self): #update plot and close analyze datafile window
+        self.plotSequence()
+        self.analyzeDataWindow.close()
+        
     def configurePlot(self): #set plot design flags
         self.plotSequence()
         self.configPlotWindow.close()
@@ -2863,72 +2934,112 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
     def updatePlot(self): #update plot
         if self.videoPath != "":
             if self.forceData.force_filepath != "":
-                self.init_plotconfig()
+                # self.init_plotconfig()
                 if self.forceData.ptsnumber != 0: #when no force file loaded
                     self.forceData.calcData()
                     self.forceData.getArea(self.frameTime, self.dataDict)
+                    self.performFit(plot = False)
                 #self.effect_change()
                 # self.video_analysis() #CHECK!
             # self.plot_live_data() #CHECK!
-                    if self.forceData.plotWidget.fig_close == False: #area and force plot
-                        self.forceData.plotData(self.lengthUnit.currentText())
+                    # if self.forceData.plotWidget.fig_close == False: #area and force plot
+                    self.forceData.plotData(self.imageDataUnitDict)
 
     def plotSequence(self): #sequence of plot calculations
-        if self.forceData.force_filepath != "":
-            self.forceData.dataClean()
-            self.defl_vert1_raw = self.forceData.defl_vert1.copy() #copy of raw vert data
-        self.zero_force_correct()
+        # if self.forceData.force_filepath != "":
+        #     self.forceData.dataClean()
+        #     self.defl_vert1_raw = self.forceData.defl_vert1.copy() #copy of raw vert data
+        # self.updateFitDict()
+        # self.fitWindow.plotSequence()
+        self.zero_data_update()
         self.updatePlot()
         print("end plot sequence")
     
-    def init_plotconfig(self): #initialize plot configuration window
-        self.forceData.flag_ca = self.configPlotWindow.showContactArea.isChecked()
-        self.forceData.flag_ra = self.configPlotWindow.showROIArea.isChecked()
-        self.forceData.flag_cl = self.configPlotWindow.showContactLength.isChecked()
-        self.forceData.flag_rl = self.configPlotWindow.showROILength.isChecked()
-        self.forceData.flag_cn = self.configPlotWindow.showContactNumber.isChecked()
-        self.forceData.flag_ecc = self.configPlotWindow.showEcc.isChecked()
-        self.forceData.flag_lf = self.configPlotWindow.showLateralForce.isChecked()
-        self.forceData.flag_zp = self.configPlotWindow.showZPiezo.isChecked()
-        self.forceData.flag_xp = self.configPlotWindow.showXPiezo.isChecked()
-        self.forceData.flag_ap = self.configPlotWindow.showAdhesion.isChecked()
-        self.forceData.flag_fp = self.configPlotWindow.showFriction.isChecked()
-        self.forceData.flag_st = self.configPlotWindow.showStress.isChecked()
-        self.forceData.flag_zd = self.configPlotWindow.showDeformation.isChecked()
-        self.forceData.show_title = self.configPlotWindow.showTitle.isChecked()
-        self.forceData.showLegend2 = self.configPlotWindow.showLegend2.isChecked()
-        self.forceData.x_var = self.configPlotWindow.xAxisParam.currentText()
-        self.forceData.calib_lat1 = self.configPlotWindow.latCalibEq.text()
-        self.forceData.invert_latf = self.configPlotWindow.invertLatForce.isChecked()
-        self.forceData.flag_ct = self.configPlotWindow.applyCrossTalk.isChecked()
-        self.forceData.ctv_slope = self.configPlotWindow.vertCrossTalk.value()
-        self.forceData.ctl_slope = self.configPlotWindow.latCrossTalk.value()
+    def setPlotRange(self): #set global plot range
+        fig = Figure(figsize=(5, 3), dpi=100)
+        ax = fig.add_subplot(111)
+        # xdata = self.forceData.time1
+        ydata = self.forceData.fileDataDict["Vertical force"] #CHECK! make this more general
+        xdata = self.forceData.fileDataDict["Index"]
+        # xdata = np.linspace(0, len(ydata)-1,len(ydata), dtype = np.uint) #index
+        ax.plot(xdata, ydata, 'r-', linewidth=1, markersize=1)
+        cursor_pos = self.configPlotWindow.plotDict['plot settings']\
+            ['plot range'].text().split(',')
+        plotWidget = PlotWidget(fig = fig,
+                                xdata = xdata,
+                                cursor1_init=int(cursor_pos[0]),
+                                cursor2_init=int(cursor_pos[1]),
+                                method = self.updateRange)
+        plotWidget.setGeometry(100, 100, 600, 400)
+        self.fullPlotWidget = plotWidget.wid
+        plotWidget.show()
+
+    def updateRange(self): #update plot range slice
+        x1 = self.fullPlotWidget.cursor1.get_xdata()[0]
+        x2 = self.fullPlotWidget.cursor2.get_xdata()[0]
+        xdata =  self.fullPlotWidget.xdata
+        x1_ind = np.searchsorted(xdata, [x1])[0] 
+        x2_ind = np.searchsorted(xdata, [x2])[0]
+        xstart = min(x1_ind, x2_ind)
+        xend = max(x1_ind, x2_ind)
+        xend = xend-1 if xend == len(xdata) else xend
+        # self.forceData.plot_slice = slice(xstart, xend + 1)
+        self.configPlotWindow.plotDict['plot settings']['plot range'].\
+            setText(str(xstart) + ',' + str(xend))
+        
+    def updateCursorRange(self, label): #update range of datafile analysis params
+        if self.forceData != None:
+            self.forceData.setCursorPosition(label)
+        
+    # def init_plotconfig(self): #initialize plot configuration window
+    #     pass
+        # self.forceData.flag_ca = self.configPlotWindow.showContactArea.isChecked()
+        # self.forceData.flag_ra = self.configPlotWindow.showROIArea.isChecked()
+        # self.forceData.flag_cl = self.configPlotWindow.showContactLength.isChecked()
+        # self.forceData.flag_rl = self.configPlotWindow.showROILength.isChecked()
+        # self.forceData.flag_cn = self.configPlotWindow.showContactNumber.isChecked()
+        # self.forceData.flag_ecc = self.configPlotWindow.showEcc.isChecked()
+        # self.forceData.flag_lf = self.configPlotWindow.showLateralForce.isChecked()
+        # self.forceData.flag_zp = self.configPlotWindow.showZPiezo.isChecked()
+        # self.forceData.flag_xp = self.configPlotWindow.showXPiezo.isChecked()
+        # self.forceData.flag_ap = self.configPlotWindow.showAdhesion.isChecked()
+        # self.forceData.flag_fp = self.configPlotWindow.showFriction.isChecked()
+        # self.forceData.flag_st = self.configPlotWindow.showStress.isChecked()
+        # self.forceData.flag_zd = self.configPlotWindow.showDeformation.isChecked()
+        # self.forceData.show_title = self.configPlotWindow.showTitle.isChecked()
+        # self.forceData.showLegend2 = self.configPlotWindow.showLegend2.isChecked()
+        # self.forceData.x_var = self.configPlotWindow.xAxisParam.currentText()
+        # self.forceData.calib_lat1 = self.configPlotWindow.latCalibEq.text()
+        # self.forceData.invert_latf = self.configPlotWindow.invertLatForce.isChecked()
+        # self.forceData.flag_ct = self.configPlotWindow.applyCrossTalk.isChecked()
+        # self.forceData.ctv_slope = self.configPlotWindow.vertCrossTalk.value()
+        # self.forceData.ctl_slope = self.configPlotWindow.latCrossTalk.value()
 ##        self.forceData.zero_stop = self.configPlotWindow.zeroRange2.value()
 ##        self.forceData.adh_start = self.configPlotWindow.adhRange1.value()
 ##        self.forceData.adh_stop = self.configPlotWindow.adhRange2.value()
 ##        self.forceData.prl_start = self.configPlotWindow.prlRange1.value()
 ##        self.forceData.prl_stop = self.configPlotWindow.prlRange2.value()
-        self.forceData.rangeDict = self.configPlotWindow.rangeDict
-        self.forceData.flag_zshift = self.configPlotWindow.zeroShift.isChecked()
-        self.forceData.flag_lf_filter = self.configPlotWindow.filterLatF.isChecked()
-        self.forceData.window_length = self.configPlotWindow.filter_wind.value()
-        self.forceData.polyorder = self.configPlotWindow.filter_poly.value()
-        self.forceData.startFull = self.configPlotWindow.startFull.value()
-        self.forceData.endFull = self.configPlotWindow.endFull.value()
-        self.forceData.fontSize = self.configPlotWindow.fontSize.value()        
-        self.forceData.noiseSteps = self.configPlotWindow.noiseSteps.text()
-        self.forceData.legendPos = self.configPlotWindow.legendPos.text()
+        # self.forceData.rangeDict = self.configPlotWindow.rangeDict
+        # self.forceData.flag_zshift = self.configPlotWindow.zeroShift.isChecked()
+        # self.forceData.flag_lf_filter = self.configPlotWindow.filterLatF.isChecked()
+        # self.forceData.window_length = self.configPlotWindow.filter_wind.value()
+        # self.forceData.polyorder = self.configPlotWindow.filter_poly.value()
+        # self.forceData.startFull = self.configPlotWindow.startFull.value()
+        # self.forceData.endFull = self.configPlotWindow.endFull.value()
+        # self.forceData.fontSize = self.configPlotWindow.fontSize.value()        
+        # self.forceData.noiseSteps = self.configPlotWindow.noiseSteps.text()
+        # self.forceData.legendPos = self.configPlotWindow.legendPos.text()
         # self.forceData.flag_fit = self.configPlotWindow.fittingGroupBox.isChecked()
         # self.forceData.fit_x = self.configPlotWindow.xFit.currentText()
         # self.forceData.fit_y = self.configPlotWindow.yFit.currentText()
         # self.forceData.startFit = self.configPlotWindow.fitStart.value()
         # self.forceData.endFit = self.configPlotWindow.fitStop.value()
-        self.forceData.fit_pos = self.configPlotWindow.fitPos.text()
-        self.forceData.fit_show = self.configPlotWindow.showFitEq.isChecked()
-        self.forceData.k_beam = self.configPlotWindow.kBeam.text()
-        self.forceData.deform_tol = self.configPlotWindow.deformStart.value()
+        # self.forceData.fit_pos = self.configPlotWindow.fitPos.text()
+        # self.forceData.fit_show = self.configPlotWindow.showFitEq.isChecked()
+        # self.forceData.k_beam = self.configPlotWindow.kBeam.text()
+        # self.forceData.deform_tol = self.configPlotWindow.deformStart.value()
         
-        self.updateFitDict() #CHECK!!
+        # self.updateFitDict() #CHECK!!
         
 #     def roiDraw(self): #draw roi
 #         if len(self.frame) != 0:
@@ -3236,76 +3347,87 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
     def save_data(self): #save data and plots
         self.update_settings_dict()
         if len(self.frame) != 0:
-            roi_corners = []
-            roi_labels = []
-            dataDict_actual = self.dataDict.copy()
-            for k in self.dataDict.keys():
-                if len(self.dataDict.keys()) > 1 and k == "Default":
-                    del dataDict_actual["Default"]
-                    continue
-                roi_corners.append(self.roiDict[k][0].tolist())
-                roi_labels.append(k)
+            # roi_corners = []
+            # roi_labels = []
+            dataDict_actual = copy.deepcopy(self.dataDict)
+            # for k in self.dataDict.keys():
+            #     if len(self.dataDict.keys()) > 1 and k == "Default":
+            #         del dataDict_actual["Default"]
+            #         continue
+                # roi_corners.append(self.roiDict[k][0].tolist())
+                # roi_labels.append(k)
            
             if self.configPathWindow.dataGroupBox.isChecked() == True:
-                data = np.stack(np.array(list(dataDict_actual.values())).T, axis = 1)
-                data_string = '\n'.join([''.join("{0:.8f}".format(x)+ '\t' +str(y) +
-                                        '\t' + str(z) + '\t' + str((w)) + '\t' +
-                                        str(v) + '\t' + str(u) +
-                                        '\t' + str(t)) \
-                                        for x, y, z, w, v, u, t in zip(self.frameTime, \
-                                                         data[0], data[1], data[2], \
-                                                         data[3], data[4], data[5])]) 
-
-
-                with open(self.dataPath, "w", encoding = "utf_8") as f: #save area data
-                    f.write(self.appVersion + "\n")
-                    f.write("Date\t" + time.strftime("%d/%m/%Y, %H:%M:%S") + "\n")
-                    f.write("Measurement number\t" + str(self.msrmnt_num) + "\n")
-                    f.write("Video file\t" + self.videoPath + "\n")
-                    f.write("Frames per second\t" + str(self.fpsSpinBox.value()) + "\n")
-                    f.write("ROI Labels\t" + str(roi_labels) + "\n")
-                    f.write("ROI Corners \t" + str(roi_corners) + "\n")
-                    print("Calibration factor [" + self.lengthUnit.currentText() + "/px]\t" + str(self.calibFactor) + "\n")
-                    f.write("Calibration factor [" + self.lengthUnit.currentText() + "/px]\t" +
-                                "{0:.8f}".format(self.calibFactor) + "\n")
-                    f.write("BG Frame no.\t" + str(self.bgframeNumber) + "\n")
+                # data = np.stack(np.array(list(dataDict_actual.values())).T, axis = 1)
+                # data_string = '\n'.join([''.join("{0:.8f}".format(x)+ '\t' +str(y) +
+                #                         '\t' + str(z) + '\t' + str((w)) + '\t' +
+                #                         str(v) + '\t' + str(u) +
+                #                         '\t' + str(t)) \
+                #                         for x, y, z, w, v, u, t in zip(self.frameTime, \
+                #                                          data[0], data[1], data[2], \
+                #                                          data[3], data[4], data[5])]) 
+                for k in dataDict_actual.keys():
+                    if len(dataDict_actual.keys()) > 1 and k == "Default":
+                        continue
+                    del dataDict_actual[k]["Ellipse fit"] #CHECK: not saving ellipse fit data
+                    data_zipped = zip(*dataDict_actual[k].values())
+                    data_string = '\n'.join(['\t'.join(map("{0:.8f}".format,x)) \
+                                             for x in list(data_zipped)])
                     
-                    for key in self.settingsDict.keys():
-                        wid = self.settingsDict[key]
-                        widtype = wid.__class__.__name__
-                        if key in ["Force Range dictionary"]:#not a widget
-                            f.write(key + "\t" + str(wid) + "\n")
-                        elif key in ["Show Plot Flags"]: #widget list
-                            f.write(key + "\t" + str([x.isChecked() for x in wid]) + "\n")
-                        elif widtype in ["QCheckBox", "QGroupBox"]:
-                            f.write(key + "\t" + str(wid.isChecked()) + "\n")
-                        elif widtype in ["QComboBox"]:
-                            f.write(key + "\t" + str(wid.currentText()) + "\n")
-                        elif widtype in ["QLineEdit"]:
-                            f.write(key + "\t" + str(wid.text()) + "\n") 
-                        else:                    
-                            f.write(key + "\t" + str(wid.value()) + "\n")
-                    
-                    f.write("Time [s]\tContact_Area [" + self.lengthUnit.currentText() + "2]\t" +
-                            "Contact_Length [" + self.lengthUnit.currentText() + "]\t" + 
-                            "Contour_Number\tROI_Area [" + self.lengthUnit.currentText() + "2]\t" +
-                            "ROI_Length [" + self.lengthUnit.currentText() + "]\tMedian_Eccentricity\n")
-                    f.write(data_string)
+                    file_name = self.dataPath[:-4] + '(' + k + ')' + self.dataPath[-4:]
+                    with open(file_name, "w", encoding = "utf_8") as f: #save area data
+                        f.write(self.appVersion + "\n")
+                        f.write("Date\t" + time.strftime("%d/%m/%Y, %H:%M:%S") + "\n")
+                        f.write("Measurement number\t" + str(self.msrmnt_num) + "\n")
+                        f.write("Video file\t" + self.videoPath + "\n")
+                        f.write("Frames per second\t" + str(self.fpsSpinBox.value()) + "\n")
+                        f.write("ROI Label\t" + k + "\n")
+                        f.write("ROI Corners \t" + str(self.roiDict[k][0].tolist()) + "\n")
+                        print("Calibration factor [" + self.lengthUnit.currentText() + "/px]\t" + str(self.calibFactor) + "\n")
+                        f.write("Calibration factor [" + self.lengthUnit.currentText() + "/px]\t" +
+                                    "{0:.8f}".format(self.calibFactor) + "\n")
+                        f.write("BG Frame no.\t" + str(self.bgframeNumber) + "\n")
+                        
+                        self.write_settings_to_file(f)
+                        # for key in self.settingsDict.keys():
+                        #     wid = self.settingsDict[key]
+                        #     widtype = wid.__class__.__name__
+                        #     if key in ["Force Range dictionary"]:#not a widget
+                        #         f.write(key + "\t" + str(wid) + "\n")
+                        #     elif key in ["Show Plot Flags"]: #widget list
+                        #         f.write(key + "\t" + str([x.isChecked() for x in wid]) + "\n")
+                        #     elif widtype in ["QCheckBox", "QGroupBox"]:
+                        #         f.write(key + "\t" + str(wid.isChecked()) + "\n")
+                        #     elif widtype in ["QComboBox"]:
+                        #         f.write(key + "\t" + str(wid.currentText()) + "\n")
+                        #     elif widtype in ["QLineEdit"]:
+                        #         f.write(key + "\t" + str(wid.text()) + "\n") 
+                        #     else:                    
+                        #         f.write(key + "\t" + str(wid.value()) + "\n")
+                        header = '\t'.join([x + self.imageDataUnitDict[x].replace('$', '') \
+                                            for x in dataDict_actual[k].keys()])
+                        f.write(header + '\n')
+                        # f.write("Time [s]\tContact_Area [" + self.lengthUnit.currentText() + "2]\t" +
+                        #         "Contact_Length [" + self.lengthUnit.currentText() + "]\t" + 
+                        #         "Contour_Number\tROI_Area [" + self.lengthUnit.currentText() + "2]\t" +
+                        #         "ROI_Length [" + self.lengthUnit.currentText() + "]\tMedian_Eccentricity\n")
+                        f.write(data_string)
                 print(self.forceData)
             
             if self.forceData.force_filepath != "":
-                self.forceData.getArea(self.frameTime, self.dataDict)
+                self.plotSequence()
+                # self.forceData.getArea(self.frameTime, self.dataDict)
                 if self.configPathWindow.plotGroupBox.isChecked() == True:
-                    self.forceData.plotData(self.lengthUnit.currentText()) #prepare plot
+                    # self.forceData.plotData(self.imageDataUnitDict) #prepare plot
                     self.forceData.savePlot(self.plotPath) #save force-area plot
                 if self.configPathWindow.summaryGroupBox.isChecked() == True:
                     videofile1 = self.videoPath.split('/')[-1][:-4]
                     videofile2 = self.configRecWindow.videoTextbox.toPlainText().split('/')[-1][:-4]
                     print("video", videofile2, videofile1)
-                    zeroforcefile = self.zeroForceData.force_filepath if \
-                                    self.correctZeroForce.isChecked()== True else ""
+                    zeroforcefile = self.zeroForceData.force_filepath #if \
+                                    # self.correctZeroForce.isChecked()== True else ""
                     self.forceData.saveSummaryData(videofile1, videofile2, zeroforcefile,
-                                                   self.lengthUnit.currentText(),
+                                                   self.imageDataUnitDict,
                                                    self.msrmnt_num, self.summaryPath) #save summary data
 
             if self.configPathWindow.contourGroupBox.isChecked() == True:
@@ -3314,11 +3436,17 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                     pickle.dump(self.contour_data, f, pickle.HIGHEST_PROTOCOL)
                 #save contour data as excel
                 contour_header = ["Frame_no", "ROI_Label", "Contour_ID", "Area",
-                                  "Length", "Eccentricity", "Moments", "Array"]
-                contour_datadict = dict(zip(contour_header, self.contour_data))
+                                  "Length", "Eccentricity", "Moments"]
+                contour_datadict = dict(zip(contour_header, self.contour_data[:-1]))
                 self.contour_data = [[], [], [], [], [], [], [], []]
                 df_contour = pd.DataFrame(contour_datadict)
                 del contour_datadict
+                #get list of roi labels
+                roi_labels = []
+                for k in self.dataDict.keys():
+                    if len(self.dataDict.keys()) > 1 and k == "Default":
+                        continue
+                    roi_labels.append(k)
                 #process contour data in separate thread
                 self.contourThread = ContourDataThread(df_contour, self.contourDataPath,
                                                        roi_labels)
@@ -3348,27 +3476,45 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                 val = line.split('\t')[1]
                 wid = self.settingsDict[key]
                 widtype = wid.__class__.__name__
-                if key in ["Force Range dictionary"]:#not a widget
-                    fdict = ast.literal_eval(val)
-                    for k in fdict.keys():
-                        if k in self.configPlotWindow.rangeDict.keys():
-                            self.configPlotWindow.rangeDict[k] = fdict[k]
-                elif key in ["Show Plot Flags"]: #widget list
-                    for i in range(len(ast.literal_eval(val))):
-                        state = ast.literal_eval(val)[i]
-                        self.configPlotWindow.showWidgets[i].setChecked(state)
-                elif widtype in ["QCheckBox", "QGroupBox"]:
+                # if key in ["Force Range dictionary"]:#not a widget
+                #     fdict = ast.literal_eval(val)
+                #     for k in fdict.keys():
+                #         if k in self.configPlotWindow.rangeDict.keys():
+                #             self.configPlotWindow.rangeDict[k] = fdict[k]
+                # elif key in ["Show Plot Flags"]: #widget list
+                #     for i in range(len(ast.literal_eval(val))):
+                #         state = ast.literal_eval(val)[i]
+                #         self.configPlotWindow.showWidgets[i].setChecked(state)
+                if widtype in ["QCheckBox", "QGroupBox"]:
                     wid.setChecked(ast.literal_eval(val))
                 elif widtype in ["QComboBox"]:
                     wid.setCurrentIndex(wid.findText(val))
-                elif widtype in ["QLineEdit"]:
-                    wid.setText(val) 
+                elif widtype in ["QLineEdit","QTextEdit"]:
+                    wid.setText(val)
+                elif widtype in ["QPushButton"]: #CHECK for color
+                    color = QColor(*ast.literal_eval(val))
+                    # col = wid.palette().setColor(1, color)
+                    wid.setStyleSheet("QPushButton {background-color: %s}"
+                                      % color.name()) #set background color
+                    print(color.getRgb())
+                elif widtype in ["dict"]: #dictionary self.settingsDict[key]
+                    wid.update(ast.literal_eval(val))
+                elif widtype in ["list"]: #list
+                    wid[:] = ast.literal_eval(val)
                 else:                    
                     wid.setValue(ast.literal_eval(val))
+            
+            #update relavant dicts or widgets
+            self.configPlotWindow.updateColorTuple()
+            self.analyzeDataWindow.update_widgets()
+            self.fitWindow.updateTEX()
+            self.fitWindow.plotSequence()
+            
             self.statusBar.showMessage("Settings set!")
             
             self.plotSequence()
-        
+    
+    
     #save current settings
     def save_settings(self):
         self.update_settings_dict()
@@ -3378,26 +3524,68 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         with open(filepath, "w", encoding = "utf_8") as f: #save area data
             f.write(self.appVersion + "\n")
             f.write("Date\t" + time.strftime("%d/%m/%Y, %H:%M:%S") + "\n")
-            for key in self.settingsDict.keys():
-                wid = self.settingsDict[key]
-                widtype = wid.__class__.__name__
-                if key in ["Force Range dictionary"]:#not a widget
-                    f.write(key + "\t" + str(wid) + "\n")
-                elif key in ["Show Plot Flags"]: #widget list
-                    f.write(key + "\t" + str([x.isChecked() for x in wid]) + "\n")
-                elif widtype in ["QCheckBox", "QGroupBox"]:
-                    f.write(key + "\t" + str(wid.isChecked()) + "\n")
-                elif widtype in ["QComboBox"]:
-                    f.write(key + "\t" + str(wid.currentText()) + "\n")
-                elif widtype in ["QLineEdit"]:
-                    f.write(key + "\t" + str(wid.text()) + "\n") 
-                elif widtype in ["slice"]: #slice
-                    f.write(key + "\t" + str([wid.start, wid.stop]) + "\n") 
-                else:                    
-                    f.write(key + "\t" + str(wid.value()) + "\n")
+            self.write_settings_to_file(f)
+            # for key in self.settingsDict.keys():
+            #     wid = self.settingsDict[key]
+            #     widtype = wid.__class__.__name__
+            #     # if key in ["Force Range dictionary"]:#not a widget
+            #     #     f.write(key + "\t" + str(wid) + "\n")
+            #     # elif key in ["Show Plot Flags"]: #widget list
+            #     #     f.write(key + "\t" + str([x.isChecked() for x in wid]) + "\n")
+            #     if widtype in ["QCheckBox", "QGroupBox"]:
+            #         f.write(key + "\t" + str(wid.isChecked()) + "\n")
+            #     elif widtype in ["QComboBox"]:
+            #         f.write(key + "\t" + str(wid.currentText()) + "\n")
+            #     elif widtype in ["QLineEdit"]:
+            #         f.write(key + "\t" + str(wid.text()) + "\n") 
+            #     elif widtype in ["QPushButton"]: #CHECK for color
+            #         col = wid.palette().color(1).getRgb()
+            #         f.write(key + "\t" + str(col) + "\n") 
+            #     elif widtype in ["dict"]: #dictionary
+            #         f.write(key + "\t" + str(wid) + "\n")
+            #     elif widtype in ["slice"]: #slice
+            #         f.write(key + "\t" + str([wid.start, wid.stop]) + "\n")
+            #     elif widtype in ["tuple"]: #tuple
+            #         pass
+            #         # f.write(key + "\t" + str(wid) + "\n") 
+            #     else:                    
+            #         f.write(key + "\t" + str(wid.value()) + "\n")
         self.statusBar.showMessage("Settings saved!")
+
+    #write setttings values from settingsDict to give text file
+    def write_settings_to_file(self, f):
+        for key in self.settingsDict.keys():
+            wid = self.settingsDict[key]
+            widtype = wid.__class__.__name__
+            # if key in ["Force Range dictionary"]:#not a widget
+            #     f.write(key + "\t" + str(wid) + "\n")
+            # elif key in ["Show Plot Flags"]: #widget list
+            #     f.write(key + "\t" + str([x.isChecked() for x in wid]) + "\n")
+            if widtype in ["QCheckBox", "QGroupBox"]:
+                f.write(key + "\t" + str(wid.isChecked()) + "\n")
+            elif widtype in ["QComboBox"]:
+                f.write(key + "\t" + str(wid.currentText()) + "\n")
+            elif widtype in ["QLineEdit"]:
+                f.write(key + "\t" + wid.text() + "\n") 
+            elif widtype in ["QTextEdit"]:
+                f.write(key + "\t" + wid.toPlainText() + "\n") 
+            elif widtype in ["QPushButton"]: #CHECK for color
+                col = wid.palette().color(1).getRgb()
+                f.write(key + "\t" + str(col) + "\n") 
+            elif widtype in ["dict", 'list', 'NoneType']: #dictionary/tuple/None
+                f.write(key + "\t" + str(wid) + "\n")
+            elif widtype in ["slice"]: #slice
+                print(key)
+                f.write(key + "\t" + str([wid.start, wid.stop]) + "\n")
+                # f.write(key + "\t" + str(wid) + "\n") 
+            elif widtype in ["tuple"]: #tuple
+                print(key)
+                pass
+            else:    
+                # print(key)                
+                f.write(key + "\t" + str(wid.value()) + "\n")
     
-        #update settings widget dictionary
+    #update settings widget dictionary
     def update_settings_dict(self):
         self.settingsDict = {}
         
@@ -3456,35 +3644,85 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         self.settingsDict["Pixel Value"] = self.pixelValue
         self.settingsDict["Length Value"] = self.lengthValue
         self.settingsDict["Length Unit"] = self.lengthUnit
-        self.settingsDict["Apply Zero-Force Correction"] = self.correctZeroForce
+        # self.settingsDict["Apply Zero-Force Correction"] = self.correctZeroForce
         #config plot settings
-        self.settingsDict["Force Range dictionary"] = self.configPlotWindow.rangeDict #not a widget
-        self.settingsDict["Show Plot Flags"] = self.configPlotWindow.showWidgets #list of widgets
-        self.settingsDict["Zero shift force"] = self.configPlotWindow.zeroShift
-        self.settingsDict["Invert lateral force"] = self.configPlotWindow.invertLatForce
-        self.settingsDict["Apply filter"] = self.configPlotWindow.filterLatF
-        self.settingsDict["Noise filter window"] = self.configPlotWindow.filter_wind
-        self.settingsDict["Noise filter polyord"] = self.configPlotWindow.filter_poly
-        self.settingsDict["Lateral Force Calibration [μN]"] = self.configPlotWindow.latCalibEq
-        self.settingsDict["Apply Cross Talk "] = self.configPlotWindow.applyCrossTalk
-        self.settingsDict["Vertical Cross Talk [μN/μN]"] = self.configPlotWindow.vertCrossTalk
-        self.settingsDict["Lateral Cross Talk [μN/μN]"] = self.configPlotWindow.latCrossTalk
-        self.settingsDict["Deformation Start"] = self.configPlotWindow.deformStart
-        self.settingsDict["Beam Spring Constant"] = self.configPlotWindow.kBeam
-        self.settingsDict["Noisy Steps"] = self.configPlotWindow.noiseSteps
-        self.settingsDict["X Axis"] = self.configPlotWindow.xAxisParam
-        self.settingsDict["Plot Start"] = self.configPlotWindow.startFull
-        self.settingsDict["Plot End"] = self.configPlotWindow.endFull
-        self.settingsDict["Font Size"] = self.configPlotWindow.fontSize
-        self.settingsDict["Legend Position"] = self.configPlotWindow.legendPos
-        self.settingsDict["Fit data"] = self.fitWindow.enableFitting
-        # self.settingsDict["Fit Start"] = self.configPlotWindow.fitStart
-        # self.settingsDict["Fit End"] = self.configPlotWindow.fitStop
-        self.settingsDict["Fit Range"] = self.fitWindow.fit_slice
+        for source in self.configPlotWindow.plotDict.keys():
+            key1 = source
+            source_dict = self.configPlotWindow.plotDict[source]
+            if source in ['datafile', 'image']:
+                for category in source_dict.keys():
+                    key2 = key1 + '/' + category
+                    category_dict = source_dict[category]
+                    for category_key in category_dict.keys():
+                        key3 = key2 + '/' + category_key
+                        category_option = category_dict[category_key]
+                        if category_key == 'combine':
+                            self.settingsDict[key3] = category_option
+                        elif category_key == 'curves':
+                            for curve in category_option.keys():
+                                key4 = key3 + '/' + curve
+                                curve_dict = category_option[curve]
+                                for curve_key in curve_dict.keys():
+                                    key5 = key4 + '/' + curve_key
+                                    self.settingsDict[key5] = curve_dict[curve_key]
+            elif source in ['extras', 'plot settings']:
+                for param in source_dict.keys():
+                    key2 = key1 + '/' + param
+                    self.settingsDict[key2] = source_dict[param]
+        
+        #datafile analysis settings
+        for force in self.analyzeDataWindow.dataAnalDict.keys():
+            key1 = force
+            if force in ['Vertical force', 'Lateral force']: #values in dict
+                self.settingsDict[key1 + ' settings'] = \
+                    self.analyzeDataWindow.dataAnalDict[force]
+            elif force == 'misc settings': #widgets
+                misc_dict = self.analyzeDataWindow.dataAnalDict[force]
+                for param in misc_dict.keys():
+                    key2 = key1 + '/' + param
+                    self.settingsDict[key2] = misc_dict[param]
+                
+        #fitting settings
+        self.settingsDict["Fit data"] = self.fitWindow.enableFitting        
         self.settingsDict["Fit X-param"] = self.fitWindow.xFit
         self.settingsDict["Fit Y-param"] = self.fitWindow.yFit
-        self.settingsDict["Fit position"] = self.configPlotWindow.fitPos
-        self.settingsDict["Show Fit Slope"] = self.configPlotWindow.showFitEq
+        self.settingsDict["Fit parameters"] = self.fitWindow.fittingParams
+        self.settingsDict["Fit initial guess"] = self.fitWindow.guessValues
+        self.settingsDict["Fit lower bound"] = self.fitWindow.lowBound
+        self.settingsDict["Fit upper bound"] = self.fitWindow.upBound
+        self.settingsDict["Fit constants"] = self.fitWindow.constantParams
+        self.settingsDict["Fitting function type"] = self.fitWindow.fittingFunctionType
+        self.settingsDict["Fitting equation"] = self.fitWindow.fittingFunctionText
+        self.settingsDict["Fit Range"] = self.fitWindow.fit_range
+        self.settingsDict["Fit position"] = self.forceData.fit_pos
+        # self.settingsDict["Show Fit Slope"] = self.configPlotWindow.showFitEq
+
+                  
+        # self.settingsDict["Force Range dictionary"] = self.configPlotWindow.rangeDict #not a widget
+        # self.settingsDict["Show Plot Flags"] = self.configPlotWindow.showWidgets #list of widgets
+        # self.settingsDict["Zero shift force"] = self.configPlotWindow.zeroShift
+        # self.settingsDict["Invert lateral force"] = self.configPlotWindow.invertLatForce
+        # self.settingsDict["Apply filter"] = self.configPlotWindow.filterLatF
+        # self.settingsDict["Noise filter window"] = self.configPlotWindow.filter_wind
+        # self.settingsDict["Noise filter polyord"] = self.configPlotWindow.filter_poly
+        # self.settingsDict["Lateral Force Calibration [μN]"] = self.configPlotWindow.latCalibEq
+        # self.settingsDict["Apply Cross Talk "] = self.configPlotWindow.applyCrossTalk
+        # self.settingsDict["Vertical Cross Talk [μN/μN]"] = self.configPlotWindow.vertCrossTalk
+        # self.settingsDict["Lateral Cross Talk [μN/μN]"] = self.configPlotWindow.latCrossTalk
+        # self.settingsDict["Deformation Start"] = self.configPlotWindow.deformStart
+        # self.settingsDict["Beam Spring Constant"] = self.configPlotWindow.kBeam
+        # self.settingsDict["Noisy Steps"] = self.configPlotWindow.noiseSteps
+        # self.settingsDict["X Axis"] = self.configPlotWindow.xAxisParam
+        # self.settingsDict["Plot Start"] = self.configPlotWindow.startFull
+        # self.settingsDict["Plot End"] = self.configPlotWindow.endFull
+        # self.settingsDict["Font Size"] = self.configPlotWindow.fontSize
+        # self.settingsDict["Legend Position"] = self.configPlotWindow.legendPos
+        # self.settingsDict["Fit data"] = self.fitWindow.enableFitting
+        # self.settingsDict["Fit Range"] = self.fitWindow.fit_slice
+        # self.settingsDict["Fit X-param"] = self.fitWindow.xFit
+        # self.settingsDict["Fit Y-param"] = self.fitWindow.yFit
+        # self.settingsDict["Fit position"] = self.configPlotWindow.fitPos
+        # self.settingsDict["Show Fit Slope"] = self.configPlotWindow.showFitEq
             
 #     def import_force_data(self): #import force data
 #         if self.msrListMode == False:
@@ -3533,12 +3771,19 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
 #                                  for i in range(len(self.forceData.defl_vert1))]
 
     def clear_data(self): #clear area data
+        # empty_array = np.zeros(int(self.frameCount), np.float64)
         for k in self.roiDict.keys():
             if len(self.roiDict.keys()) > 1 and k == "Default":
-                continue
-            self.dataDict[k] = 6 * [np.zeros(int(self.frameCount), np.float64)] + \
-                               [[[(0,0),(0,0),0,1]]*int(self.frameCount)] + \
-                    [np.zeros(int(self.frameCount), np.float64)]
+                continue       
+            self.init_datadict(k)
+            # for key in self.dataDict[k].keys():
+            #     if key == "Ellipse fit":
+            #         self.dataDict[k][key] = [[(0,0),(0,0),0,1]]*int(self.frameCount)
+            #     else:
+            #         self.dataDict[k][key] = empty_array
+            # self.dataDict[k] = 6 * [np.zeros(int(self.frameCount), np.float64)] + \
+            #                    [[[(0,0),(0,0),0,1]]*int(self.frameCount)] + \
+            #         [np.zeros(int(self.frameCount), np.float64)]
         self.contour_data = [[], [], [], [], [], [], [], []]
         self.plotSequence()
         self.statusBar.showMessage("Data cleared!")
@@ -3786,23 +4031,42 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
 #         plt.close()
 #         gc.collect()
 #         self.statusBar.showMessage("Reset!")
-
+    
+    def showAnalysisWindow(self):
+        self.plot_data()
+        self.analyzeDataWindow.show_window()
+    
     def showFitWindow(self):
-        # self.updateFitDict()
-        self.fitWindow.plotSequence()
+        self.updateFitDict()
+        # self.fitWindow.plotSequence()
         self.fitWindow.show()
+    
+    def performFit(self, plot = True): #perfomr fitting and update plots
+        if plot == True: #on clicking fit button
+            self.fitWindow.fitData(True)
+            self.plotSequence()
+        else: #on data analysis update
+            self.updateFitDict()
+            self.fitWindow.fitData(True)
         
     def updateFitDict(self):
         if self.forceData.force_filepath != "":
-            self.fitWindow.xDict = {'Vertical Position (μm)': np.array(self.forceData.dist_vert1),
-                     'Lateral Position (μm)':np.array(self.forceData.dist_lat1),
-                     'Deformation (μm)':np.array(self.forceData.deform_vert),
-                     'Time (s)':np.array(self.forceData.time1),
-                     'Index':np.linspace(0,len(self.forceData.dist_vert1)-1,
-                                         len(self.forceData.dist_vert1), 
-                                         dtype = np.uint)}
-            self.fitWindow.yDict = {'Vertical Force (μN)':np.array(self.forceData.force_vert1_shifted),
-                         'Lateral Force (μN)':np.array(self.forceData.force_lat1_shifted)}
+            fitDataDict = {}
+            for key in self.forceData.fileDataDict.keys():
+                fitDataDict[key] = np.array(self.forceData.fileDataDict[key])
+            
+            self.fitWindow.fileDataDict = fitDataDict
+            # self.fitWindow.xDict = fitDataDict
+            # self.fitWindow.yDict = fitDataDict
+            # self.fitWindow.xDict = {'Vertical piezo': np.array(self.forceData.dist_vert1),
+            #          'Lateral piezo':np.array(self.forceData.dist_lat1),
+            #          'Deformation':np.array(self.forceData.deform_vert),
+            #          'Time':np.array(self.forceData.time1),
+            #          'Index':np.linspace(0,len(self.forceData.dist_vert1)-1,
+            #                              len(self.forceData.dist_vert1), 
+            #                              dtype = np.uint)}
+            # self.fitWindow.yDict = {'Vertical force':np.array(self.forceData.force_vert1_shifted),
+            #              'Lateral force':np.array(self.forceData.force_lat1_shifted)}
             self.fitWindow.plotSequence()
     
     def resizeEvent(self, event): #resize view

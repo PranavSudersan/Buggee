@@ -8,7 +8,8 @@ Created on Fri Jun 21 19:42:45 2019
 import numpy as np
 # import glob
 import os.path
-from tkinter import filedialog
+# from tkinter import filedialog
+from PyQt5.QtWidgets import QFileDialog
 import tkinter as tk
 from statistics import mean, stdev
 from scipy.signal import savgol_filter, medfilt
@@ -20,12 +21,28 @@ from source.analysis.plotting import Plotting
 
 class ForceAnal(Plotting):
 
-    def __init__(self, fitWindow = None):
-        super().__init__(fitWindow)
+    def __init__(self, fitWindow = None, configPlotWindow = None,
+                 analyzeDataWindow = None):
+        super().__init__(fitWindow, configPlotWindow)
         
+        self.analyzeDataWindow = analyzeDataWindow
+        # if self.analyzeDataWindow != None:
+        #     self.analyzeDataWindow.__init__()
+        #     self.analyzeDataWindow.zeroBtn.clicked.connect(lambda: 
+        #                                                    self.setCursorPosition(
+        #                                                        self.analyzeDataWindow.zeroLabel))
+        #     self.analyzeDataWindow.forceBtn.clicked.connect(lambda: 
+        #                                                self.setCursorPosition(
+        #                                                    self.analyzeDataWindow.forceLabel))
+        #     self.analyzeDataWindow.preloadBtn.clicked.connect(lambda: 
+        #                                                    self.setCursorPosition(
+        #                                                        self.analyzeDataWindow.preloadLabel))
+        #     self.analyzeDataWindow.deformBtn.clicked.connect(lambda: 
+        #                                                    self.setCursorPosition(
+        #                                                        self.analyzeDataWindow.deformLabel))
         self.force_filepath = ""
-        self.force_vert1 = [0,0,0]
-        self.time1 = [0,0,0]
+        # self.force_vert1 = [0,0,0]
+        # self.time1 = [0,0,0]
         self.speed_um = ""
         self.ptsnumber = 0
         # self.fig1_close = True
@@ -44,18 +61,18 @@ class ForceAnal(Plotting):
         # self.flag_st = False
         # self.flag_zd = False
         # self.x_var = 'Time' #x axis default parameter
-        self.flag_zshift = False #zero shift
-        self.flag_lf_filter = False
-        self.window_length = 101
-        self.polyorder = 2
+        # self.flag_zshift = False #zero shift
+        # self.flag_lf_filter = False
+        # self.window_length = 101
+        # self.polyorder = 2
         self.calib_lat1 = "29181.73*x"
-        self.invert_latf = False
-        self.flag_ct = True
-        self.ctv_slope = 0 #vertical cross talk slope
-        self.ctl_slope = 0 #lateral cross talk slope
-        self.startFull = 0 #plot range
-        self.endFull = 100
-        self.noiseSteps = ""
+        # self.invert_latf = False
+        # self.flag_ct = True
+        # self.ctv_slope = 0 #vertical cross talk slope
+        # self.ctl_slope = 0 #lateral cross talk slope
+        # self.startFull = 0 #plot range
+        # self.endFull = 100
+        # self.noiseSteps = ""
         # self.legendPos = "upper right"
         # #fitting
         # self.flag_fit = False
@@ -67,8 +84,8 @@ class ForceAnal(Plotting):
         # self.fit_show = False
         # self.slope = ''
         # self.slope_unit = ''
-        self.k_beam = '30,1' # Beam spring constant (μN/μm)
-        self.deform_tol = 100 #deformation contact start auto detect tolerance
+        # self.k_beam = '30,1' # Beam spring constant (μN/μm)
+        # self.deform_tol = 100 #deformation contact start auto detect tolerance
         
 ##        self.friction_start = 1
 ##        self.friction_stop = 100
@@ -80,43 +97,51 @@ class ForceAnal(Plotting):
 ##        self.prl_stop = 100
 ##        self.force_friction = 0 #initialize
 
-        #area data dictionary
-        self.areaDict = {"area2_init":[], "area2_max":[], "area3_init":[],
-                         "area2_pulloff":[], "area2_residue":[],
-                         "area3_pulloff":[], "area3_max":[],
-                         "area_friction":[]}
-        #length data dictionary
-        self.lengthDict = {"contLength_init":[], "contLength_max":[],
-                           "roilen_init":[], "roilen_max":[],
-                           "contLength_pulloff":[], "roilen_pulloff":[],
-                           "ecc_pulloff":[], "contnum_pulloff": []} 
-        #bounding ellipse data dictionary
-        self.ellipDict = {"ellipAr_max":[], "ellipPer_max":[],
-                          "ellipMajr_max":[], "ellipMinr_max":[]}
-        #force data dictionaryrangeDict
-        self.forceDict = {"force_adhesion1":[], "force_preload1":[],
-                          "force_friction":[], "force_preload2":[],
-                          "force_min1":[], "force_max1":[], "zero1":[], "zero2":[],
-                          "zero1_stdv":[], "zero2_stdv":[], "force_lat_min":[],
-                          "force_lat_max":[], "force_max2":[]}
-        #index/time data dictionary for calculation
-        self.indDict = {"force_lat_max_index":[], "force_lat_min_index":[],
-                        "time1_max":[0], "time1_lat_avg":[]}
+        # #area data dictionary
+        # self.areaDict = {"area2_init":[], "area2_max":[], "area3_init":[],
+        #                  "area2_pulloff":[], "area2_residue":[],
+        #                  "area3_pulloff":[], "area3_max":[],
+        #                  "area_friction":[]}
+        # #length data dictionary
+        # self.lengthDict = {"contLength_init":[], "contLength_max":[],
+        #                    "roilen_init":[], "roilen_max":[],
+        #                    "contLength_pulloff":[], "roilen_pulloff":[],
+        #                    "ecc_pulloff":[], "contnum_pulloff": []} 
+        # #bounding ellipse data dictionary
+        # self.ellipDict = {"ellipAr_max":[], "ellipPer_max":[],
+        #                   "ellipMajr_max":[], "ellipMinr_max":[]}
+        # #force data dictionaryrangeDict
+        # self.forceDict = {"force_adhesion1":[], "force_preload1":[],
+        #                   "force_friction":[], "force_preload2":[],
+        #                   "force_min1":[], "force_max1":[], "zero1":[], "zero2":[],
+        #                   "zero1_stdv":[], "zero2_stdv":[], "force_lat_min":[],
+        #                   "force_lat_max":[], "force_max2":[]}
+        # #index/time data dictionary for calculation
+        # self.indDict = {"force_lat_max_index":[], "force_lat_min_index":[],
+        #                 "time1_max":[0], "time1_lat_avg":[]}
         #range dictionary (zero, adhesion, adh preload, friction, fr preload, fr zero)
-        self.rangeDict = {"Default" : [[0,1],[0,100],[0,100],[0,100],[0,100], [0,1]]} 
+        # self.rangeDict = {"Default" : [[0,1],[0,100],[0,100],[0,100],[0,100], [0,1]]} 
         
 
     def importData(self, msrListMode):
         if msrListMode == False:
-            root = tk.Tk()
-            root.withdraw()
-            self.force_filepath =  filedialog.askopenfilename(title =
-                                                         "Select force data file")
-            root.destroy()
+            self.force_filepath, _ = QFileDialog.getOpenFileName(caption = "Select force data file")
+            # root = tk.Tk()
+            # root.withdraw()
+            # self.force_filepath =  filedialog.askopenfilename(title =
+            #                                              "Select force data file")
+            # root.destroy()
         if self.force_filepath != "":
             with open(self.force_filepath, 'r') as f: #open force data file
                 x1 = f.read().splitlines()
-
+            
+            self.fileDataDict = {} # for plotting
+            # self.fileDataDict2 = {} # for summary file data
+            self.summaryDataDict = {} #summary data values
+            self.summaryDataDict['measurement params'] = {}
+            self.summaryDataDict['data params'] = {}
+            self.summaryDataDict['misc'] = {}
+            
             self.waveform = x1[5].split('\t')[1]
             print(self.waveform)
 
@@ -128,26 +153,30 @@ class ForceAnal(Plotting):
                 ic = 0
                 
             #collect force data 
-            self.dist_vert1 = [(float(y.split('\t')[0]))/1000 for y in x1[23+ir:]] #nm to μm units
+            self.fileDataDict["Vertical piezo"] = [(float(y.split('\t')[0]))/1000 \
+                                                   for y in x1[23+ir:]] #nm to μm units
             self.ptsnumber = int(float((x1[11+ir].split('\t')[1])))
             if ic == 1:
-                self.dist_lat1 = [(float(y.split('\t')[ic])/1000) for y in x1[23+ir:]] #nm to μm units
+                self.fileDataDict["Lateral piezo"] = [(float(y.split('\t')[ic])/1000) \
+                                                      for y in x1[23+ir:]] #nm to μm units
                 speed1 = [int(float(y)) for y in x1[8].split('\t')[1:]]
                 self.steps = [y for y in x1[7].split('\t')[1:]]
                 print(self.steps)
                 self.step_num = len(x1[7].split('\t')[1:])
                 self.pause = [int(float(y)) for y in x1[9].split('\t')[1:]]
             else:
-                self.dist_lat1 = [0] * self.ptsnumber
+                self.fileDataDict["Lateral piezo"] = [0] * self.ptsnumber
                 speed1 = [int(float(x1[6].split('\t')[1]))]
                 self.steps = ["Up/Down"] #Check
                 self.step_num = 1
                 self.pause = [0]
             self.fps = float((x1[20+ir].split('\t')[1]))
             self.frame_num = [int(float(y)) for y in (x1[21+ir].split('\t')[1:])]
-            self.time1 = [float(y.split('\t')[1+ic]) for y in x1[23+ir:]]
-            self.defl_vert = [float(y.split('\t')[2+ic]) for y in x1[23+ir:]]
-            self.defl_lat = [float(y.split('\t')[3+ic]) for y in x1[23+ir:]]
+            self.fileDataDict["Time"] = [float(y.split('\t')[1+ic]) for y in x1[23+ir:]]
+            self.fileDataDict["Vertical Deflection Raw"] = [float(y.split('\t')[2+ic]) \
+                                                        for y in x1[23+ir:]]
+            self.fileDataDict["Lateral Deflection Raw"] = [float(y.split('\t')[3+ic])\
+                                                       for y in x1[23+ir:]]
             self.calib_vert1 = x1[19+ir].split('\t')[1].replace("^", "**")
             #make 'Back' speeds negative
             # self.speed = [-speed1[self.steps.index(a)] if a == 'Back' \
@@ -155,16 +184,56 @@ class ForceAnal(Plotting):
             self.speed = [-speed1[i] if self.steps[i] == 'Back' \
                           else speed1[i] for i in range(len(self.steps))]
             print(self.ptsnumber)
+            
+            self.fileDataDict["Index"] = np.linspace(0, self.ptsnumber-1, 
+                                                     self.ptsnumber, 
+                                                     dtype = np.uint)
+            
+            # self.fileDataDict2["Steps"] = self.steps
+            # self.summaryDataDict['data params'] = {}
+            # self.summaryDataDict['data params']["Steps"] = self.steps
+            # self.dataClean()
 
-            self.dataClean()
-
-            self.calcData()
+            # self.calcData()
 
     def dataClean(self): #clean force data
-            #correct offshoot
-            self.defl_vert1 = self.offShootCorrect(self.defl_vert)
-            self.defl_lat1 = self.offShootCorrect(self.defl_lat)        
-
+        #correct offshoot
+        self.fileDataDict["Vertical Deflection"] = self.offShootCorrect(
+            self.fileDataDict["Vertical Deflection Raw"])
+        self.fileDataDict["Lateral Deflection"] = self.offShootCorrect(
+            self.fileDataDict["Lateral Deflection Raw"])
+            
+    def evaluateForce(self): #calculate force from calibration equations
+        self.fileDataDict["Vertical force"] = [-eval(self.calib_vert1) for x in \
+                                               self.fileDataDict["Vertical Deflection"]]
+        self.fileDataDict["Lateral force"] = [-eval(self.calib_lat1) for x in \
+                                              self.fileDataDict["Lateral Deflection"]]
+            
+    def transformForce(self): #apply transformations to force
+        dataAnalDict = self.analyzeDataWindow.dataAnalDict
+        force_list = ['Vertical force', 'Lateral force']
+        i = 0 #used to find correct key of force for cross talk correction
+        for force in force_list:
+            #zero force subtraction
+            if dataAnalDict[force]["transform"]["Zero subtract"] == True:
+                self.fileDataDict[force] = self.zeroSubtract(self.fileDataDict[force],
+                                                             self.zeroDataDict[force])
+            #cross talk correction
+            if dataAnalDict['misc settings']['apply cross talk'].isChecked() == True:
+                self.fileDataDict[force] = self.crosstalkCorrect(
+                    self.fileDataDict[force_list[i]], 
+                    self.fileDataDict[force_list[i-1]],
+                    dataAnalDict[force]["transform"]["Cross Talk"], 
+                    force.split(' ')[0])
+            #filter data
+            if dataAnalDict[force]["transform"]["Filter"] == True:
+                window = dataAnalDict[force]["transform"]["Filter window"]
+                order = dataAnalDict[force]["transform"]["Filter order"]
+                self.fileDataDict[force] = savgol_filter(self.fileDataDict[force], 
+                                                         window, order).tolist()
+            
+            i += 1        
+            
     def crosstalkCorrect(self, f_in, f_dep, slope, f_type):
         if f_type == 'Vertical':
             f_err = [slope*(x - f_dep[1]) for x in f_dep]
@@ -174,7 +243,9 @@ class ForceAnal(Plotting):
         return f_out
 
     def offShootCorrect(self, data): #remove first point of each step
-        steps_bad = self.noiseSteps.split(",")
+        # steps_bad = self.noiseSteps.split(",")
+        steps_bad = self.analyzeDataWindow.dataAnalDict['misc settings']\
+            ['noise steps'].text().split(",")
         data_new = data.copy()
         if steps_bad[0] == '':
             print("no steps")
@@ -187,9 +258,17 @@ class ForceAnal(Plotting):
             data_new[ind] = data_new[ind + 1] #replace to next value
         return data_new
 
-    def zeroShift(self, data, zero): #shift force to zero
-        data_shifted = [x-zero for x in data]
-        return data_shifted
+    # def zeroShift(self, data, zero): #shift force to zero
+    #     data_shifted = [x-zero for x in data]
+    #     return data_shifted
+    
+    def zeroSubtract(self, actual_data, zero_data):
+        zero_shift = zero_data[0] - actual_data[0]
+        zero_data_shifted = [x-zero_shift for x in zero_data]
+##        self.defl_vert1_raw = self.forceData.defl_vert1.copy()
+        data_subtracted = [actual_data[0] + actual_data[i] - zero_data_shifted[i] \
+                                 for i in range(len(actual_data))]
+        return data_subtracted
 
     def interpolData(self, t, data): #interpolate data at force time resolution
             t_near = sorted([[abs(a - t), a] for a in self.time2],
@@ -201,30 +280,78 @@ class ForceAnal(Plotting):
                                            weights = wt)
             return data_t
         
-    def calcData(self):
+    def calcData(self): #datafile related calculations
 ##            self.calib_lat1 = "-10.249*1000*x"
         print("calc")
-        self.plot_slice = slice(int(self.startFull * self.ptsnumber/100),
-                                int(self.endFull * self.ptsnumber/100))
+        dataAnalDict = self.analyzeDataWindow.dataAnalDict
+        
+        #update plot slice
+        plot_range = self.configPlotWindow.plotDict['plot settings']\
+            ['plot range'].text().split(',')
+        self.plot_slice = slice(int(plot_range[0]), int(plot_range[1]) + 1)
+        
+        time1 = self.fileDataDict["Time"]
+        
+        # self.plot_slice = slice(int(self.startFull * self.ptsnumber/100),
+        #                         int(self.endFull * self.ptsnumber/100))
         
 ##        #correct offshoot
 ##        self.defl_vert1 = self.offShootCorrect(self.defl_vert)
 ##        self.defl_lat1 = self.offShootCorrect(self.defl_lat)
+        self.dataClean()
         
-        force_vert = [-eval(self.calib_vert1) for x in self.defl_vert1]
-        force_lat = [-eval(self.calib_lat1) for x in self.defl_lat1]
-
-        if self.flag_ct == True: #cross talk correction
-            self.force_vert1 = self.crosstalkCorrect(force_vert, force_lat,
-                                                     self.ctv_slope, 'Vertical')
-            self.force_lat1 = self.crosstalkCorrect(force_lat, force_vert,
-                                                    self.ctl_slope, 'Lateral')
-        else:
-            self.force_vert1 = force_vert
-            self.force_lat1 = force_lat
+        self.evaluateForce()
         
-        self.speed_um = [x/1000 for x in self.speed] #speed in μm/s
+        self.transformForce()
+        
+        #file data units
+        self.unitDict = {'Time': ' [s]',
+                         'Index': '',
+                         'Vertical force': ' [μN]',
+                         'Lateral force': ' [μN]',
+                         'Vertical piezo': ' [μm]',
+                         'Lateral piezo': ' [μm]',
+                         'Deformation': ' [μm]',
+                         'Speed': ' [μm/s]'}
+        
+        # self.fileDataDict["Vertical force"] = [-eval(self.calib_vert1) for x in \
+        #                                        self.fileDataDict["Vertical Deflection"]]
+        # self.fileDataDict["Lateral force"] = [-eval(self.calib_lat1) for x in \
+        #                                       self.fileDataDict["Lateral Deflection"]]
 
+        # if self.flag_ct == True: #cross talk correction
+        # force_list = ['Vertical force', 'Lateral force']
+        # i = 0 #used to find correct key of force for cross talk correction
+        # for force in force_list:
+        #     #cross talk correction
+        #     if dataAnalDict['misc settings']['apply cross talk'].isChecked() == True:
+        #         self.fileDataDict[force] = self.crosstalkCorrect(
+        #             self.fileDataDict[force_list[i]], 
+        #             self.fileDataDict[force_list[i-1]],
+        #             dataAnalDict[force]["transform"]["Cross Talk"], 
+        #             force.split(' ')[0])
+        #     #filter data
+        #     if dataAnalDict[force]["transform"]["Filter"] == True:
+        #         window = dataAnalDict[force]["transform"]["Filter window"]
+        #         order = dataAnalDict[force]["transform"]["Filter order"]
+        #         self.fileDataDict[force] = savgol_filter(self.fileDataDict[force], 
+        #                                                  window, order).tolist()
+        #     if dataAnalDict[force]["transform"]["Zero subtract"] == True:
+        #         self.fileDataDict[force] = self.zeroSubtract(self.fileDataDict[force],
+        #                                                      self.zeroDataDict[force])
+        #     i += 1
+            # self.force_lat1 = self.crosstalkCorrect(force_lat, force_vert,
+            #                                         dataAnalDict["Lateral force"]
+            #                                          ["transform"]["Cross Talk"],
+            #                                          'Lateral')
+            # self.force_vert1 = self.crosstalkCorrect(force_vert, force_lat,
+            #                                          self.ctv_slope, 'Vertical')
+            # self.force_lat1 = self.crosstalkCorrect(force_lat, force_vert,
+            #                                         self.ctl_slope, 'Lateral')
+        # else:
+        #     self.force_vert1 = force_vert
+        #     self.force_lat1 = force_lat
+        
         #recalculate time array of video (considering measurement delay)
         tstart = 0
         self.time_video = np.empty((0, 100), dtype = np.float64)
@@ -233,45 +360,62 @@ class ForceAnal(Plotting):
                                      int(self.frame_num[y]), dtype = np.float64)
             self.time_video = np.append(self.time_video, time_video_temp)
             if y < self.step_num-1: 
-                tstart = self.time1[int((y+1)*self.ptsnumber/self.step_num)] #CHANGE TO DIRECT DATA
+                tstart = time1[int((y+1)*self.ptsnumber/self.step_num)] #CHANGE TO DIRECT DATA
 
         #noise filter lateral force
-        if self.flag_lf_filter == True:
-            self.force_lat1_filtered = savgol_filter(self.force_lat1, self.window_length,
-                                                     self.polyorder).tolist()
-        else:
-            self.force_lat1_filtered = []
-
-        self.forceDict["force_adhesion1"] = []
-        self.forceDict["force_preload1"] = []
-        self.forceDict["force_friction"] = []
-        self.forceDict["force_preload2"] = []
-        self.forceDict["force_max1"] = []
-        self.forceDict["force_max2"] = []
-        self.forceDict["force_min1"] = []
-        self.forceDict["zero1"] = []
-        self.forceDict["force_lat_min"] = []
-        self.forceDict["force_lat_max"] = []
-        self.indDict["force_lat_max_index"] = []
-        self.indDict["force_lat_min_index"] = []
-##        self.indDict["contact_time1"] = []
-        self.indDict["time1_max"] = []
-
-        for k in self.rangeDict.keys():
-            print(self.rangeDict.keys())
-            if len(self.rangeDict.keys()) > 1 and k == "Default":
+        # if self.flag_lf_filter == True:
+        #     self.force_lat1_filtered = savgol_filter(self.force_lat1, self.window_length,
+        #                                              self.polyorder).tolist()
+        # else:
+        #     self.force_lat1_filtered = []                
+        
+        force_vert1 = self.fileDataDict["Vertical force"]
+        force_lat1 = self.fileDataDict["Lateral force"]
+        
+#         self.forceDict["force_adhesion1"] = []
+#         self.forceDict["force_preload1"] = []
+#         self.forceDict["force_friction"] = []
+#         self.forceDict["force_preload2"] = []
+#         self.forceDict["force_max1"] = []
+#         self.forceDict["force_max2"] = []
+#         self.forceDict["force_min1"] = []
+#         self.forceDict["zero1"] = []
+#         self.forceDict["force_lat_min"] = []
+#         self.forceDict["force_lat_max"] = []
+#         self.indDict["force_lat_max_index"] = []
+#         self.indDict["force_lat_min_index"] = []
+# ##        self.indDict["contact_time1"] = []
+#         self.indDict["time1_max"] = []
+        
+        self.forceDict = {} #force calculation values
+        self.indDict = {} #index values
+        # self.summaryDataDict = {} #summary data values
+        self.summaryDataDict['Vertical force'] = {}
+        self.summaryDataDict['Lateral force'] = {}
+        
+        roi_list = dataAnalDict["Vertical force"]["ranges"].keys()
+        for k in roi_list:
+            print(roi_list)
+            if len(roi_list) > 1 and k == "Default":
                 continue
+            #initialize dict for the given roi label
+            self.forceDict[k] = {}
+            self.indDict[k] = {}
+            self.summaryDataDict['Vertical force'][k] = {}
+            self.summaryDataDict['Lateral force'][k] = {}
                 #calculate friction force
 ##            if self.flag_lf == True or self.flag_lf_filter == True:
-            friction_slice = slice(int(self.rangeDict[k][3][0] * self.ptsnumber/100),
-                           int(self.rangeDict[k][3][1] * self.ptsnumber/100))
-            force_lat_max = max(self.force_lat1[friction_slice])
+            limits = eval(dataAnalDict["Lateral force"]["ranges"][k]["Force"])
+            friction_slice = slice(limits[0], limits[1]+1)
+            # friction_slice = slice(int(self.rangeDict[k][3][0] * self.ptsnumber/100),
+            #                int(self.rangeDict[k][3][1] * self.ptsnumber/100))
+            force_lat_max = max(force_lat1[friction_slice])
             force_lat_max_index = friction_slice.start + \
-                                       self.force_lat1[friction_slice]. \
+                                       force_lat1[friction_slice]. \
                                        index(force_lat_max)
-            force_lat_min = min(self.force_lat1[friction_slice])
+            force_lat_min = min(force_lat1[friction_slice])
             force_lat_min_index = friction_slice.start + \
-                                       self.force_lat1[friction_slice]. \
+                                       force_lat1[friction_slice]. \
                                        index(force_lat_min)
             force_friction = abs(force_lat_max - force_lat_min)
             print(friction_slice, force_lat_max_index, force_lat_min_index)
@@ -296,92 +440,116 @@ class ForceAnal(Plotting):
 ##                                                              self.time1[dist_vert1_max_index])        
 
             #ignore first point of force data due to overshoot
-            adh_slice = slice(int(self.rangeDict[k][1][0] * self.ptsnumber/100),
-                               int(self.rangeDict[k][1][1] * self.ptsnumber/100))
-            force_min1 = min(self.force_vert1[adh_slice])
+            limits = eval(dataAnalDict["Vertical force"]["ranges"][k]["Force"])
+            adh_slice = slice(limits[0], limits[1]+1)
+            # adh_slice = slice(int(self.rangeDict[k][1][0] * self.ptsnumber/100),
+            #                    int(self.rangeDict[k][1][1] * self.ptsnumber/100))
+            force_min1 = min(force_vert1[adh_slice])
             self.force_min_index = adh_slice.start + \
-                              self.force_vert1[adh_slice].index(force_min1)
-
-            prl1_slice = slice(int(self.rangeDict[k][2][0] * self.ptsnumber/100),
-                               int(self.rangeDict[k][2][1] * self.ptsnumber/100))
-            force_max1 = max(self.force_vert1[prl1_slice])
-
-            prl2_slice = slice(int(self.rangeDict[k][4][0] * self.ptsnumber/100),
-                               int(self.rangeDict[k][4][1] * self.ptsnumber/100))
-            force_max2 = max(self.force_vert1[prl2_slice])
+                              force_vert1[adh_slice].index(force_min1)
+            limits = eval(dataAnalDict["Vertical force"]["ranges"][k]["Preload"])
+            prl1_slice = slice(limits[0], limits[1]+1)
+            # prl1_slice = slice(int(self.rangeDict[k][2][0] * self.ptsnumber/100),
+            #                    int(self.rangeDict[k][2][1] * self.ptsnumber/100))
+            force_max1 = max(force_vert1[prl1_slice])
             
-            zero_slice = slice(int(self.rangeDict[k][0][0] * self.ptsnumber/100),
-                               int(self.rangeDict[k][0][1] * self.ptsnumber/100))
-            zero1 = mean(self.force_vert1[zero_slice]) #average n points as vert zero
-            zero1_stdv = stdev(self.force_vert1[zero_slice]) #vertical force error
-            zero2_slice = slice(int(self.rangeDict[k][5][0] * self.ptsnumber/100),
-                               int(self.rangeDict[k][5][1] * self.ptsnumber/100))
-            zero2 = mean(self.force_lat1[zero2_slice]) #average n points as lat zero
-            zero2_stdv = stdev(self.force_lat1[zero2_slice]) #lateral force error
-            time1_max = self.time1[self.force_min_index]
+            limits = eval(dataAnalDict["Lateral force"]["ranges"][k]["Preload"])
+            prl2_slice = slice(limits[0], limits[1]+1)
+            # prl2_slice = slice(int(self.rangeDict[k][4][0] * self.ptsnumber/100),
+            #                    int(self.rangeDict[k][4][1] * self.ptsnumber/100))
+            force_max2 = max(force_vert1[prl2_slice])
+            
+            limits = eval(dataAnalDict["Vertical force"]["ranges"][k]["Zero"])
+            zero_slice = slice(limits[0], limits[1]+1)
+            # zero_slice = slice(int(self.rangeDict[k][0][0] * self.ptsnumber/100),
+            #                    int(self.rangeDict[k][0][1] * self.ptsnumber/100))
+            zero1 = mean(force_vert1[zero_slice]) #average n points as vert zero
+            zero1_stdv = stdev(force_vert1[zero_slice]) #vertical force error
+            
+            limits = eval(dataAnalDict["Lateral force"]["ranges"][k]["Zero"])
+            zero2_slice = slice(limits[0], limits[1]+1)
+            # zero2_slice = slice(int(self.rangeDict[k][5][0] * self.ptsnumber/100),
+            #                    int(self.rangeDict[k][5][1] * self.ptsnumber/100))
+            zero2 = mean(force_lat1[zero2_slice]) #average n points as lat zero
+            zero2_stdv = stdev(force_lat1[zero2_slice]) #lateral force error
+            time1_max = time1[self.force_min_index]
 
-            zero2_filter = mean(self.force_lat1[zero2_slice]) #average n points as lat zero
+            zero2_filter = mean(force_lat1[zero2_slice]) #average n points as lat zero
 
             force_preload1 = abs(force_max1 - zero1) #adhesion preload
-            if self.flag_lf == True or self.flag_lf_filter == True:
-                force_preload2 = abs(force_max2 - zero1) #friction preload
-            else:
-                force_preload2 = 0
+            # if self.flag_lf == True or self.flag_lf_filter == True:
+            force_preload2 = abs(force_max2 - zero1) #friction preload
+            # else:
+            #     force_preload2 = 0
             force_adhesion1 = abs(force_min1 - zero1)
             print(force_preload1, force_adhesion1, self.speed_um)
 
-            self.forceDict["force_adhesion1"].append(force_adhesion1)
-            self.forceDict["force_preload1"].append(force_preload1)
-            self.forceDict["force_friction"].append(force_friction)
-            self.forceDict["force_preload2"].append(force_preload2)
-            self.forceDict["force_max2"].append(force_max2)
-            self.forceDict["force_max1"].append(force_max1)
-            self.forceDict["force_min1"].append(force_min1)
-            self.forceDict["zero1"].append(zero1)
-            self.forceDict["zero1_stdv"] = zero1_stdv
-            self.forceDict["zero2"] = zero2
-            self.forceDict["zero2_stdv"] = zero2_stdv
-            self.forceDict["force_lat_min"].append(force_lat_min)
-            self.forceDict["force_lat_max"].append(force_lat_max)
-            self.indDict["force_lat_max_index"].append(force_lat_max_index)
-            self.indDict["force_lat_min_index"].append(force_lat_min_index)
+            self.summaryDataDict['Vertical force'][k]["Pulloff Force"] = force_adhesion1
+            self.summaryDataDict['Vertical force'][k]["Adhesion Preload"] = force_preload1
+            self.summaryDataDict['Vertical force'][k]["Vertical Force Stdev"] = zero1_stdv
+            self.summaryDataDict['Lateral force'][k]["Friction Force"] = force_friction
+            self.summaryDataDict['Lateral force'][k]["Friction Preload"] = force_preload2
+            self.summaryDataDict['Lateral force'][k]["Lateral Force Stdev"] = zero2_stdv
+            
+            self.forceDict[k]["force_max2"] = force_max2
+            self.forceDict[k]["force_max1"] = force_max1
+            self.forceDict[k]["force_min1"] = force_min1
+            self.forceDict[k]["zero1"] = zero1
+            # self.forceDict[k]["zero1_stdv"] = zero1_stdv
+            self.forceDict[k]["zero2"] = zero2
+            # self.forceDict[k]["zero2_stdv"] = zero2_stdv
+            self.forceDict[k]["force_lat_min"] = force_lat_min
+            self.forceDict[k]["force_lat_max"] = force_lat_max
+            self.indDict[k]["force_lat_max_index"] = force_lat_max_index
+            self.indDict[k]["force_lat_min_index"] = force_lat_min_index
 ##            self.indDict["contact_time1"].append(contact_time1)
-            self.indDict["time1_max"].append(time1_max)
+            self.indDict[k]["time1_max"] = time1_max
             print("end")
 
         #IMP: CHECK zero1 VARIABLE BELOW. DIFFERENT ZEROS NOT CONSIDERED BELOW!
         #shift force data for plotting
-        if self.flag_zshift == True:
-            self.force_vert1_shifted = [x-zero1 for x in self.force_vert1]
-            self.force_lat1_shifted = [x-zero2 for x in self.force_lat1]
-            self.force_lat1_filtered_shifted = [x-zero2_filter for x in self.force_lat1_filtered]
-        else:
-            self.force_vert1_shifted = self.force_vert1
-            self.force_lat1_shifted = self.force_lat1
-            self.force_lat1_filtered_shifted = self.force_lat1_filtered           
-
-        self.speedDict = {} #step number corresponding to sliding/attachment detachment
+        # if self.flag_zshift == True:
+        #     self.force_vert1_shifted = [x-zero1 for x in self.force_vert1]
+        #     self.force_lat1_shifted = [x-zero2 for x in self.force_lat1]
+        #     self.force_lat1_filtered_shifted = [x-zero2_filter for x in self.force_lat1_filtered]
+        # else:
+        #     self.force_vert1_shifted = self.force_vert1
+        #     self.force_lat1_shifted = self.force_lat1
+        #     self.force_lat1_filtered_shifted = self.force_lat1_filtered           
+        self.speed_um = [x/1000 for x in self.speed] #speed in μm/s
+        # self.fileDataDict2["Speed"] = self.speed_um
+        # self.summaryDataDict['data params'] = {}
+        self.summaryDataDict['data params']['Speed'] = {}
+        # self.summaryDataDict['misc']['Speed']["Speed list"] = self.speed_um
+        
+        # self.speedDict = {} #step number corresponding to sliding/attachment detachment
         self.ptsperstep = int(self.ptsnumber/self.step_num) #number of points per step
         force_lat_index = int(mean([force_lat_min_index, force_lat_max_index]))
         print(force_lat_index, self.ptsperstep, self.ptsnumber)
         if self.steps[0] == "Up/Down":
-            self.speedDict["Sliding Speed"] = 0
-            self.speedDict["Detachment Speed"] = self.speed[0]
-            self.speedDict["Attachment Speed"] = self.speed[0] #CHECK!
+            self.summaryDataDict['data params']['Speed']["Sliding Speed"] = 0
+            self.summaryDataDict['data params']['Speed']["Detachment Speed"] = self.speed[0]
+            self.summaryDataDict['data params']['Speed']["Attachment Speed"] = self.speed[0] #CHECK!
             self.slideStep = "None"
         else:
-            self.speedDict["Sliding Speed"] = self.speed_um[int(force_lat_index/self.ptsperstep)]
+            self.summaryDataDict['data params']['Speed']["Sliding Speed"] = self.speed_um[int(force_lat_index/self.ptsperstep)]
             ind_detach = int(self.force_min_index/self.ptsperstep)
-            self.speedDict["Detachment Speed"] = self.speed_um[ind_detach]
+            self.summaryDataDict['data params']['Speed']["Detachment Speed"] = self.speed_um[ind_detach]
             #last down step bfore detachment
-            self.speedDict["Attachment Speed"] = self.speed_um[ind_detach - \
+            self.summaryDataDict['data params']['Speed']["Attachment Speed"] = self.speed_um[ind_detach - \
                                            self.steps[ind_detach::-1].index('Down')]
             #lateral sliding step
             self.slideStep = self.steps[int(force_lat_index/self.ptsperstep)]
             print("slide step ", force_lat_index, self.ptsperstep)
-            print("Speed dict", self.speedDict)
+            # print("Speed dict", self.speedDict)
+                   
         self.contact_time1 = sum(self.pause) #contact time
         
+        # self.fileDataDict2["Sliding Step"] = self.slideStep
+        # self.fileDataDict2["Contact Time"] = self.contact_time1
+        # self.summaryDataDict['data params']["Sliding Step"] = self.slideStep
+        self.summaryDataDict['data params']['Time'] = {}
+        self.summaryDataDict['data params']['Time']["Contact Time"] = self.contact_time1
         #calculate actual vertical deformation
         # for a in self.force_vert1: 
         #     if abs(a-zero1) > self.deform_tol*zero1_stdv: #point of contact for given tolerence
@@ -389,90 +557,127 @@ class ForceAnal(Plotting):
         #         break
         #     else:
         #         deform_index1 = 0
-        deform_index1 = self.deform_tol #index of point of contact
-        deform_index2 = max([self.force_vert1.index(a) for a in self.forceDict["force_min1"]]) #point of contact loss
-        print("deform index", deform_index1, deform_index2)
-        self.deform_init = self.dist_vert1[deform_index1]#piezo value at contact loss
-        self.deform_vert = [self.dist_vert1[i] - self.deform_init - \
-                            ((self.force_vert1[i] - zero1)/float(self.k_beam.split(',')[0])) \
-                                if i >= deform_index1 and i <= deform_index2 else 0 \
-                                    for i in range(len(self.dist_vert1))]
-        self.deform_pulloff = self.deform_vert[deform_index2] #deformation at contact loss
-        
-        #calculate adhesion energy (area under curve)
-        pulloff_index = int(self.ptsperstep * int(self.force_min_index/self.ptsperstep))
-        force_shifted = [x-zero1 for x in self.force_vert1]
-        zero_index = (force_shifted[pulloff_index:deform_index2+1].index\
-            (sorted([[abs(a - 0), a] for a in force_shifted[pulloff_index:deform_index2+1]], 
-                    key=lambda l:l[0])[0][1])) + pulloff_index #point where force reaches zero
-        self.energy_slice = slice(zero_index, deform_index2 + 1)
-        self.energy_adhesion = integrate.simps(force_shifted[self.energy_slice],
-                                               self.deform_vert[self.energy_slice])
-        print("energy", self.energy_adhesion, pulloff_index, zero_index)
-        self.zero_array =zero1*np.ones(len(self.force_vert1))
-        
 
+        kBeam = dataAnalDict['misc settings']['beam spring constant'].text()
+        deform_limits = eval(dataAnalDict['misc settings']['deformation range'].text())
+        dist_vert1 = self.fileDataDict["Vertical piezo"]
+        # deform_index1 = int(dataAnalDict['misc settings']['deformation start'].text())
+        # deform_index1 = self.deform_tol #index of point of contact
+        # deform_index2 = max([self.force_vert1.index(a) for a in self.forceDict["force_min1"]]) #point of contact loss
+        # deform_index2 = len(self.force_vert1)-1 if deform_index2 <= deform_index1 else deform_index2
+        print("deform index", deform_limits[0], deform_limits[1])
+        self.deform_init = dist_vert1[deform_limits[0]]#piezo value at contact loss
+        self.fileDataDict["Deformation"] = [dist_vert1[i] - self.deform_init - \
+                            ((force_vert1[i] - zero1)/float(kBeam.split(',')[0])) \
+                                if i >= deform_limits[0] and i <= deform_limits[1] else 0 \
+                                    for i in range(len(dist_vert1))]
+        self.deform_pulloff = self.fileDataDict["Deformation"][deform_limits[1]] #deformation at contact loss
+        
+        #calculate adhesion energy (area under curve) 
+        #CHECK! Last zero1 value of rois taken for energy calculation
+        pulloff_index = int(self.ptsperstep * int(deform_limits[1]/self.ptsperstep)) #start index of contact loss "step"
+        force_shifted = [x-zero1 for x in force_vert1]
+        zero_index = (force_shifted[pulloff_index:deform_limits[1]+1].index\
+            (sorted([[abs(a - 0), a] for a in force_shifted[pulloff_index:deform_limits[1]+1]], 
+                    key=lambda l:l[0])[0][1])) + pulloff_index #point where force reaches zero
+        self.energy_slice = slice(zero_index, deform_limits[1] + 1)
+        self.energy_adhesion = integrate.simps(force_shifted[self.energy_slice],
+                                               self.fileDataDict["Deformation"][self.energy_slice])
+        print("energy", self.energy_adhesion, pulloff_index, zero_index)
+        self.zero_array =zero1*np.ones(len(force_vert1))
+        
+        # self.fileDataDict2["Initial Deformation"] = self.deform_init
+        # self.fileDataDict2["Pulloff Deformation"] = self.deform_pulloff
+        # self.fileDataDict2["Adhesion Energy"] = self.energy_adhesion
+        # self.summaryDataDict['misc'] = {}
+        self.summaryDataDict['misc']["Adhesion Energy"] = self.energy_adhesion
+        self.summaryDataDict['data params']['Deformation'] = {}
+        self.summaryDataDict['data params']['Deformation']["Initial Deformation"] = self.deform_init
+        self.summaryDataDict['data params']['Deformation']["Pulloff Deformation"] = self.deform_pulloff
+        
+        
     def getArea(self, time, dataDict): #get contact area/lenghths at pulloff etc
     #area data (2)
         print("Get area begin")
         self.dataDict = dataDict #data dictionary from videos
-
-        self.areaDict["area2_init"] = []
-        self.areaDict["area2_max"] = []
-        self.areaDict["area3_init"] = []
-        self.areaDict["area3_max"] = []
-        self.areaDict["area2_pulloff"] = []
-        self.areaDict["area2_residue"] = []
-        self.areaDict["area3_pulloff"] = []
-        self.areaDict["area_friction"] = []
-
-        self.lengthDict["contLength_init"] = []
-        self.lengthDict["contLength_max"] = []
-        self.lengthDict["roilen_init"] = []
-        self.lengthDict["roilen_max"] = []
-        self.lengthDict["contLength_pulloff"] = []
-        self.lengthDict["roilen_pulloff"] = []
-        self.lengthDict["ecc_pulloff"] = []
-        self.lengthDict["contnum_pulloff"] = []
-
-        self.ellipDict["ellipAr_max"] = []
-        self.ellipDict["ellipPer_max"] = []
-        self.ellipDict["ellipMajr_max"] = []
-        self.ellipDict["ellipMinr_max"] = []
         
-        self.indDict["time1_lat_avg"] = []
+        time1 = self.fileDataDict["Time"]
+
+        # self.areaDict["area2_init"] = []
+        # self.areaDict["area2_max"] = []
+        # self.areaDict["area3_init"] = []
+        # self.areaDict["area3_max"] = []
+        # self.areaDict["area2_pulloff"] = []
+        # self.areaDict["area2_residue"] = []
+        # self.areaDict["area3_pulloff"] = []
+        # self.areaDict["area_friction"] = []
+
+        # self.lengthDict["contLength_init"] = []
+        # self.lengthDict["contLength_max"] = []
+        # self.lengthDict["roilen_init"] = []
+        # self.lengthDict["roilen_max"] = []
+        # self.lengthDict["contLength_pulloff"] = []
+        # self.lengthDict["roilen_pulloff"] = []
+        # self.lengthDict["ecc_pulloff"] = []
+        # self.lengthDict["contnum_pulloff"] = []
+
+        # self.ellipDict["ellipAr_max"] = []
+        # self.ellipDict["ellipPer_max"] = []
+        # self.ellipDict["ellipMajr_max"] = []
+        # self.ellipDict["ellipMinr_max"] = []
+        
+        # self.indDict["time1_lat_avg"] = []
 
         self.time2 = time.tolist()
         area2_full = [0] * len(time) #initialize
 
         #area/length whole plot slice
-        time2_start = sorted([[abs(a - self.time1[self.plot_slice.start]), a] \
+        time2_start = sorted([[abs(a - time1[self.plot_slice.start]), a] \
                          for a in self.time2], key=lambda l:l[0])[0][1]
-        time2_end = sorted([[abs(a - self.time1[self.plot_slice.stop-1]), a] \
+        time2_end = sorted([[abs(a - time1[self.plot_slice.stop-1]), a] \
                          for a in self.time2], key=lambda l:l[0])[0][1]        
         self.plot_slice2 = slice(self.time2.index(time2_start),
                                 self.time2.index(time2_end) + 1)         
         i = 0
-        print(self.rangeDict.keys(), dataDict.keys())
+        print(dataDict.keys())
+        self.areaDict = {}
+        self.lengthDict = {}
+        # self.ellipDict = {}
+        self.summaryDataDict['Contact area'] = {}
+        self.summaryDataDict['Contact length'] = {}
+        self.summaryDataDict['ROI area'] = {}
+        self.summaryDataDict['ROI length'] = {}
+        self.summaryDataDict['Contact number'] = {}
+        self.summaryDataDict['Eccentricity'] = {}
         
-        for k in self.rangeDict.keys():
-            if len(self.rangeDict.keys()) > 1 and k == "Default":
+        for k in self.dataDict.keys():
+            if len(self.dataDict.keys()) > 1 and k == "Default":
                 continue
             print(k)
-            area2 = dataDict[k][0].tolist() #contact area
-            contLength = dataDict[k][1].tolist() #contact length
-            contnum = dataDict[k][2].tolist() #contact number
-            area3 = dataDict[k][3].tolist() #roi area
-            roilen = dataDict[k][4].tolist() #roi length
-            ecc = dataDict[k][5].tolist() #median eccentricity
-            print("ellip", dataDict[k][6][0])
-            ellipMajr = [x[3]*max(x[1][0],x[1][1]) for x in dataDict[k][6]] #ellipse major axis length
-            ellipMinr = [x[3]*min(x[1][0],x[1][1]) for x in dataDict[k][6]] #ellipse minor axis length
-            ellipAr = [np.pi*(x[1][0]/2)*(x[1][1]/2)*(x[3]**2) for x in dataDict[k][6]] #bounding ellipse area
+            self.areaDict[k] = {}
+            self.lengthDict[k] = {}
+            self.summaryDataDict['Contact area'][k] = {}
+            self.summaryDataDict['Contact length'][k] = {}
+            self.summaryDataDict['ROI area'][k] = {}
+            self.summaryDataDict['ROI length'][k] = {}
+            self.summaryDataDict['Contact number'][k] = {}
+            self.summaryDataDict['Eccentricity'][k] = {}            
+            # self.ellipDict[k] = {}
+            
+            area2 = dataDict[k]["Contact area"].tolist() #contact area
+            contLength = dataDict[k]["Contact length"].tolist() #contact length
+            contnum = dataDict[k]["Contact number"].tolist() #contact number
+            area3 = dataDict[k]["ROI area"].tolist() #roi area
+            roilen = dataDict[k]["ROI length"].tolist() #roi length
+            ecc = dataDict[k]["Eccentricity"].tolist() #median eccentricity
+            # print("ellip", dataDict[k][6][0])
+            ellipMajr = [x[3]*max(x[1][0],x[1][1]) for x in dataDict[k]["Ellipse fit"]] #ellipse major axis length
+            ellipMinr = [x[3]*min(x[1][0],x[1][1]) for x in dataDict[k]["Ellipse fit"]] #ellipse minor axis length
+            ellipAr = [np.pi*(x[1][0]/2)*(x[1][1]/2)*(x[3]**2) for x in dataDict[k]["Ellipse fit"]] #bounding ellipse area
             ellipPer = [x[3]*np.pi*((3*((x[1][0]/2)+(x[1][1]/2)))-\
                                     (((3*x[1][0]/2)+(x[1][1]/2))*\
                                      ((x[1][0]/2)+(3*x[1][1]/2)))**0.5)\
-                        for x in dataDict[k][6]] #bounding ellipse perimeter (Ramanujan first approximation)
+                        for x in dataDict[k]["Ellipse fit"]] #bounding ellipse perimeter (Ramanujan first approximation)
             
             
             area2_init = area2[0] #initial areas/lengths
@@ -485,7 +690,7 @@ class ForceAnal(Plotting):
             area3_max = max(area3)
             contLength_max = max(contLength)
             roilen_max = max(roilen)
-            time2_max = sorted([[abs(a - self.indDict["time1_max"][i]), a] \
+            time2_max = sorted([[abs(a - self.indDict[k]["time1_max"]), a] \
                                      for a in self.time2], key=lambda l:l[0])[:2]
             print(time2_max)
 
@@ -524,12 +729,12 @@ class ForceAnal(Plotting):
                 return
                      
             print("adhesion calc", area2_max,
-                  self.indDict["time1_max"][i], time2_max, area2_pulloff)
+                  self.indDict[k]["time1_max"], time2_max, area2_pulloff)
 
 ##            if self.flag_lf == True or self.flag_lf_filter == True:
-            force_lat_avg_index = int(mean([self.indDict["force_lat_max_index"][i],
-                                           self.indDict["force_lat_min_index"][i]]))
-            time1_lat_avg = self.time1[force_lat_avg_index]
+            force_lat_avg_index = int(mean([self.indDict[k]["force_lat_max_index"],
+                                           self.indDict[k]["force_lat_min_index"]]))
+            time1_lat_avg = time1[force_lat_avg_index]
             time2_lat_avg = sorted([[abs(a - time1_lat_avg), a] \
                                  for a in self.time2], key=lambda l:l[0])[:2]
             wt_sum2 = time2_lat_avg[0][0] + time2_lat_avg[1][0] #take weighted avg
@@ -551,35 +756,51 @@ class ForceAnal(Plotting):
 ##            else:
 ##                area_friction = area2_init #zero
 ##                time1_lat_avg = 0
-
-            #get bounding ellipse properties at maximum contact
-            ind_max = area2.index(area2_max) #index of maximum contact
-            self.ellipDict["ellipAr_max"].append(ellipAr[ind_max])
-            self.ellipDict["ellipPer_max"].append(ellipPer[ind_max])
-            self.ellipDict["ellipMajr_max"].append(ellipMajr[ind_max])
-            self.ellipDict["ellipMinr_max"].append(ellipMinr[ind_max])
+            
+            self.indDict[k]["time1_lat_avg"] = time1_lat_avg
 
             #save contour properties to dictionary
-            self.areaDict["area2_init"].append(area2_init)
-            self.areaDict["area2_max"].append(area2_max)
-            self.areaDict["area3_init"].append(area3_init)
-            self.areaDict["area3_max"].append(area3_max)
-            self.areaDict["area2_pulloff"].append(area2_pulloff)
-            self.areaDict["area3_pulloff"].append(area3_pulloff)
-            self.areaDict["area_friction"].append(area_friction)
-            self.areaDict["area2_residue"].append(area2_residue)
+            self.areaDict[k]["area2_init"] = area2_init
+            self.areaDict[k]["area2_max"] = area2_max
+            self.areaDict[k]["area3_init"] = area3_init
+            self.areaDict[k]["area3_max"] = area3_max
+            self.areaDict[k]["area2_pulloff"] = area2_pulloff
+            self.areaDict[k]["area3_pulloff"] = area3_pulloff
+            self.areaDict[k]["area_friction"] = area_friction
+            self.areaDict[k]["area2_residue"] = area2_residue
 
-            self.lengthDict["contLength_init"].append(contLength_init)
-            self.lengthDict["contLength_max"].append(contLength_max)
-            self.lengthDict["roilen_init"].append(roilen_init)
-            self.lengthDict["roilen_max"].append(roilen_max)
-            self.lengthDict["contLength_pulloff"].append(contLength_pulloff)
-            self.lengthDict["roilen_pulloff"].append(roilen_pulloff)
-            self.lengthDict["ecc_pulloff"].append(ecc_pulloff)
-            self.lengthDict["contnum_pulloff"].append(contnum_pulloff)
+            self.summaryDataDict['Contact area'][k]["Max Area"] = area2_max - area2_init
+            self.summaryDataDict['Contact area'][k]["Pulloff Area"] = area2_pulloff - area2_init
+            self.summaryDataDict['ROI area'][k]["ROI Max Area"] = area3_max
+            self.summaryDataDict['ROI area'][k]["ROI Pulloff Area"] = area3_pulloff
+            self.summaryDataDict['Contact area'][k]["Friction Area"] = area_friction - area2_init
+            self.summaryDataDict['Contact area'][k]["Residue Area"] = area2_residue - area2_init
+
+            self.lengthDict[k]["contLength_init"] = contLength_init
+            self.lengthDict[k]["contLength_max"] = contLength_max
+            self.lengthDict[k]["roilen_init"] = roilen_init
+            self.lengthDict[k]["roilen_max"] = roilen_max
+            self.lengthDict[k]["contLength_pulloff"] = contLength_pulloff
+            self.lengthDict[k]["roilen_pulloff"] = roilen_pulloff
+            # self.lengthDict[k]["ecc_pulloff"] = ecc_pulloff
+            # self.lengthDict[k]["contnum_pulloff"] = contnum_pulloff
             
-            self.indDict["time1_lat_avg"].append(time1_lat_avg)
-
+            self.summaryDataDict["Contact length"][k]["Max Length"] = contLength_max - contLength_init
+            self.summaryDataDict["Contact length"][k]["Pulloff Length"] = contLength_pulloff - contLength_init
+            self.summaryDataDict["ROI length"][k]["ROI Max Length"] = roilen_max
+            self.summaryDataDict["ROI length"][k]["ROI Pulloff Length"] = roilen_pulloff
+            
+            self.summaryDataDict["Eccentricity"][k]["Pulloff Median Eccentricity"] = ecc_pulloff
+            self.summaryDataDict['Contact number'][k]["Pulloff Contact Number"] = contnum_pulloff
+            
+            #get bounding ellipse properties at maximum contact
+            ind_max = area2.index(area2_max) #index of maximum contact
+            self.summaryDataDict['Contact area'][k]["Max Bounding Area"] = ellipAr[ind_max]
+            self.summaryDataDict["Contact length"][k]["Max Bounding Perimeter"] = ellipPer[ind_max]
+            self.summaryDataDict["Contact length"][k]["Max Bounding Length"] = ellipMajr[ind_max]
+            self.summaryDataDict["Contact length"][k]["Max Bounding Width"] = ellipMinr[ind_max]
+            
+            
             #calculate full area
             area2_full = [area2_full[i] + area2[i] for i in range(len(area2))]
             i += 1
@@ -588,19 +809,23 @@ class ForceAnal(Plotting):
         # area_interpol = [self.interpolData(self.time1[i], area2_full) \
         #                     for i in range(len(self.time1))]
         
-        if self.flag_st == True or self.flag_lf_filter == True: #stress    
+        # if self.flag_st == True or self.flag_lf_filter == True: #stress   
+        if self.configPlotWindow.plotDict['extras']['Stress'].isChecked() == True: #stress  
             #local stress dF/dA #CHECK
     ##        stress_local = np.diff(np.array(self.force_vert1))/np.diff(np.array(area_interpol))
     ##        self.stress = np.append(stress_local, stress_local[-1]) #make array size same as time1
             
             
             #stress F/A
-            self.stress = [(self.force_vert1[i]-self.forceDict["zero1"][0])/
-                           (self.interpolData(self.time1[i], area2_full)-
-                            self.interpolData(self.time1[0], area2_full)) for i \
-                      in range(len(self.time1))]
-            #noise filter stress
-            k_size = self.window_length+1 if self.window_length % 2 == 0 else self.window_length
+            self.stress = [(self.fileDataDict["Vertical force"][i]-
+                            self.fileDataDict["Vertical force"][0])/
+                           (self.interpolData(time1[i], area2_full)-
+                            self.interpolData(time1[0], area2_full)) for i \
+                      in range(len(time1))]
+            #noise filter stress using vertical force filter parameters
+            window_length = self.analyzeDataWindow.dataAnalDict["Vertical force"]\
+                ["transform"]["Filter window"]
+            k_size = window_length+1 if window_length % 2 == 0 else window_length
             self.stress_filtered = medfilt(self.stress, kernel_size=k_size).tolist()
         
         print("get area finished")
@@ -997,31 +1222,44 @@ class ForceAnal(Plotting):
 #         print("save plot")
 #         self.fig1.savefig(filepath, orientation='landscape',
 #                           transparent = True)
-
-    def saveSummaryData(self, videofile1, videofile2, zeroforcefile, unit, msrmnt_num, summary_filepath): #save and append data
+    
+    #find corresponding unit from the different unit dictionaries
+    def findUnit(self, key):
+        if key in self.unitDict.keys():
+            return self.unitDict[key].replace('$', '')
+        elif key in self.imageDataUnitDict.keys():
+            return self.imageDataUnitDict[key].replace('$', '')
+        elif key in self.miscUnitDict.keys():
+            return self.miscUnitDict[key].replace('$', '')
+        else:
+            return '' #no unit
+        
+    
+    def saveSummaryData(self, videofile1, videofile2, zeroforcefile, imageDataUnitDict, 
+                        msrmnt_num, summary_filepath): #save and append data
         print("save summary")
 ##        self.summary_filepath = os.path.dirname(os.path.dirname(
 ##            self.force_filepath))+ "/Analysis/Summary/summary data.txt"
-        if os.path.exists(summary_filepath) == False:
-            with open(summary_filepath, "w", encoding="utf-8") as f:
-##                f.write("Lateral Force Calib [μN] \t" + self.calib_lat1 + "\n")
-                f.write("Max Area [" + unit + "^2]\tPulloff Area [" + unit + "^2]\tAdhesion [μN]\t" +
-                        "Adhesion Preload [μN]\tContact Time[s]\tSpeed [μm/s]\t" +
-                        "Steps\tFriction [μN]\tFriction Area [" + unit + "^2]\t" +
-                        "Friction Preload [μN]\tMeasurement number\t" +
-                        "Measurement OK?\tROI Labels\t" +
-                        "Step Dictionary\tVertical Force Stdev\t" +
-                        "Lateral Force Stdev\tSliding Step\t" +
-                        "ROI Max Area [" + unit + "^2]\tROI Pulloff Area [" + unit + "^2]\t" +
-                        "Max Length [" + unit + "]\tPulloff Length [" + unit + "]\t" +
-                        "ROI Max Length [" + unit + "^2]\tROI Pulloff Length [" + unit + "^2]\t" +
-                        "Pulloff Median Eccentricity\tPulloff Contact Number\t" +
-                        "Residue Area [" + unit + "^2]\tSlope [" + self.slope_unit + "]\t" + 
-                        "Beam Spring Constant [μN/μm]\tBeam Spring Constant Stdev\t" + 
-                        "Initial Deformation[μm]\tPulloff Deformation[μm]\tAdhesion Energy [pJ]\t" +
-                        "Max Bounding Area [" + unit + "^2]\t Max Bounding Perimeter [" + unit + "]\t" +
-                        "Max Bounding Length [" + unit + "]\tMax Bounding Width [" + unit + "]\t" +
-                        "Video file\tForce data file\t2nd Video file\tZero-Force file\n")
+#         if os.path.exists(summary_filepath) == False:
+#             with open(summary_filepath, "w", encoding="utf-8") as f:
+# ##                f.write("Lateral Force Calib [μN] \t" + self.calib_lat1 + "\n")
+#                 f.write("Max Area [" + unit + "^2]\tPulloff Area [" + unit + "^2]\tAdhesion [μN]\t" +
+#                         "Adhesion Preload [μN]\tContact Time[s]\tSpeed [μm/s]\t" +
+#                         "Steps\tFriction [μN]\tFriction Area [" + unit + "^2]\t" +
+#                         "Friction Preload [μN]\tMeasurement number\t" +
+#                         "Measurement OK?\tROI Labels\t" +
+#                         "Step Dictionary\tVertical Force Stdev\t" +
+#                         "Lateral Force Stdev\tSliding Step\t" +
+#                         "ROI Max Area [" + unit + "^2]\tROI Pulloff Area [" + unit + "^2]\t" +
+#                         "Max Length [" + unit + "]\tPulloff Length [" + unit + "]\t" +
+#                         "ROI Max Length [" + unit + "^2]\tROI Pulloff Length [" + unit + "^2]\t" +
+#                         "Pulloff Median Eccentricity\tPulloff Contact Number\t" +
+#                         "Residue Area [" + unit + "^2]\tSlope [" + self.slope_unit + "]\t" + 
+#                         "Beam Spring Constant [μN/μm]\tBeam Spring Constant Stdev\t" + 
+#                         "Initial Deformation[μm]\tPulloff Deformation[μm]\tAdhesion Energy [pJ]\t" +
+#                         "Max Bounding Area [" + unit + "^2]\t Max Bounding Perimeter [" + unit + "]\t" +
+#                         "Max Bounding Length [" + unit + "]\tMax Bounding Width [" + unit + "]\t" +
+#                         "Video file\tForce data file\t2nd Video file\tZero-Force file\n")
 
 ##        max_area = [self.areaDict["area2_max"][k] - self.areaDict["area2_init"][k] \
 ##                    for k in range(0, len(self.dataDict.keys())-1)]
@@ -1030,97 +1268,192 @@ class ForceAnal(Plotting):
 ##        friction_area = [self.areaDict["area_friction"][k] - self.areaDict["area2_init"][k] \
 ##                    for k in range(0, len(self.dataDict.keys())-1)]
         
-        roi_label = []
-        max_area2 = []
-        pulloff_area2 = []
-        max_area3 = []
-        pulloff_area3 = []
-        friction_area = []
-        max_contLength = []
-        pulloff_contLength = []
-        max_roilen = []
-        pulloff_roilen = []
-        pulloff_ecc = []
-        pulloff_contnum = []
-        residue_area2 = []
-        adhesion = []
-        preload1 = []
-##        contact_time = []
-        friction = []
-        preload2 = []
-        elip_area = []
-        elip_per = []
-        elip_maj = []
-        elip_min = []
-        i = 0
-        for k in self.rangeDict.keys():
-            print(i)
-            if len(self.rangeDict.keys()) > 1 and k == "Default":
-                continue
-            roi_label.append(k)
-            max_area2.append(self.areaDict["area2_max"][i] -
-                             self.areaDict["area2_init"][i])
-            pulloff_area2.append(self.areaDict["area2_pulloff"][i] -
-                                 self.areaDict["area2_init"][i])
-            max_area3.append(self.areaDict["area3_max"][i])
-            pulloff_area3.append(self.areaDict["area3_pulloff"][i])
-            friction_area.append(self.areaDict["area_friction"][i] -
-                                 self.areaDict["area2_init"][i])
-            max_contLength.append(self.lengthDict["contLength_max"][i] -
-                            self.lengthDict["contLength_init"][i])
-            pulloff_contLength.append(self.lengthDict["contLength_pulloff"][i] -
-                                      self.lengthDict["contLength_init"][i])
-            max_roilen.append(self.lengthDict["roilen_max"][i])
-            pulloff_roilen.append(self.lengthDict["roilen_pulloff"][i])
-            pulloff_ecc.append(self.lengthDict["ecc_pulloff"][i])
-            pulloff_contnum.append(self.lengthDict["contnum_pulloff"][i])
-            residue_area2.append(self.areaDict["area2_residue"][i] -
-                                 self.areaDict["area2_init"][i])            
-            adhesion.append(self.forceDict["force_adhesion1"][i])
-            preload1.append(self.forceDict["force_preload1"][i])
-##            contact_time.append(self.indDict["contact_time1"][i])
-            friction.append(self.forceDict["force_friction"][i])
-            preload2.append(self.forceDict["force_preload2"][i])
-            elip_area.append(self.ellipDict["ellipAr_max"][i])
-            elip_per.append(self.ellipDict["ellipPer_max"][i])
-            elip_maj.append(self.ellipDict["ellipMajr_max"][i])
-            elip_min.append(self.ellipDict["ellipMinr_max"][i])
-            
-            i += 1
+#         roi_label = []
+#         max_area2 = []
+#         pulloff_area2 = []
+#         max_area3 = []
+#         pulloff_area3 = []
+#         friction_area = []
+#         max_contLength = []
+#         pulloff_contLength = []
+#         max_roilen = []
+#         pulloff_roilen = []
+#         pulloff_ecc = []
+#         pulloff_contnum = []
+#         residue_area2 = []
+#         adhesion = []
+#         preload1 = []
+# ##        contact_time = []
+#         friction = []
+#         preload2 = []
+#         elip_area = []
+#         elip_per = []
+#         elip_maj = []
+#         elip_min = []
+#         i = 0
+        self.imageDataUnitDict = imageDataUnitDict
+        # self.summaryDataDict['data params'] = {}
+        self.summaryDataDict['measurement params']['Measurement number'] = msrmnt_num
+        self.summaryDataDict['measurement params']['Measurement OK?'] = 'Y' #CHANGE!
+        # self.summaryDataDict['data params']["Steps"] = self.steps        
+        self.summaryDataDict['misc']["Sliding Step"] = self.slideStep
         
-        with open(summary_filepath, "a") as f:
-            f.write(str(max_area2)+'\t' +
-                    str(pulloff_area2)+'\t' +
-                    str(adhesion) + '\t' +
-                    str(preload1) +'\t' +
-                    str(self.contact_time1) +'\t' +
-                    str(self.speed_um) + '\t' + str(self.steps) + '\t' +
-                    str(friction) + '\t' +
-                    str(friction_area) + '\t' +
-                    str(preload2) + '\t' +
-                    str(msrmnt_num) + '\tY\t' +
-                    str(roi_label) + '\t' + str(self.speedDict) + '\t' +
-                    str(self.forceDict["zero1_stdv"]) + '\t' +
-                    str(self.forceDict["zero2_stdv"]) + '\t' +
-                    self.slideStep + '\t' +
-                    str(max_area3)+'\t' +
-                    str(pulloff_area3)+'\t' +
-                    str(max_contLength)+'\t' +
-                    str(pulloff_contLength)+'\t' +
-                    str(max_roilen)+'\t' +
-                    str(pulloff_roilen)+'\t' +
-                    str(pulloff_ecc)+'\t' +
-                    str(pulloff_contnum)+'\t' +
-                    str(residue_area2)+'\t' + str(self.slope) + '\t' +
-                    self.k_beam.split(',')[0] + '\t' + self.k_beam.split(',')[1] + '\t' +
-                    str(self.deform_init) + '\t' + str(self.deform_pulloff) + '\t' +
-                    str(self.energy_adhesion) + '\t' +
-                    str(elip_area)+'\t' + str(elip_per) + '\t' +
-                    str(elip_maj)+'\t' + str(elip_min) + '\t' +
-                    videofile1 + '\t' +
-                    self.force_filepath.split('/')[-1][:-4] +
-                    '\t' + videofile2 +
-                    '\t' + zeroforcefile + '\n')
+        kBeam = self.analyzeDataWindow.dataAnalDict['misc settings']['beam spring constant'].text()
+        # self.fileDataDict2["Beam Spring Constant"] = kBeam.split(',')[0]
+        # self.fileDataDict2["Beam Spring Constant Stdev"] = kBeam.split(',')[1]
+        self.summaryDataDict['data params']["Spring Constant"] = {}
+        self.summaryDataDict['data params']["Spring Constant"]["Beam Spring Constant"] = kBeam.split(',')[0]
+        self.summaryDataDict['data params']["Spring Constant"]["Beam Spring Constant Stdev"] = kBeam.split(',')[1]
+        
+        # self.fileDataDict2["Slope"] = self.slope
+        self.summaryDataDict['misc']["Slope"] = self.slope
+        
+        self.miscUnitDict = {'Adhesion Energy': ' [pJ]',
+                             'Spring Constant': ' [μN/μm]',
+                             'Slope': ' [' + self.slope_unit + ']'}
+        
+        roi_list = self.analyzeDataWindow.dataAnalDict["Vertical force"]["ranges"].keys()
+        for k in roi_list:
+            # print(i)
+            if len(roi_list) > 1 and k == "Default":
+                continue
+            
+            self.summaryDataDict['measurement params']["ROI Label"] = k
+            summary_filepath_new = summary_filepath[:-4] + '(' + k + ')' + summary_filepath[-4:]
+            
+            header_list = []
+            if os.path.exists(summary_filepath_new) == False:
+                for x in self.summaryDataDict.keys():
+                    if x in ['measurement params', 'misc']:
+                        for y in self.summaryDataDict[x].keys():
+                            unit = self.findUnit(y)
+                            header_list.append(y + unit)
+                    elif x == 'data params':
+                        for y in self.summaryDataDict[x].keys():
+                            unit = self.findUnit(y)
+                            for z in self.summaryDataDict[x][y].keys():
+                                header_list.append(z + unit)
+                    else:
+                        unit = self.findUnit(x)
+                        for y in self.summaryDataDict[x][k].keys():
+                            header_list.append(y + unit)
+                
+                header = '\t'.join(header_list) + '\t' + \
+                    "Force data file\tZero-Force file\tVideo file\t2nd Video file\n"     
+                            
+                # header = "Measurement number\tMeasurement OK?\tROI Label\t" + \
+                #     '\t'.join(self.speedDict.keys()) + '\t' + \
+                #     '\t'.join(self.fileDataDict2.keys()) + '\t' + \
+                #     '\t'.join(self.summaryDataDict[k].keys()) + '\t' + \
+                #     "Force data file\tZero-Force file\tVideo file\t2nd Video file\n"                  
+                with open(summary_filepath_new, "w", encoding="utf-8") as f:
+                    f.write(header)
+            
+            data_list = []
+            for x in self.summaryDataDict.keys():
+                if x in ['measurement params', 'misc']:
+                    for y in self.summaryDataDict[x].keys():
+                        data_list.append(self.summaryDataDict[x][y])
+                elif x == 'data params':
+                    for y in self.summaryDataDict[x].keys():
+                        for z in self.summaryDataDict[x][y].keys():
+                            data_list.append(self.summaryDataDict[x][y][z])
+                else:
+                    for y in self.summaryDataDict[x][k].keys():
+                        data_list.append(self.summaryDataDict[x][k][y])            
+            # for x in self.summaryDataDict.keys():
+            #     if x in ['measurement params', 'misc']:
+            #         for y in self.summaryDataDict[x].keys():
+            #             data_list.append(self.summaryDataDict[x][y])
+            #     # elif x == 'misc':
+            #     #     for y in self.summaryDataDict[x].keys():
+            #     #         data_list.append(self.summaryDataDict[x][y])
+            #     else:
+            #         for y in self.summaryDataDict[x][k].keys():
+            #             data_list.append(self.summaryDataDict[x][k][y])
+            
+            data_string = '\t'.join(map(str,data_list)) + '\t' + \
+                self.force_filepath.split('/')[-1][:-4] + '\t' + \
+                zeroforcefile + '\t' +  videofile1 + '\t' + \
+                videofile2 + '\n'
+                            
+            # # data_string = str(msrmnt_num) + '\tY\t' + k + '\t' + \
+            # #     '\t'.join(map(str, self.speedDict.values())) + '\t' + \
+            # #     '\t'.join(map(str, self.fileDataDict2.values())) + '\t' + \
+            # #     '\t'.join(map(str, self.summaryDataDict[k].values())) + '\t' + \
+            # #     self.force_filepath.split('/')[-1][:-4] + '\t' + \
+            # #     zeroforcefile + '\t' +  videofile1 + '\t' + \
+            # #     videofile2 + '\n'
+                
+            with open(summary_filepath_new, "a") as f:
+                f.write(data_string)
+                
+#             roi_label.append(k)
+#             max_area2.append(self.areaDict["area2_max"][i] -
+#                              self.areaDict["area2_init"][i])
+#             pulloff_area2.append(self.areaDict["area2_pulloff"][i] -
+#                                  self.areaDict["area2_init"][i])
+#             max_area3.append(self.areaDict["area3_max"][i])
+#             pulloff_area3.append(self.areaDict["area3_pulloff"][i])
+#             friction_area.append(self.areaDict["area_friction"][i] -
+#                                  self.areaDict["area2_init"][i])
+#             max_contLength.append(self.lengthDict["contLength_max"][i] -
+#                             self.lengthDict["contLength_init"][i])
+#             pulloff_contLength.append(self.lengthDict["contLength_pulloff"][i] -
+#                                       self.lengthDict["contLength_init"][i])
+#             max_roilen.append(self.lengthDict["roilen_max"][i])
+#             pulloff_roilen.append(self.lengthDict["roilen_pulloff"][i])
+#             pulloff_ecc.append(self.lengthDict["ecc_pulloff"][i])
+#             pulloff_contnum.append(self.lengthDict["contnum_pulloff"][i])
+#             residue_area2.append(self.areaDict["area2_residue"][i] -
+#                                  self.areaDict["area2_init"][i])            
+#             adhesion.append(self.forceDict["force_adhesion1"][i])
+#             preload1.append(self.forceDict["force_preload1"][i])
+# ##            contact_time.append(self.indDict["contact_time1"][i])
+#             friction.append(self.forceDict["force_friction"][i])
+#             preload2.append(self.forceDict["force_preload2"][i])
+#             elip_area.append(self.ellipDict["ellipAr_max"][i])
+#             elip_per.append(self.ellipDict["ellipPer_max"][i])
+#             elip_maj.append(self.ellipDict["ellipMajr_max"][i])
+#             elip_min.append(self.ellipDict["ellipMinr_max"][i])
+            
+#             i += 1
+        
+        
+        
+            # with open(summary_filepath, "a") as f:
+            #     f.write(str(max_area2)+'\t' +
+            #             str(pulloff_area2)+'\t' +
+            #             str(adhesion) + '\t' +
+            #             str(preload1) +'\t' +
+            #             str(self.contact_time1) +'\t' +
+            #             str(self.speed_um) + '\t' + str(self.steps) + '\t' +
+            #             str(friction) + '\t' +
+            #             str(friction_area) + '\t' +
+            #             str(preload2) + '\t' +
+            #             str(msrmnt_num) + '\tY\t' +
+            #             str(roi_label) + '\t' + str(self.speedDict) + '\t' +
+            #             str(self.forceDict["zero1_stdv"]) + '\t' +
+            #             str(self.forceDict["zero2_stdv"]) + '\t' +
+            #             self.slideStep + '\t' +
+            #             str(max_area3)+'\t' +
+            #             str(pulloff_area3)+'\t' +
+            #             str(max_contLength)+'\t' +
+            #             str(pulloff_contLength)+'\t' +
+            #             str(max_roilen)+'\t' +
+            #             str(pulloff_roilen)+'\t' +
+            #             str(pulloff_ecc)+'\t' +
+            #             str(pulloff_contnum)+'\t' +
+            #             str(residue_area2)+'\t' + str(self.slope) + '\t' +
+            #             kBeam.split(',')[0] + '\t' + kBeam.split(',')[1] + '\t' +
+            #             str(self.deform_init) + '\t' + str(self.deform_pulloff) + '\t' +
+            #             str(self.energy_adhesion) + '\t' +
+            #             str(elip_area)+'\t' + str(elip_per) + '\t' +
+            #             str(elip_maj)+'\t' + str(elip_min) + '\t' +
+            #             videofile1 + '\t' +
+            #             self.force_filepath.split('/')[-1][:-4] +
+            #             '\t' + videofile2 +
+            #             '\t' + zeroforcefile + '\n')
         
 
 ##a = ForceData()

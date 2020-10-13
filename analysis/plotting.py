@@ -1013,7 +1013,7 @@ class Plotting:
             if curve_dict_ax['invert'].isChecked() == True:
                 ax2.invert_yaxis()
             if self.fixYLimits == True:
-                y_bound = [int(x) for x in curve_dict_ax['y bounds'].text().split(',')]
+                y_bound = [float(x) for x in curve_dict_ax['y bounds'].text().split(',')]
                 ax2.set_ylim(y_bound)
             else:
                 self.plotWidget.wid.artistDict[ylabel] = ax2
@@ -1053,7 +1053,21 @@ class Plotting:
             ax2 = ax_secondary
 
         return ax2, legend
-
+    
+    #update y bounds
+    def updateYBounds(self):
+        print('clicked')
+        source = 'image'
+        for category in self.configPlotWindow.plotDict[source].keys():
+            category_dict = self.configPlotWindow.plotDict[source][category]
+            for curve in category_dict['curves'].keys():
+                if curve in self.imageAxisDict.keys():
+                    print(curve)
+                    y_bounds = ','.join(map(str,self.plotAxisDict[curve].get_ybound()))
+                    print(y_bounds)
+                    category_dict['curves'][curve]['y bounds'].setText(y_bounds)
+            
+    
     def updatePosition(self):
 
         # final_pos = tuple(self.plotWidget.wid.axes.transLimits.transform

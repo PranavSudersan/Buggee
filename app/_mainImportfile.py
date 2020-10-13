@@ -122,9 +122,9 @@ class MainImportFile:
             
             self.init_dict() #initialise dictionaries
                         
-            self.forceData = ForceAnal(self.fitWindow, self.configPlotWindow,
-                                       self.analyzeDataWindow)
-            self.zeroForceData = ForceAnal() #initalise
+            # self.forceData = ForceAnal(self.fitWindow, self.configPlotWindow,
+            #                            self.analyzeDataWindow)
+            # self.zeroForceData = ForceAnal() #initalise
             # self.correctZeroForce.setEnabled(False)
             self.clearData.setEnabled(True)
             # self.videoEffect.setCurrentIndex(0) CHECK TAB DISABLE!
@@ -287,9 +287,9 @@ class MainImportFile:
             # self.showEffect.setEnabled(False)
             
             
-            self.forceData = ForceAnal(self.fitWindow, self.configPlotWindow,
-                                       self.analyzeDataWindow)
-            self.zeroForceData = ForceAnal() #initalise
+            # self.forceData = ForceAnal(self.fitWindow, self.configPlotWindow,
+            #                            self.analyzeDataWindow)
+            # self.zeroForceData = ForceAnal() #initalise
             # self.correctZeroForce.setEnabled(False)
             self.clearData.setEnabled(True)
             # self.videoEffect.setCurrentIndex(0) CHECK TAB DISABLE!
@@ -351,10 +351,10 @@ class MainImportFile:
             print(self.measurmntList, self.folderPath)
 
     def import_force_data(self): #import force data
-        if self.msrListMode == False:
-            self.forceData = ForceAnal(self.fitWindow, self.configPlotWindow,
-                                       self.analyzeDataWindow)
-        self.zeroForceData = ForceAnal() #initalise
+        # if self.msrListMode == False:
+        #     self.forceData = ForceAnal(self.fitWindow, self.configPlotWindow,
+        #                                self.analyzeDataWindow)
+        # self.zeroForceData = ForceAnal() #initalise
         # self.correctZeroForce.blockSignals(True)
         # self.correctZeroForce.setChecked(False)
         # self.correctZeroForce.blockSignals(False)        
@@ -388,7 +388,7 @@ class MainImportFile:
             print(self.frameRate)
 
     def import_zero_force(self): #import zero force line
-        self.zeroForceData = ForceAnal(analyzeDataWindow = self.analyzeDataWindow)
+        # self.zeroForceData = ForceAnal(analyzeDataWindow = self.analyzeDataWindow)
         # self.correctZeroForce.setEnabled(True)
         self.analyzeDataWindow.zero_subtract.setEnabled(True)
         self.analyzeDataWindow.zero_subtract.setChecked(False)             

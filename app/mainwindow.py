@@ -72,7 +72,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
     def __init__(self, wd, ht):
         super().__init__()
         self.setGeometry(0, 0, wd, ht)
-        self.appVersion = "AdheSee v1.3"
+        self.appVersion = "AdheSee v1.4"
         self.setWindowTitle(self.appVersion)
         self.layout = QGridLayout()
         self.layout.setColumnMinimumWidth(0,650)
@@ -88,8 +88,9 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         self.fitWindow = FitDataWindow() #fit data window
         
         #initialize force data classes
-        self.forceData = ForceAnal()
-        self.zeroForceData = ForceAnal()
+        self.forceData = ForceAnal(self.fitWindow, self.configPlotWindow,
+                                   self.analyzeDataWindow)
+        self.zeroForceData = ForceAnal(analyzeDataWindow = self.analyzeDataWindow)
         
         quitWindow = QAction("&Quit", self) #quit program
 ##        quitWindow.setShortcut("Ctrl+Q") 
@@ -142,6 +143,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         plot.setStatusTip("Configure plot and force curves")
         plot.triggered.connect(self.configPlotWindow.show_window)
         self.configPlotWindow.plotRangeButton.clicked.connect(self.setPlotRange)
+        self.configPlotWindow.setYBounds.clicked.connect(self.forceData.updateYBounds)
         self.configPlotWindow.okBtn.clicked.connect(self.configurePlot)
         self.configPlotWindow.updateBtn.clicked.connect(self.plotSequence)
 
@@ -2988,7 +2990,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
             setText(str(xstart) + ',' + str(xend))
         
     def updateCursorRange(self, label): #update range of datafile analysis params
-        if self.forceData != None:
+        if self.forceData.force_filepath != "":
             self.forceData.setCursorPosition(label)
         
     # def init_plotconfig(self): #initialize plot configuration window
@@ -4088,6 +4090,17 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
             self.frameAction = "Stop" #exit play loop
             self.reset_summary()
             cv2.destroyAllWindows()
+            
+            #TODO: close windows more elegently
+            self.configROIWindow.close()
+            self.configPathWindow.close()
+            self.configRecWindow.close()
+            self.configPlotWindow.close()
+            self.plotWindow.close()
+            self.analyzeDataWindow.close()
+            self.fitWindow.close()
+            self.forceData.plotWidget.close()
+            
             QApplication.exit()
         else:
             if type(event) is not bool:

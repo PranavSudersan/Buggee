@@ -8,11 +8,13 @@ from PyQt5.QtWidgets import QCheckBox, QLabel, QPushButton, \
      QComboBox, QLineEdit, QSpinBox, QDoubleSpinBox, \
      QGroupBox, QGridLayout, QWidget, QColorDialog
 from PyQt5.QtGui import QColor
+from PyQt5.QtCore import Qt
      
 # %% Configure Plot Window
 class ConfigPlotWindow(QWidget):
     def __init__(self):
         super().__init__()
+        # self.setWindowFlags(Qt.Window)
         self.setGeometry(100, 100, 900, 200)
         self.setWindowTitle("Configure Plot")
         self.layout = QGridLayout()
@@ -76,6 +78,7 @@ class ConfigPlotWindow(QWidget):
         fixYBound.setChecked(True)
         zeroShiftY = QCheckBox('Zero shift Y', self) #shift Y axis to zero
         zeroShiftY.setChecked(False)
+        self.setYBounds = QPushButton("Update Y Bounds", self) #set y bounds from current figure
         
         # #used for settings save
         # self.showWidgets = [self.showContactArea, self.showROIArea, self.showZPiezo, 
@@ -390,10 +393,11 @@ class ConfigPlotWindow(QWidget):
         # plotLayout.addWidget(showLabel, 0, 1, 1, 1)
         # self.designLayout(plotLayout, 1, None, None, "Title", False)
         # self.designLayout(plotLayout, 2, None, None, "Legend2", False)
-        plotLayout.addWidget(showTitle, 0, 2, 1, 1)
-        plotLayout.addWidget(fixYBound, 1, 2, 1, 1)
-        plotLayout.addWidget(showLegend2, 2, 2, 1, 1)
-        plotLayout.addWidget(zeroShiftY, 3, 2, 1, 1)
+        plotLayout.addWidget(showTitle, 0, 2, 1, 1)        
+        plotLayout.addWidget(showLegend2, 1, 2, 1, 1)
+        plotLayout.addWidget(zeroShiftY, 2, 2, 1, 1)
+        plotLayout.addWidget(fixYBound, 3, 2, 1, 1)
+        plotLayout.addWidget(self.setYBounds, 4, 2, 1, 1)
         plotLayout.addWidget(xAxisLabel, 0, 0, 1, 1)
         plotLayout.addWidget(xAxisParam, 0, 1, 1, 1)
         plotLayout.addWidget(fontLabel, 2, 0, 1, 1)

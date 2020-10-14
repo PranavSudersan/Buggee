@@ -10,7 +10,6 @@ import openpyxl
 import pandas as pd
 from pandas.io.json import json_normalize
 import numpy as np
-from PyQt5.QtWidgets import QFileDialog
 # import random
 
 class SummaryAnal:
@@ -28,218 +27,180 @@ class SummaryAnal:
 ##        self.eq_count = [1,1,1,1]
         self.eq_count = {}
         self.eq_count["All"] = [1,1,1,1]
-        # root = tk.Tk()
-        # root.withdraw()
+        root = tk.Tk()
+        root.withdraw()
         if filepath == None:
-            # self.summary_filepath =  filedialog.askopenfilename(
-            #     title = "Select summary data file")
-             self.summary_filepath, _ = QFileDialog.getOpenFileName(caption = 
-                                                                    "Select summary data file")
+            self.summary_filepath =  filedialog.askopenfilename(
+                title = "Select summary data file")
         else:
             self.summary_filepath = filepath
         
         if self.summary_filepath != "":
-            summarydf = pd.read_csv(self.summary_filepath,delimiter='\t')
-            col_list = summarydf.columns
-            self.unitDict = {}
-            for col_name in col_list:
-                unit = col_name.split('[')[-1].split(']')[0]
-                if unit == col_name:
-                    self.unitDict[col_name] = ''
-                else:
-                    col_clean = col_name.split('[')[0].strip()
-                    summarydf.rename(columns = {col_name : col_clean}, 
-                                     inplace=True)
-                    self.unitDict[col_clean] = ' [$' + unit + '$]'
-                
-            # with open(self.summary_filepath, 'r', encoding = "utf_8") as f: #open summary data file
-            #     x = f.read().splitlines()
-            # area_max = [[float(i) for i in ast.literal_eval(y.split('\t')[0])] for y in x[1:]]
-            # area_pulloff = [[float(i) for i in ast.literal_eval(y.split('\t')[1])] for y in x[1:]]
-            # force_adhesion = [[float(i) for i in ast.literal_eval(y.split('\t')[2])] for y in x[1:]]
-            # adh_preload = [[float(i) for i in ast.literal_eval(y.split('\t')[3])] for y in x[1:]]
-            # contact_time = [float(y.split('\t')[4]) for y in x[1:]]
-            # speed = [[float(i) for i in ast.literal_eval(y.split('\t')[5])] for y in x[1:]]
-            # steps = [ast.literal_eval(y.split('\t')[6]) for y in x[1:]]
-            # force_friction = [[float(i) for i in ast.literal_eval(y.split('\t')[7])] for y in x[1:]]
-            # area_friction = [[float(i) for i in ast.literal_eval(y.split('\t')[8])] for y in x[1:]]
-            # friction_preload = [[float(i) for i in ast.literal_eval(y.split('\t')[9])] for y in x[1:]]
-            # msrmnt_num = [float(y.split('\t')[10]) for y in x[1:]]
-            # msrmnt_ok = [y.split('\t')[11] for y in x[1:]]
-            # roi_label = [ast.literal_eval(y.split('\t')[12]) for y in x[1:]]
-            # speed_def = [(ast.literal_eval(y.split('\t')[13])) for y in x[1:]] #speed definitions
-            # error_vert = [float(y.split('\t')[14]) for y in x[1:]]
-            # error_lat = [float(y.split('\t')[15]) for y in x[1:]]
-            # slideStep = [y.split('\t')[16] for y in x[1:]]
-            # roiarea_max = [[float(i) for i in ast.literal_eval(y.split('\t')[17])] for y in x[1:]]
-            # roiarea_pulloff = [[float(i) for i in ast.literal_eval(y.split('\t')[18])] for y in x[1:]]            
-            # length_max = [[float(i) for i in ast.literal_eval(y.split('\t')[19])] for y in x[1:]]
-            # length_pulloff = [[float(i) for i in ast.literal_eval(y.split('\t')[20])] for y in x[1:]] 
-            # roilength_max = [[float(i) for i in ast.literal_eval(y.split('\t')[21])] for y in x[1:]]
-            # roilength_pulloff = [[float(i) for i in ast.literal_eval(y.split('\t')[22])] for y in x[1:]]
-            # ecc_pulloff = [[float(i) for i in ast.literal_eval(y.split('\t')[23])] for y in x[1:]]
-            # contnum_pulloff = [[float(i) for i in ast.literal_eval(y.split('\t')[24])] for y in x[1:]]
-            # area_residue = [[float(i) for i in ast.literal_eval(y.split('\t')[25])] for y in x[1:]]
-            # slope_header = x[0].split('\t')[26] #check if data exists
-            # slope = [float(y.split('\t')[26]) if slope_header[:5] == 'Slope' and y.split('\t')[26] != '' else None for y in x[1:]]
-            # self.slope_unit = slope_header.split('[')[1].split(']')[0] if slope_header[:5] == 'Slope' else None
-            # k_beam_header = x[0].split('\t')[27] #check if data exists
-            # k_beam = [float(y.split('\t')[27]) if k_beam_header[:4] == 'Beam' else None for y in x[1:]]
-            # error_k_beam = [float(y.split('\t')[28]) if k_beam_header[:4] == 'Beam' else None for y in x[1:]]
-            # deform_init = [float(y.split('\t')[29]) if k_beam_header[:4] == 'Beam' else None for y in x[1:]]
-            # deform_pulloff = [float(y.split('\t')[30]) if k_beam_header[:4] == 'Beam' else None for y in x[1:]]
-            # energy_adh = [float(y.split('\t')[31]) if k_beam_header[:4] == 'Beam' else None for y in x[1:]]
-            # bound_area = [[float(i) for i in ast.literal_eval(y.split('\t')[32])] \
-            #               if k_beam_header[:4] == 'Beam' else [None]*len(ast.literal_eval(y.split('\t')[12])) for y in x[1:]]
-            # bound_peri = [[float(i) for i in ast.literal_eval(y.split('\t')[33])] \
-            #               if k_beam_header[:4] == 'Beam' else [None]*len(ast.literal_eval(y.split('\t')[12])) for y in x[1:]]
-            # bound_len = [[float(i) for i in ast.literal_eval(y.split('\t')[34])] \
-            #              if k_beam_header[:4] == 'Beam' else [None]*len(ast.literal_eval(y.split('\t')[12])) for y in x[1:]]
-            # bound_wid = [[float(i) for i in ast.literal_eval(y.split('\t')[35])] \
-            #              if k_beam_header[:4] == 'Beam' else [None]*len(ast.literal_eval(y.split('\t')[12])) for y in x[1:]]
-            # area_unit = x[0].split('\t')[0][-5:-1]
-            # rownum = len(area_max)
-            
-            
-            # data_folderpath = os.path.dirname(
-            #                     os.path.dirname(
-            #                         os.path.dirname(
-            #                             self.summary_filepath)))
-            
-            
-            # summarydf['Data Folder'] = data_folderpath
-            # self.unitDict['Data Folder'] = ''
-#             #data to be split according to roi label
-#             header_split_max = ["Adhesion_Force", "Adhesion_Preload",
-#                                 "Friction_Force","Friction_Preload"] #take max in "All" (legacy)
-#             header_split_avg = ["Pulloff_Median_Eccentricity"] #take mean in "All" (legacy)
-#             header_split_add = ["Max_Area", "Pulloff_Area", "Friction_Area",
-#                                 "ROI_Max_Area", "ROI_Pulloff_Area",
-#                                 "Max_Length", "Pulloff_Length", "ROI_Max_Length",
-#                                 "ROI_Pulloff_Length", "Pulloff_Contact_Number",
-#                                 "Residue_Area", "Max_Bounding_Area", 
-#                                 "Max_Bounding_Perimeter", "Max_Bounding_Length", 
-#                                 "Max_Bounding_Width"] #take sum in "All" (legacy)
-#             header_split = header_split_max + header_split_avg + header_split_add
-#             data_split = [force_adhesion, adh_preload,
-#                           force_friction, friction_preload,
-#                           ecc_pulloff,
-#                           area_max, area_pulloff, area_friction, 
-#                           roiarea_max, roiarea_pulloff,
-#                           length_max, length_pulloff, roilength_max,
-#                           roilength_pulloff, contnum_pulloff,
-#                           area_residue, bound_area, bound_peri,
-#                           bound_len, bound_wid]
+            with open(self.summary_filepath, 'r', encoding = "utf_8") as f: #open summary data file
+                x = f.read().splitlines()
+            area_max = [[float(i) for i in ast.literal_eval(y.split('\t')[0])] for y in x[1:]]
+            area_pulloff = [[float(i) for i in ast.literal_eval(y.split('\t')[1])] for y in x[1:]]
+            force_adhesion = [[float(i) for i in ast.literal_eval(y.split('\t')[2])] for y in x[1:]]
+            adh_preload = [[float(i) for i in ast.literal_eval(y.split('\t')[3])] for y in x[1:]]
+            contact_time = [float(y.split('\t')[4]) for y in x[1:]]
+            speed = [[float(i) for i in ast.literal_eval(y.split('\t')[5])] for y in x[1:]]
+            steps = [ast.literal_eval(y.split('\t')[6]) for y in x[1:]]
+            force_friction = [[float(i) for i in ast.literal_eval(y.split('\t')[7])] for y in x[1:]]
+            area_friction = [[float(i) for i in ast.literal_eval(y.split('\t')[8])] for y in x[1:]]
+            friction_preload = [[float(i) for i in ast.literal_eval(y.split('\t')[9])] for y in x[1:]]
+            msrmnt_num = [float(y.split('\t')[10]) for y in x[1:]]
+            msrmnt_ok = [y.split('\t')[11] for y in x[1:]]
+            roi_label = [ast.literal_eval(y.split('\t')[12]) for y in x[1:]]
+            speed_def = [(ast.literal_eval(y.split('\t')[13])) for y in x[1:]] #speed definitions
+            error_vert = [float(y.split('\t')[14]) for y in x[1:]]
+            error_lat = [float(y.split('\t')[15]) for y in x[1:]]
+            slideStep = [y.split('\t')[16] for y in x[1:]]
+            roiarea_max = [[float(i) for i in ast.literal_eval(y.split('\t')[17])] for y in x[1:]]
+            roiarea_pulloff = [[float(i) for i in ast.literal_eval(y.split('\t')[18])] for y in x[1:]]            
+            length_max = [[float(i) for i in ast.literal_eval(y.split('\t')[19])] for y in x[1:]]
+            length_pulloff = [[float(i) for i in ast.literal_eval(y.split('\t')[20])] for y in x[1:]] 
+            roilength_max = [[float(i) for i in ast.literal_eval(y.split('\t')[21])] for y in x[1:]]
+            roilength_pulloff = [[float(i) for i in ast.literal_eval(y.split('\t')[22])] for y in x[1:]]
+            ecc_pulloff = [[float(i) for i in ast.literal_eval(y.split('\t')[23])] for y in x[1:]]
+            contnum_pulloff = [[float(i) for i in ast.literal_eval(y.split('\t')[24])] for y in x[1:]]
+            area_residue = [[float(i) for i in ast.literal_eval(y.split('\t')[25])] for y in x[1:]]
+            slope_header = x[0].split('\t')[26] #check if data exists
+            slope = [float(y.split('\t')[26]) if slope_header[:5] == 'Slope' and y.split('\t')[26] != '' else None for y in x[1:]]
+            self.slope_unit = slope_header.split('[')[1].split(']')[0] if slope_header[:5] == 'Slope' else None
+            k_beam_header = x[0].split('\t')[27] #check if data exists
+            k_beam = [float(y.split('\t')[27]) if k_beam_header[:4] == 'Beam' else None for y in x[1:]]
+            error_k_beam = [float(y.split('\t')[28]) if k_beam_header[:4] == 'Beam' else None for y in x[1:]]
+            deform_init = [float(y.split('\t')[29]) if k_beam_header[:4] == 'Beam' else None for y in x[1:]]
+            deform_pulloff = [float(y.split('\t')[30]) if k_beam_header[:4] == 'Beam' else None for y in x[1:]]
+            energy_adh = [float(y.split('\t')[31]) if k_beam_header[:4] == 'Beam' else None for y in x[1:]]
+            bound_area = [[float(i) for i in ast.literal_eval(y.split('\t')[32])] \
+                          if k_beam_header[:4] == 'Beam' else [None]*len(ast.literal_eval(y.split('\t')[12])) for y in x[1:]]
+            bound_peri = [[float(i) for i in ast.literal_eval(y.split('\t')[33])] \
+                          if k_beam_header[:4] == 'Beam' else [None]*len(ast.literal_eval(y.split('\t')[12])) for y in x[1:]]
+            bound_len = [[float(i) for i in ast.literal_eval(y.split('\t')[34])] \
+                         if k_beam_header[:4] == 'Beam' else [None]*len(ast.literal_eval(y.split('\t')[12])) for y in x[1:]]
+            bound_wid = [[float(i) for i in ast.literal_eval(y.split('\t')[35])] \
+                         if k_beam_header[:4] == 'Beam' else [None]*len(ast.literal_eval(y.split('\t')[12])) for y in x[1:]]
+            area_unit = x[0].split('\t')[0][-5:-1]
+            rownum = len(area_max)
+            data_folderpath = os.path.dirname(
+                                os.path.dirname(
+                                    os.path.dirname(
+                                        self.summary_filepath)))
 
-#             #data not to be split according to roi label            
-#             header_nosplit = ["Measurement_Number", "Measurement_OK", "Contact_Time",
-#                               "Steps","ROI_Labels", "Speed", "Speed_Definition",
-#                               "Error_Vertical", "Error_Lateral",
-#                               "Sliding_Step", "Area_Units", "Data_Folder", "Slope",
-#                               "Beam_Spring_Constant","Error_Beam_Spring_Constant",
-#                               "Initial_Deformation","Pulloff_Deformation","Adhesion_Energy"]
-#             data_nosplit = [msrmnt_num, msrmnt_ok, contact_time,
-#                             steps, roi_label, speed, speed_def,
-#                             error_vert,error_lat,
-#                             slideStep, [area_unit] * rownum,
-#                             [data_folderpath] * rownum, slope,
-#                             k_beam, error_k_beam, deform_init,
-#                             deform_pulloff, energy_adh]
+            #data to be split according to roi label
+            header_split_max = ["Adhesion_Force", "Adhesion_Preload",
+                                "Friction_Force","Friction_Preload"] #take max in "All" (legacy)
+            header_split_avg = ["Pulloff_Median_Eccentricity"] #take mean in "All" (legacy)
+            header_split_add = ["Max_Area", "Pulloff_Area", "Friction_Area",
+                                "ROI_Max_Area", "ROI_Pulloff_Area",
+                                "Max_Length", "Pulloff_Length", "ROI_Max_Length",
+                                "ROI_Pulloff_Length", "Pulloff_Contact_Number",
+                                "Residue_Area", "Max_Bounding_Area", 
+                                "Max_Bounding_Perimeter", "Max_Bounding_Length", 
+                                "Max_Bounding_Width"] #take sum in "All" (legacy)
+            header_split = header_split_max + header_split_avg + header_split_add
+            data_split = [force_adhesion, adh_preload,
+                          force_friction, friction_preload,
+                          ecc_pulloff,
+                          area_max, area_pulloff, area_friction, 
+                          roiarea_max, roiarea_pulloff,
+                          length_max, length_pulloff, roilength_max,
+                          roilength_pulloff, contnum_pulloff,
+                          area_residue, bound_area, bound_peri,
+                          bound_len, bound_wid]
+
+            #data not to be split according to roi label            
+            header_nosplit = ["Measurement_Number", "Measurement_OK", "Contact_Time",
+                              "Steps","ROI_Labels", "Speed", "Speed_Definition",
+                              "Error_Vertical", "Error_Lateral",
+                              "Sliding_Step", "Area_Units", "Data_Folder", "Slope",
+                              "Beam_Spring_Constant","Error_Beam_Spring_Constant",
+                              "Initial_Deformation","Pulloff_Deformation","Adhesion_Energy"]
+            data_nosplit = [msrmnt_num, msrmnt_ok, contact_time,
+                            steps, roi_label, speed, speed_def,
+                            error_vert,error_lat,
+                            slideStep, [area_unit] * rownum,
+                            [data_folderpath] * rownum, slope,
+                            k_beam, error_k_beam, deform_init,
+                            deform_pulloff, energy_adh]
             
-#             header_raw = header_nosplit + header_split 
-#             data_raw = data_nosplit + data_split 
+            header_raw = header_nosplit + header_split 
+            data_raw = data_nosplit + data_split 
             
-#             #define dictionaries for each step/roi and combine
-#             header_dict = [a + "_Dict" for a in header_split]
-#             data_dict = []
-#             for j in range(len(header_split)):
-#                 temp_dict = [dict(zip([header_split[j] + "_" + s for s in roi_label[i]],
-#                                    data_split[j][i])) for i in range(len(roi_label))]
-#                 data_dict.append(temp_dict)
+            #define dictionaries for each step/roi and combine
+            header_dict = [a + "_Dict" for a in header_split]
+            data_dict = []
+            for j in range(len(header_split)):
+                temp_dict = [dict(zip([header_split[j] + "_" + s for s in roi_label[i]],
+                                   data_split[j][i])) for i in range(len(roi_label))]
+                data_dict.append(temp_dict)
             
-#             header = header_raw + header_dict
-#             datalist = data_raw + data_dict
+            header = header_raw + header_dict
+            datalist = data_raw + data_dict
             
-#             datadict = dict(zip(header, datalist))
-#             df_data = pd.DataFrame(datadict)
+            datadict = dict(zip(header, datalist))
+            df_data = pd.DataFrame(datadict)
 
             
-#             #split steps into columns and combine
-#             df_speed_steps = json_normalize(df_data['Speed_Definition']) #split speed steps
-#             df_all_data = [df_data, df_speed_steps]
-#             for a in header_dict:
-#                 df_temp = json_normalize(df_data[a])
-#                 df_all_data.append(df_temp)
+            #split steps into columns and combine
+            df_speed_steps = json_normalize(df_data['Speed_Definition']) #split speed steps
+            df_all_data = [df_data, df_speed_steps]
+            for a in header_dict:
+                df_temp = json_normalize(df_data[a])
+                df_all_data.append(df_temp)
 
-#             df_combined = pd.concat(df_all_data, join='outer', axis=1).fillna(np.nan)
-#             df_combined.drop(header_dict, inplace=True, axis=1) #drop dictionary columns
-#             df_good = df_combined[df_combined["Measurement_OK"] == "Y"]
+            df_combined = pd.concat(df_all_data, join='outer', axis=1).fillna(np.nan)
+            df_combined.drop(header_dict, inplace=True, axis=1) #drop dictionary columns
+            df_good = df_combined[df_combined["Measurement_OK"] == "Y"]
 
-# ##            self.steps_unique = set([a for b in steps_modif for a in b])
-#             roi_label_unique = set([a for b in df_good["ROI_Labels"] for a in b])
-# ##            self.speed_def_unique = set([a for b in df_good["Speed_Definition"] for a in b.keys()])
+##            self.steps_unique = set([a for b in steps_modif for a in b])
+            roi_label_unique = set([a for b in df_good["ROI_Labels"] for a in b])
+##            self.speed_def_unique = set([a for b in df_good["Speed_Definition"] for a in b.keys()])
 
-#             #reshape and combine roi data into new dataframe
-#             header_nocomb = ["ROI Label", "Data_Folder",
-#                              "Measurement_Number", "Measurement_OK",
-#                              "Contact_Time", "Detachment Speed",
-#                              "Attachment Speed", "Sliding Speed", "Sliding_Step",
-#                              "Error_Vertical", "Error_Lateral", "Area_Units", "Slope",
-#                              "Beam_Spring_Constant","Error_Beam_Spring_Constant",
-#                              "Initial_Deformation","Pulloff_Deformation","Adhesion_Energy"]                      
-#             header_comb = ["Adhesion_Force", "Adhesion_Preload",
-#                           "Friction_Force","Friction_Preload",
-#                           "Max_Area", "Pulloff_Area", "Friction_Area",
-#                           "ROI_Max_Area", "ROI_Pulloff_Area",
-#                           "Max_Length", "Pulloff_Length", "ROI_Max_Length",
-#                           "ROI_Pulloff_Length", "Pulloff_Contact_Number",
-#                           "Residue_Area", "Pulloff_Median_Eccentricity",
-#                           "Max_Bounding_Area", "Max_Bounding_Perimeter", 
-#                           "Max_Bounding_Length", "Max_Bounding_Width"]
-#             header_all = header_nocomb + header_comb
-#             self.df_forcedata = pd.DataFrame(columns = header_all)
+            #reshape and combine roi data into new dataframe
+            header_nocomb = ["ROI Label", "Data_Folder",
+                             "Measurement_Number", "Measurement_OK",
+                             "Contact_Time", "Detachment Speed",
+                             "Attachment Speed", "Sliding Speed", "Sliding_Step",
+                             "Error_Vertical", "Error_Lateral", "Area_Units", "Slope",
+                             "Beam_Spring_Constant","Error_Beam_Spring_Constant",
+                             "Initial_Deformation","Pulloff_Deformation","Adhesion_Energy"]                      
+            header_comb = ["Adhesion_Force", "Adhesion_Preload",
+                          "Friction_Force","Friction_Preload",
+                          "Max_Area", "Pulloff_Area", "Friction_Area",
+                          "ROI_Max_Area", "ROI_Pulloff_Area",
+                          "Max_Length", "Pulloff_Length", "ROI_Max_Length",
+                          "ROI_Pulloff_Length", "Pulloff_Contact_Number",
+                          "Residue_Area", "Pulloff_Median_Eccentricity",
+                          "Max_Bounding_Area", "Max_Bounding_Perimeter", 
+                          "Max_Bounding_Length", "Max_Bounding_Width"]
+            header_all = header_nocomb + header_comb
+            self.df_forcedata = pd.DataFrame(columns = header_all)
 
             
-#             for b in roi_label_unique:
-#                 data_nocomb = [b] + [df_good[x] \
-#                                      for x in header_nocomb \
-#                                      if x not in ["ROI Label"]]
-#                 data_comb = [df_good[x + "_" + b] for x in header_comb]
+            for b in roi_label_unique:
+                data_nocomb = [b] + [df_good[x] \
+                                     for x in header_nocomb \
+                                     if x not in ["ROI Label"]]
+                data_comb = [df_good[x + "_" + b] for x in header_comb]
 
-#                 df_nocomb = pd.DataFrame(dict(zip(header_nocomb, data_nocomb)))
-#                 df_comb = pd.DataFrame(dict(zip(header_comb, data_comb)))
-#                 df_joined = df_comb.join(df_nocomb)
-#                 self.df_forcedata = self.df_forcedata.append(df_joined, ignore_index=True, sort=False)
-#                 self.df_forcedata['Adhesion_Force'].replace('', np.nan, inplace=True)
-#                 self.df_forcedata.dropna(subset=['Adhesion_Force'], inplace=True) #remove blanks
+                df_nocomb = pd.DataFrame(dict(zip(header_nocomb, data_nocomb)))
+                df_comb = pd.DataFrame(dict(zip(header_comb, data_comb)))
+                df_joined = df_comb.join(df_nocomb)
+                self.df_forcedata = self.df_forcedata.append(df_joined, ignore_index=True, sort=False)
+                self.df_forcedata['Adhesion_Force'].replace('', np.nan, inplace=True)
+                self.df_forcedata.dropna(subset=['Adhesion_Force'], inplace=True) #remove blanks
 
             #calculate additional data
-            # self.df_forcedata['Adhesion_Stress'] = self.df_forcedata['Adhesion_Force']/self.df_forcedata['Pulloff_Area']
-            # self.df_forcedata['Friction_Stress'] = self.df_forcedata['Friction_Force']/self.df_forcedata['Friction_Area']
-            # self.df_forcedata['Normalized_Adhesion_Force'] = self.df_forcedata['Adhesion_Force']/self.df_forcedata['Max_Area']
-            # self.df_forcedata['Normalized_Adhesion_Energy'] = self.df_forcedata['Adhesion_Energy']/self.df_forcedata['Max_Area']
-            # self.df_forcedata['Date_of_Experiment'] =  self.df_forcedata['Data_Folder'].str.split(pat = "/").str[-1].str.slice(start=0, stop=9)
+            self.df_forcedata['Adhesion_Stress'] = self.df_forcedata['Adhesion_Force']/self.df_forcedata['Pulloff_Area']
+            self.df_forcedata['Friction_Stress'] = self.df_forcedata['Friction_Force']/self.df_forcedata['Friction_Area']
+            self.df_forcedata['Normalized_Adhesion_Force'] = self.df_forcedata['Adhesion_Force']/self.df_forcedata['Max_Area']
+            self.df_forcedata['Normalized_Adhesion_Energy'] = self.df_forcedata['Adhesion_Energy']/self.df_forcedata['Max_Area']
+            self.df_forcedata['Date_of_Experiment'] =  self.df_forcedata['Data_Folder'].str.split(pat = "/").str[-1].str.slice(start=0, stop=9)
             
-            summarydf['Adhesion Stress'] = summarydf['Pulloff Force']/summarydf['Pulloff Area']
-            self.unitDict['Adhesion Stress'] = ' [$' + self.extractUnit('Pulloff Force') + \
-                '/' + self.extractUnit('Pulloff Area') + '$]'
-            summarydf['Friction Stress'] = summarydf['Friction Force']/summarydf['Friction Area']
-            self.unitDict['Friction Stress'] = ' [$' + self.extractUnit('Friction Force') + \
-                '/' + self.extractUnit('Friction Area') + '$]'
-            summarydf['Normalized Adhesion Force'] = summarydf['Pulloff Force']/summarydf['Max Area']
-            self.unitDict['Normalized Adhesion Force'] = ' [$' + self.extractUnit('Pulloff Force') + \
-                '/' + self.extractUnit('Max Area') + '$]'
-            summarydf['Normalized_Adhesion_Energy'] = summarydf['Adhesion Energy']/summarydf['Max Area']
-            self.unitDict['Normalized_Adhesion_Energy'] = ' [$' + self.extractUnit('Adhesion Energy') + \
-                '/' + self.extractUnit('Max Area') + '$]'
-            
-            # summarydf['Date of Experiment'] =  summarydf['Data Folder'].str.split(pat = "/").str[-1].str.slice(start=0, stop=9)
-            # self.unitDict['Date of Experiment'] = ''
-            
-            print(summarydf)
-            print(self.unitDict)
-            # self.df_forcedata.reset_index(inplace = True, drop = True)
-            # self.df_final = self.df_forcedata.copy()
+            self.df_forcedata.reset_index(inplace = True, drop = True)
+            self.df_final = self.df_forcedata.copy()
 
 ##            #create combined "All" data by taking sum/mean/max among various roi
 ####            if len(self.roi_label_unique) > 1: #ROI names MUST NOT have "All" ot "Dict"!
@@ -266,9 +227,6 @@ class SummaryAnal:
 ##            self.roi_label_unique.update(["All"])
 ##            self.df_final.to_excel('E:/Work/Data/Summary/20200213/Sex/summary_temp_' +
 ##                                   str(random.randint(1, 90000)) + '.xlsx') #export as excel        
-
-    def extractUnit(self, col):
-        return self.unitDict[col].split('[')[-1].split(']')[0].replace('$', '')
 
     def filter_df(self, filter_dict): #filter df based on condition
         print(filter_dict)
@@ -816,10 +774,10 @@ class SummaryAnal:
         print("save plot", filename)
 
     def combineSummary(self, summaryDict, legend_parameter): #combine summary data and plot
-        # root = tk.Tk()
-        # root.withdraw()
-        self.list_filepath, _ =  QFileDialog.getOpenFileName(caption = 
-                                                             "Select experiment list file")
+        root = tk.Tk()
+        root.withdraw()
+        self.list_filepath =  filedialog.askopenfilename(
+                    title = "Select experiment list file")
         if self.list_filepath != "":
             list_folderpath = os.path.dirname(self.list_filepath)
             wb_obj = openpyxl.load_workbook(filename = self.list_filepath,

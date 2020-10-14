@@ -142,6 +142,12 @@ class ForceAnal(Plotting):
             self.summaryDataDict['data params'] = {}
             self.summaryDataDict['misc'] = {}
             
+            expt_date = x1[1].split('\t')[0]
+            folder_name = os.path.dirname(os.path.dirname(self.force_filepath))
+            
+            self.summaryDataDict['measurement params']["Date of Experiment"] = expt_date
+            self.summaryDataDict['measurement params']["Data Folder"] = folder_name
+            
             self.waveform = x1[5].split('\t')[1]
             print(self.waveform)
 
@@ -1293,6 +1299,7 @@ class ForceAnal(Plotting):
 #         i = 0
         self.imageDataUnitDict = imageDataUnitDict
         # self.summaryDataDict['data params'] = {}
+        
         self.summaryDataDict['measurement params']['Measurement number'] = msrmnt_num
         self.summaryDataDict['measurement params']['Measurement OK?'] = 'Y' #CHANGE!
         # self.summaryDataDict['data params']["Steps"] = self.steps        

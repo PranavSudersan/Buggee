@@ -3590,44 +3590,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
     #update settings widget dictionary
     def update_settings_dict(self):
         self.settingsDict = {}
-        
-        self.settingsDict["Analysis Mode"] = self.analysisMode
-        self.settingsDict["Threshold Type"] = self.threshType
-        self.settingsDict["Invert"] = self.binaryInvert
-        self.settingsDict["Threshold Size"] = self.threshSpinBox1
-        self.settingsDict["Threshold Constant"] = self.threshSpinBox2
-        self.settingsDict["Apply Morph"] = self.applyMorph
-        self.settingsDict["Morph Type"] = self.morphType
-        self.settingsDict["Morph Size"] = self.morphSize
-        self.settingsDict["Morph Iterations"] = self.morphIterations
-        self.settingsDict["Apply Segment"] = self.segmentGroupBox
-        self.settingsDict["Use Distance Transform"] = self.useDistTransfrom
-        self.settingsDict["Segment FG"] = self.segmentFGSpinBox
-        self.settingsDict["Segment BG"] = self.segmentBGSpinBox
-        self.settingsDict["Auto detect ROI"] = self.threshROIGroupBox
-        self.settingsDict["Distinct ROI"] = self.distinctAutoROI
-        self.settingsDict["Combine ROI"] = self.combineROI
-        self.settingsDict["Apply Hull"] = self.applyHullROI
-        self.settingsDict["ROI Minimum"] = self.roiMinSpinBox
-        self.settingsDict["Resolution"] = self.epsilonSpinBox
-        self.settingsDict["Resize factor"] = self.resizeROISpinBox
-        self.settingsDict["Apply Morph"] = self.morphROI
-        self.settingsDict["Morph X"] = self.morphXSpinBox
-        self.settingsDict["Morph Y"] = self.morphYSpinBox
-        self.settingsDict["Apply ROI BG Correction"] = self.applybgROI
-        self.settingsDict["ROI BG Correction Value"] = self.bgblurROISpinBox
-        self.settingsDict["ROI BG Blend fraction"] = self.bgblendROISpinBox
-        self.settingsDict["ROI Threshold Type"] = self.threshType
-        self.settingsDict["ROI Threshold Size"] = self.threshROISpinBox1
-        self.settingsDict["ROI Threshold Constant"] = self.threshROISpinBox2
-        self.settingsDict["ROI Blur Size"] = self.blurROISpinBox
-        self.settingsDict["Line Type Top"] = self.lineTypeTop
-        self.settingsDict["Marker Window Top"] = self.markerWindowTop
-        self.settingsDict["Line Type Bottom"] = self.lineTypeBottom
-        self.settingsDict["Marker Window Bottom"] = self.markerWindowBottom
-        self.settingsDict["Line Threshold"] = self.lineThresh
-        self.settingsDict["Line Length"] = self.lineLength
-        self.settingsDict["Line Gap"] = self.lineGap 
+
         self.settingsDict["Brightness"] = self.brightnessSpinBox
         self.settingsDict["Contrast"] = self.contrastSpinBox
         self.settingsDict["Histogram Correction Type"] = self.histogramCorrectType
@@ -3645,7 +3608,45 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         self.settingsDict["BG Blend fraction"] = self.bgAlphaSpinBox
         self.settingsDict["Pixel Value"] = self.pixelValue
         self.settingsDict["Length Value"] = self.lengthValue
-        self.settingsDict["Length Unit"] = self.lengthUnit
+        self.settingsDict["Length Unit"] = self.lengthUnit        
+        self.settingsDict["Analysis Mode"] = self.analysisMode
+        self.settingsDict["Threshold Type"] = self.threshType
+        self.settingsDict["Invert"] = self.binaryInvert
+        self.settingsDict["Threshold Size"] = self.threshSpinBox1
+        self.settingsDict["Threshold Constant"] = self.threshSpinBox2
+        self.settingsDict["Apply Morph"] = self.applyMorph
+        self.settingsDict["Morph Type"] = self.morphType
+        self.settingsDict["Morph Size"] = self.morphSize
+        self.settingsDict["Morph Iterations"] = self.morphIterations
+        self.settingsDict["Apply Segment"] = self.segmentGroupBox
+        self.settingsDict["Use Distance Transform"] = self.useDistTransfrom
+        self.settingsDict["Segment FG"] = self.segmentFGSpinBox
+        self.settingsDict["Segment BG"] = self.segmentBGSpinBox
+        self.settingsDict["Auto detect ROI"] = self.threshROIGroupBox
+        self.settingsDict["Distinct ROI"] = self.distinctAutoROI
+        self.settingsDict["Combine ROI"] = self.combineROI
+        self.settingsDict["ROI Apply Hull"] = self.applyHullROI
+        self.settingsDict["ROI Minimum"] = self.roiMinSpinBox
+        self.settingsDict["ROI Resolution"] = self.epsilonSpinBox
+        self.settingsDict["ROI Resize factor"] = self.resizeROISpinBox
+        self.settingsDict["ROI Apply Morph"] = self.morphROI
+        self.settingsDict["ROI Morph X"] = self.morphXSpinBox
+        self.settingsDict["ROI Morph Y"] = self.morphYSpinBox
+        self.settingsDict["ROI Apply BG Correction"] = self.applybgROI
+        self.settingsDict["ROI BG Correction Value"] = self.bgblurROISpinBox
+        self.settingsDict["ROI BG Blend fraction"] = self.bgblendROISpinBox
+        self.settingsDict["ROI Threshold Type"] = self.threshType
+        self.settingsDict["ROI Threshold Size"] = self.threshROISpinBox1
+        self.settingsDict["ROI Threshold Constant"] = self.threshROISpinBox2
+        self.settingsDict["ROI Blur Size"] = self.blurROISpinBox
+        self.settingsDict["Line Type Top"] = self.lineTypeTop
+        self.settingsDict["Marker Window Top"] = self.markerWindowTop
+        self.settingsDict["Line Type Bottom"] = self.lineTypeBottom
+        self.settingsDict["Marker Window Bottom"] = self.markerWindowBottom
+        self.settingsDict["Line Threshold"] = self.lineThresh
+        self.settingsDict["Line Length"] = self.lineLength
+        self.settingsDict["Line Gap"] = self.lineGap 
+
         # self.settingsDict["Apply Zero-Force Correction"] = self.correctZeroForce
         #config plot settings
         for source in self.configPlotWindow.plotDict.keys():

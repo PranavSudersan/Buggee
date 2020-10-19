@@ -238,21 +238,19 @@ class SummaryDialog:
             self.summary = SummaryAnal()
             self.summary.importSummary()
             if self.summary.summary_filepath != "":
-                # self.summary.filter_df(self.filter_dict)
-                # self.summary.plotSummary(self.summaryDict,
-                #                           self.summary.df_final,
-                #                           self.summary.df_final)
-                self.summary.plotSummary()
+                self.summary.filter_df(self.filter_dict)
+                self.summary.plotSummary(self.summaryDict,
+                                         self.summary.df_final,
+                                         self.summary.df_final)
             else:
                 self.summary = None
         #save summary plots in separate thread
         if self.summary != None:
-            # saveSummPlotThread = SummPlotThread(self.summary,
-            #                                     self.summaryDict['format'][0])
-            # saveSummPlotThread.output.connect(self.process_indicate)
-            # saveSummPlotThread.finished.connect(self.save_plot_indicate)
-            # saveSummPlotThread.start()
-            self.summary.saveSummaryPlot(self.summaryDict['format'][0])
+            saveSummPlotThread = SummPlotThread(self.summary,
+                                                self.summaryDict['format'][0])
+            saveSummPlotThread.output.connect(self.process_indicate)
+            saveSummPlotThread.finished.connect(self.save_plot_indicate)
+            saveSummPlotThread.start()
 
     def save_plot_indicate(self):
         self.statusBar.showMessage("Summary Plots saved!")
@@ -263,11 +261,10 @@ class SummaryDialog:
             self.summary = SummaryAnal()
             self.summary.importSummary()
             if self.summary.summary_filepath != "":
-                # self.summary.filter_df(self.filter_dict)
-                # self.summary.plotSummary(self.summaryDict,
-                #                          self.summary.df_final,
-                #                          self.summary.df_final)
-                self.summary.plotSummary()
+                self.summary.filter_df(self.filter_dict)
+                self.summary.plotSummary(self.summaryDict,
+                                         self.summary.df_final,
+                                         self.summary.df_final)
             else:
                 self.summary = None
         if self.summary != None:

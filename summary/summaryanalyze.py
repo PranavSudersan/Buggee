@@ -1,3 +1,5 @@
+import matplotlib
+from matplotlib import rc
 import matplotlib.pyplot as plt
 import time
 from datetime import datetime
@@ -11,6 +13,9 @@ import pandas as pd
 from pandas.io.json import json_normalize
 import numpy as np
 from PyQt5.QtWidgets import QFileDialog
+import seaborn as sns
+
+matplotlib.use('Qt5Agg')
 # import random
 
 class SummaryAnal:
@@ -235,9 +240,10 @@ class SummaryAnal:
             
             # summarydf['Date of Experiment'] =  summarydf['Data Folder'].str.split(pat = "/").str[-1].str.slice(start=0, stop=9)
             # self.unitDict['Date of Experiment'] = ''
+            self.summarydf = summarydf.copy()
+            # print(summarydf)
+            # print(self.unitDict)
             
-            print(summarydf)
-            print(self.unitDict)
             # self.df_forcedata.reset_index(inplace = True, drop = True)
             # self.df_final = self.df_forcedata.copy()
 
@@ -353,240 +359,324 @@ class SummaryAnal:
         else:
             error = None
         return error
-
-    def plotSummary(self, summaryDict, df_filter, df_full, group = "ROI Label",
-                    marker = "o", figlist = None, leg = None):
-
-        if figlist == None:
-            self.figdict = {}
+    
+    def plotSummary(self, paramDict = None):
+        if paramDict == None:
+            paramDict = {'Plot type': 'line',
+                         'X Variable': 'Measurement number',
+                         'Y Variable': 'Adhesion Stress',
+                         'Color Parameter': None,
+                         'Row Parameter': None,
+                         'Column Parameter': 'ROI Label',
+                         'Style Parameter': 'Detachment Speed',
+                         'Size Parameter': None,
+                         'Show Markers': True,
+                         'Opacity': 0.8,
+                         'Plot context': 'talk',
+                         'Plot style': 'ticks',
+                         'Color palette': None}
+            
+        sns.set_theme(context = paramDict['Plot context'],
+                      style= paramDict['Plot style'])
         
-        i = 0
+        fig_size = (6,6) #figure size
+        # x_param = "Distance"
+        # x_label = "Distance, d/s"
+        # y_param = "Force"
+        # y_label = r"Force, $F/\gamma s$"
+        # hue_param = "Model" #"Model"
+        # hue_param_order = None #set to force_order to show multiple forces in color, else set to None for single force
+        # style_param = 'Model'
+        # style_param_order = None
+        # col_param = "Contact Angle"
+        # col_param_order = None
+        #set to None if dont want to group and find Max
+        # color_list = None#['g', 'b', 'r', 'c'] #corresponding colors
+        fix_marker = 'o' if paramDict['Style Parameter'] == None else None #set to 'o' if style_param is None else set as None
+        # line_styles = None#[(1, 0), (1, 1)]
+        ##group_param = ['Model', 'Contact Angle', 'θ-fa', 'θ-fw',
+        ##               'D_p/D_h', 'a_b', 'a_f', 'Fluid data file',
+        ##               'Bubble data file'] 
+        if paramDict['Plot type'] in ['line', 'scatter']:
+            self.fig = sns.relplot(data= self.summarydf,
+                                   x = paramDict['X Variable'],
+                                   y = paramDict['Y Variable'],
+                                   hue = paramDict['Color Parameter'],
+                                   row = paramDict['Row Parameter'],
+                                   col = paramDict['Column Parameter'],
+                                   style = paramDict['Style Parameter'],
+                                   size = paramDict['Size Parameter'],
+                                   palette= paramDict['Color palette'],
+                                   kind = paramDict['Plot type'],
+                                   markers = paramDict['Show Markers'],
+                                   marker =  fix_marker,
+                                   alpha = paramDict['Opacity'])
+        elif paramDict['Plot type'] in ["strip", "swarm", "box", "violin",
+                                        "boxen", "point", "bar", "count"]:
+            self.fig = sns.catplot(data= self.summarydf,
+                                   x = paramDict['X Variable'],
+                                   y = paramDict['Y Variable'],
+                                   hue = paramDict['Color Parameter'],
+                                   row = paramDict['Row Parameter'],
+                                   col = paramDict['Column Parameter'],
+                                   palette= paramDict['Color palette'],
+                                   kind = paramDict['Plot type'],
+                                   alpha = paramDict['Opacity'])            
+        
+        # ax.fig.set_size_inches(*fig_size)
+        self.fig.set_axis_labels(paramDict['X Variable'] + 
+                           self.unitDict[paramDict['X Variable']],
+                           paramDict['Y Variable'] + 
+                           self.unitDict[paramDict['Y Variable']])
 
-##        header_nocomb = ["ROI Label", "Data_Folder",
-##                         "Measurement_Number", "Measurement_OK",
-##                         "Contact_Time", "Detachment Speed",
-##                         "Attachment Speed", "Sliding Speed", "Sliding_Step",
-##                         "Error_Vertical", "Error_Lateral", "Area_Units"]                      
-##        header_comb = ["Adhesion_Force", "Adhesion_Preload",
-##                      "Friction_Force","Friction_Preload",
-##                      "Max_Area", "Pulloff_Area", "Friction_Area",
-##                      "ROI_Max_Area", "ROI_Pulloff_Area",
-##                      "Max_Length", "Pulloff_Length", "ROI_Max_Length",
-##                      "ROI_Pulloff_Length", "Pulloff_Contact_Number",
-##                      "Residue_Area", "Pulloff_Median_Eccentricity"]
-##        header_all = header_nocomb + header_comb
-##        self.df_all = pd.DataFrame(columns = header_all)
+        #rename legend text to include units
+        leg = self.fig._legend
+        leg_title = leg.get_title().get_text()
+        if leg_title != '':
+            leg.get_title().set_text(leg_title + self.unitDict[leg_title])
+        
+        for text in self.fig._legend.texts:
+            print(text.get_text())
+            if text.get_text() in self.unitDict.keys():
+                text.set_text(text.get_text() + self.unitDict[text.get_text()])  
+        
+        #TODO also rename subplot titles with unit
+        
+        self.fig.tight_layout(w_pad=0)
 
-        markerlist = ["o", "v", "P", "^", "D", "X", "<", ">", "*", "s",
-                      "+", "d", "1", "x", "2", "h"]
-        j = 0
-        print("grp", group)
-        group_unique = list(set(df_filter[group]))
-        group_unique.sort()
-        self.group_list = group_unique #if leg == None else ["All"] #only plot "All" for experiment list
-##        self.eq_count["All"] = [1,1,1,1]
-        self.violindata = {}
-        self.violinlabels = {}
-        self.violindata["All"] = [[],[],[],[]]
-        self.violinlabels["All"] = [[],[],[],[]]
-        for b in self.group_list:
-            j = 0 if j > 15 else j #reset index
+#     def plotSummary(self, summaryDict, df_filter, df_full, group = "ROI Label",
+#                     marker = "o", figlist = None, leg = None):
+
+#         if figlist == None:
+#             self.figdict = {}
+        
+#         i = 0
+
+# ##        header_nocomb = ["ROI Label", "Data_Folder",
+# ##                         "Measurement_Number", "Measurement_OK",
+# ##                         "Contact_Time", "Detachment Speed",
+# ##                         "Attachment Speed", "Sliding Speed", "Sliding_Step",
+# ##                         "Error_Vertical", "Error_Lateral", "Area_Units"]                      
+# ##        header_comb = ["Adhesion_Force", "Adhesion_Preload",
+# ##                      "Friction_Force","Friction_Preload",
+# ##                      "Max_Area", "Pulloff_Area", "Friction_Area",
+# ##                      "ROI_Max_Area", "ROI_Pulloff_Area",
+# ##                      "Max_Length", "Pulloff_Length", "ROI_Max_Length",
+# ##                      "ROI_Pulloff_Length", "Pulloff_Contact_Number",
+# ##                      "Residue_Area", "Pulloff_Median_Eccentricity"]
+# ##        header_all = header_nocomb + header_comb
+# ##        self.df_all = pd.DataFrame(columns = header_all)
+
+#         markerlist = ["o", "v", "P", "^", "D", "X", "<", ">", "*", "s",
+#                       "+", "d", "1", "x", "2", "h"]
+#         j = 0
+#         print("grp", group)
+#         group_unique = list(set(df_filter[group]))
+#         group_unique.sort()
+#         self.group_list = group_unique #if leg == None else ["All"] #only plot "All" for experiment list
+# ##        self.eq_count["All"] = [1,1,1,1]
+#         self.violindata = {}
+#         self.violinlabels = {}
+#         self.violindata["All"] = [[],[],[],[]]
+#         self.violinlabels["All"] = [[],[],[],[]]
+#         for b in self.group_list:
+#             j = 0 if j > 15 else j #reset index
             
 
-##            #combine roi data into dataframe
-##            data_nocomb = [b] + [df_filter[x] \
-##                                                       for x in header_nocomb \
-##                                                       if x not in ["ROI Label"]]
-##            data_comb = [df_filter[x + "_" + b] for x in header_comb]
-##
-##            df_nocomb = pd.DataFrame(dict(zip(header_nocomb, data_nocomb)))
-##            df_comb = pd.DataFrame(dict(zip(header_comb, data_comb)))
-##            df_joined = df_comb.join(df_nocomb)
-##            self.df_all = self.df_all.append(df_joined, ignore_index=True, sort=False)
-##            self.df_all['Adhesion_Force'].replace('', np.nan, inplace=True)
-##            self.df_all.dropna(subset=['Adhesion_Force'], inplace=True) #remove blanks
+# ##            #combine roi data into dataframe
+# ##            data_nocomb = [b] + [df_filter[x] \
+# ##                                                       for x in header_nocomb \
+# ##                                                       if x not in ["ROI Label"]]
+# ##            data_comb = [df_filter[x + "_" + b] for x in header_comb]
+# ##
+# ##            df_nocomb = pd.DataFrame(dict(zip(header_nocomb, data_nocomb)))
+# ##            df_comb = pd.DataFrame(dict(zip(header_comb, data_comb)))
+# ##            df_joined = df_comb.join(df_nocomb)
+# ##            self.df_all = self.df_all.append(df_joined, ignore_index=True, sort=False)
+# ##            self.df_all['Adhesion_Force'].replace('', np.nan, inplace=True)
+# ##            self.df_all.dropna(subset=['Adhesion_Force'], inplace=True) #remove blanks
             
-##            if leg == None: #data source is summary file
-            df_roi_filter = df_filter[df_filter[group] == b]
-            roilist = [b, "All"]
-##            else: #data source is experiment list
-##                df_roi_filter = df_filter
-##                roilist = [b]
+# ##            if leg == None: #data source is summary file
+#             df_roi_filter = df_filter[df_filter[group] == b]
+#             roilist = [b, "All"]
+# ##            else: #data source is experiment list
+# ##                df_roi_filter = df_filter
+# ##                roilist = [b]
                 
-##            roilist = [b, "All"] if leg == None else [b]#combine roi plots in 'All'
-            mk = markerlist[j]
-            j += 1
+# ##            roilist = [b, "All"] if leg == None else [b]#combine roi plots in 'All'
+#             mk = markerlist[j]
+#             j += 1
 
-            #show variable names for numeric values in legend
-            group_unit = self.get_units(group, df_roi_filter)
-            group_unit_clean = group_unit.split('(')[1].split(')')[0] if group_unit != '' else group_unit
-            self.group_name = group.replace('_', ' ') + group_unit
-            self.group_val = b
-            # if summaryDict['plot type'][0] == "Scatter":
-            b = group.replace('_', ' ') + ' ' + str(b) + group_unit_clean  \
-                if isinstance(b, str) !=True and b!= None else b
-            leg = group.replace('_', ' ') + ' ' + str(leg) + group_unit_clean \
-                  if isinstance(leg, str) !=True and leg!= None else leg
-            # else:
-            #     b = str(b)  \
-            #         if isinstance(b, str) !=True and b!= None else b
-            #     leg = str(leg) \
-            #           if isinstance(leg, str) !=True and leg!= None else leg:
+#             #show variable names for numeric values in legend
+#             group_unit = self.get_units(group, df_roi_filter)
+#             group_unit_clean = group_unit.split('(')[1].split(')')[0] if group_unit != '' else group_unit
+#             self.group_name = group.replace('_', ' ') + group_unit
+#             self.group_val = b
+#             # if summaryDict['plot type'][0] == "Scatter":
+#             b = group.replace('_', ' ') + ' ' + str(b) + group_unit_clean  \
+#                 if isinstance(b, str) !=True and b!= None else b
+#             leg = group.replace('_', ' ') + ' ' + str(leg) + group_unit_clean \
+#                   if isinstance(leg, str) !=True and leg!= None else leg
+#             # else:
+#             #     b = str(b)  \
+#             #         if isinstance(b, str) !=True and b!= None else b
+#             #     leg = str(leg) \
+#             #           if isinstance(leg, str) !=True and leg!= None else leg:
                           
-##            if leg == None: #initialize fit equation counter
-            self.eq_count[b] = [1,1,1,1]
-            self.violindata[b] = [[],[],[],[]]
-            self.violinlabels[b] = [[],[],[],[]]
+# ##            if leg == None: #initialize fit equation counter
+#             self.eq_count[b] = [1,1,1,1]
+#             self.violindata[b] = [[],[],[],[]]
+#             self.violinlabels[b] = [[],[],[],[]]
             
-##            self.eq_count[b] = [1,1,1,1]
-            for c in roilist:
-                c = group.replace('_', ' ') + ' ' + str(c) + group_unit_clean \
-                    if isinstance(c, str) !=True and c!= None else c
+# ##            self.eq_count[b] = [1,1,1,1]
+#             for c in roilist:
+#                 c = group.replace('_', ' ') + ' ' + str(c) + group_unit_clean \
+#                     if isinstance(c, str) !=True and c!= None else c
 
-                # adhesion_speed_plots = {}
-                # friction_speed_plots = {}
+#                 # adhesion_speed_plots = {}
+#                 # friction_speed_plots = {}
                 
-                title_a = summaryDict['title'][0] + ' (' + c + ')'
+#                 title_a = summaryDict['title'][0] + ' (' + c + ')'
               
-##                title_l = 'Adhesion (' + c + ') vs Length'
+# ##                title_l = 'Adhesion (' + c + ') vs Length'
             
-##                for a in speed_def_unique: #loop over speed definitions
-##                    if a in ['Detachment Speed']:
+# ##                for a in speed_def_unique: #loop over speed definitions
+# ##                    if a in ['Detachment Speed']:
 
-                p1 = summaryDict['cbar var'][0] #first subplot
-                p1_clean = p1.replace('_', ' ')
-                p1_unit =  self.get_units(p1, df_roi_filter)
-                x1 = summaryDict['x var'][0]
-                x1_clean = x1.replace('_', ' ')
-                x1_unit =  self.get_units(x1, df_roi_filter)
-                y1 = summaryDict['y var'][0]
-                y1_clean = y1.replace('_', ' ')
-                y1_unit =  self.get_units(y1, df_roi_filter)
-                title1 = 'Effect of ' + p1_clean \
-                    if summaryDict['plot type'][0] == "Scatter" else y1_clean
-                fig_a = self.preparePlot(summaryDict['plot type'][0], 
-                                         title1, title_a, df_full, 
-                                         df_roi_filter[x1], df_roi_filter[y1],
-                                         df_roi_filter[p1], self.get_errordata(y1, df_roi_filter),
-                                         x1_clean + x1_unit,
-                                         y1_clean + y1_unit,
-                                         p1_clean + p1_unit, j,
-                                         mk if leg == None and c == "All" else marker,
-                                         figlist[c][0] if c in self.figdict.keys() else None,
-                                         b if leg == None and c == "All" else leg,
-                                         subplt = 1, fit_flag = summaryDict['fit'][0],
-                                         fit_order = summaryDict['order'][0])
-##                adhesion_speed_plots[a] = fig_a
+#                 p1 = summaryDict['cbar var'][0] #first subplot
+#                 p1_clean = p1.replace('_', ' ')
+#                 p1_unit =  self.get_units(p1, df_roi_filter)
+#                 x1 = summaryDict['x var'][0]
+#                 x1_clean = x1.replace('_', ' ')
+#                 x1_unit =  self.get_units(x1, df_roi_filter)
+#                 y1 = summaryDict['y var'][0]
+#                 y1_clean = y1.replace('_', ' ')
+#                 y1_unit =  self.get_units(y1, df_roi_filter)
+#                 title1 = 'Effect of ' + p1_clean \
+#                     if summaryDict['plot type'][0] == "Scatter" else y1_clean
+#                 fig_a = self.preparePlot(summaryDict['plot type'][0], 
+#                                          title1, title_a, df_full, 
+#                                          df_roi_filter[x1], df_roi_filter[y1],
+#                                          df_roi_filter[p1], self.get_errordata(y1, df_roi_filter),
+#                                          x1_clean + x1_unit,
+#                                          y1_clean + y1_unit,
+#                                          p1_clean + p1_unit, j,
+#                                          mk if leg == None and c == "All" else marker,
+#                                          figlist[c][0] if c in self.figdict.keys() else None,
+#                                          b if leg == None and c == "All" else leg,
+#                                          subplt = 1, fit_flag = summaryDict['fit'][0],
+#                                          fit_order = summaryDict['order'][0])
+# ##                adhesion_speed_plots[a] = fig_a
 
-##                if a in ['Sliding Speed']:
-##                fig_l = self.preparePlot('Effect of ' + p1_clean, title_l, df_full, 
-##                                         df_roi_filter["Pulloff_Length"], df_roi_filter["Adhesion_Force"],
-##                                         df_roi_filter[p1], df_roi_filter["Error_Vertical"],
-##                                         'Contact Length ($' + df_roi_filter["Area_Units"].iloc[0][:-2] + '$)',
-##                                         'Adhesion Force (μN)', p1_clean + ' ' + p1_unit,
-##                                         mk if leg == None and c == "All" else marker,
-##                                         figlist[c][1] if c in self.figdict.keys() else None,
-##                                         b if leg == None and c == "All" else leg, subplt = 1)
-##                friction_speed_plots[a] = fig_f
+# ##                if a in ['Sliding Speed']:
+# ##                fig_l = self.preparePlot('Effect of ' + p1_clean, title_l, df_full, 
+# ##                                         df_roi_filter["Pulloff_Length"], df_roi_filter["Adhesion_Force"],
+# ##                                         df_roi_filter[p1], df_roi_filter["Error_Vertical"],
+# ##                                         'Contact Length ($' + df_roi_filter["Area_Units"].iloc[0][:-2] + '$)',
+# ##                                         'Adhesion Force (μN)', p1_clean + ' ' + p1_unit,
+# ##                                         mk if leg == None and c == "All" else marker,
+# ##                                         figlist[c][1] if c in self.figdict.keys() else None,
+# ##                                         b if leg == None and c == "All" else leg, subplt = 1)
+# ##                friction_speed_plots[a] = fig_f
 
-                p2 = summaryDict['cbar var'][1] #second subplot
-                p2_clean = p2.replace('_', ' ')
-                p2_unit =  self.get_units(p2, df_roi_filter)
-                x2 = summaryDict['x var'][1]
-                x2_clean = x2.replace('_', ' ')
-                x2_unit =  self.get_units(x2, df_roi_filter)
-                y2 = summaryDict['y var'][1]
-                y2_clean = y2.replace('_', ' ')
-                y2_unit =  self.get_units(y2, df_roi_filter)
-                title2 = 'Effect of ' + p2_clean \
-                    if summaryDict['plot type'][0] == "Scatter" else y2_clean
-                fig_a = self.preparePlot(summaryDict['plot type'][0], 
-                                         title2, title_a, df_full, 
-                                        df_roi_filter[x2], df_roi_filter[y2],
-                                        df_roi_filter[p2], self.get_errordata(y2, df_roi_filter),
-                                        x2_clean + x2_unit,
-                                         y2_clean + y2_unit,
-                                         p2_clean + p2_unit, j,
-                                         mk if leg == None and c == "All" else marker,
-                                        fig_a, b if leg == None and c == "All" else leg,
-                                         subplt = 2, fit_flag = summaryDict['fit'][1],
-                                         fit_order = summaryDict['order'][1])
-##                fig_l = self.preparePlot('Effect of ' + p2_clean, title_l, df_full, 
-##                                         df_roi_filter["Pulloff_Length"], df_roi_filter["Adhesion_Force"],
-##                                        df_roi_filter[p2], df_roi_filter["Error_Vertical"],
-##                                         'Contact Length ($' + df_roi_filter["Area_Units"].iloc[0][:-2] + '$)',
-##                                         'Adhesion Force (μN)', p2_clean + ' ' + p2_unit,
-##                                         mk if leg == None and c == "All" else marker,
-##                                        fig_l, b if leg == None and c == "All" else leg, subplt = 2)
+#                 p2 = summaryDict['cbar var'][1] #second subplot
+#                 p2_clean = p2.replace('_', ' ')
+#                 p2_unit =  self.get_units(p2, df_roi_filter)
+#                 x2 = summaryDict['x var'][1]
+#                 x2_clean = x2.replace('_', ' ')
+#                 x2_unit =  self.get_units(x2, df_roi_filter)
+#                 y2 = summaryDict['y var'][1]
+#                 y2_clean = y2.replace('_', ' ')
+#                 y2_unit =  self.get_units(y2, df_roi_filter)
+#                 title2 = 'Effect of ' + p2_clean \
+#                     if summaryDict['plot type'][0] == "Scatter" else y2_clean
+#                 fig_a = self.preparePlot(summaryDict['plot type'][0], 
+#                                          title2, title_a, df_full, 
+#                                         df_roi_filter[x2], df_roi_filter[y2],
+#                                         df_roi_filter[p2], self.get_errordata(y2, df_roi_filter),
+#                                         x2_clean + x2_unit,
+#                                          y2_clean + y2_unit,
+#                                          p2_clean + p2_unit, j,
+#                                          mk if leg == None and c == "All" else marker,
+#                                         fig_a, b if leg == None and c == "All" else leg,
+#                                          subplt = 2, fit_flag = summaryDict['fit'][1],
+#                                          fit_order = summaryDict['order'][1])
+# ##                fig_l = self.preparePlot('Effect of ' + p2_clean, title_l, df_full, 
+# ##                                         df_roi_filter["Pulloff_Length"], df_roi_filter["Adhesion_Force"],
+# ##                                        df_roi_filter[p2], df_roi_filter["Error_Vertical"],
+# ##                                         'Contact Length ($' + df_roi_filter["Area_Units"].iloc[0][:-2] + '$)',
+# ##                                         'Adhesion Force (μN)', p2_clean + ' ' + p2_unit,
+# ##                                         mk if leg == None and c == "All" else marker,
+# ##                                        fig_l, b if leg == None and c == "All" else leg, subplt = 2)
 
-                p3 = summaryDict['cbar var'][2] #third subplot
-                p3_clean = p3.replace('_', ' ')
-                p3_unit =  self.get_units(p3, df_roi_filter)
-                x3 = summaryDict['x var'][2]
-                x3_clean = x3.replace('_', ' ')
-                x3_unit =  self.get_units(x3, df_roi_filter)
-                y3 = summaryDict['y var'][2]
-                y3_clean = y3.replace('_', ' ')
-                y3_unit =  self.get_units(y3, df_roi_filter)
-                title3 = 'Effect of ' + p3_clean \
-                    if summaryDict['plot type'][0] == "Scatter" else y3_clean
-                fig_a = self.preparePlot(summaryDict['plot type'][0], 
-                                         title3, title_a, df_full,  
-                                         df_roi_filter[x3], df_roi_filter[y3],
-                                        df_roi_filter[p3], self.get_errordata(y3, df_roi_filter),
-                                         x3_clean + x3_unit,
-                                         y3_clean + y3_unit,
-                                         p3_clean + p3_unit, j,
-                                         mk if leg == None and c == "All" else marker,
-                                        fig_a, b if leg == None and c == "All" else leg,
-                                         subplt = 3, fit_flag = summaryDict['fit'][2],
-                                         fit_order = summaryDict['order'][2])
-##                fig_l = self.preparePlot('Effect of ' + p3_clean, title_l, df_full, 
-##                                         df_roi_filter["Pulloff_Length"], df_roi_filter["Adhesion_Force"],
-##                                        df_roi_filter[p3], df_roi_filter["Error_Vertical"],
-##                                         'Contact Length ($' + df_roi_filter["Area_Units"].iloc[0][:-2] + '$)',
-##                                         'Adhesion Force (μN)', p3_clean + ' ' + p3_unit,
-##                                         mk if leg == None and c == "All" else marker,
-##                                        fig_l, b if leg == None and c == "All" else leg, subplt = 3)
+#                 p3 = summaryDict['cbar var'][2] #third subplot
+#                 p3_clean = p3.replace('_', ' ')
+#                 p3_unit =  self.get_units(p3, df_roi_filter)
+#                 x3 = summaryDict['x var'][2]
+#                 x3_clean = x3.replace('_', ' ')
+#                 x3_unit =  self.get_units(x3, df_roi_filter)
+#                 y3 = summaryDict['y var'][2]
+#                 y3_clean = y3.replace('_', ' ')
+#                 y3_unit =  self.get_units(y3, df_roi_filter)
+#                 title3 = 'Effect of ' + p3_clean \
+#                     if summaryDict['plot type'][0] == "Scatter" else y3_clean
+#                 fig_a = self.preparePlot(summaryDict['plot type'][0], 
+#                                          title3, title_a, df_full,  
+#                                          df_roi_filter[x3], df_roi_filter[y3],
+#                                         df_roi_filter[p3], self.get_errordata(y3, df_roi_filter),
+#                                          x3_clean + x3_unit,
+#                                          y3_clean + y3_unit,
+#                                          p3_clean + p3_unit, j,
+#                                          mk if leg == None and c == "All" else marker,
+#                                         fig_a, b if leg == None and c == "All" else leg,
+#                                          subplt = 3, fit_flag = summaryDict['fit'][2],
+#                                          fit_order = summaryDict['order'][2])
+# ##                fig_l = self.preparePlot('Effect of ' + p3_clean, title_l, df_full, 
+# ##                                         df_roi_filter["Pulloff_Length"], df_roi_filter["Adhesion_Force"],
+# ##                                        df_roi_filter[p3], df_roi_filter["Error_Vertical"],
+# ##                                         'Contact Length ($' + df_roi_filter["Area_Units"].iloc[0][:-2] + '$)',
+# ##                                         'Adhesion Force (μN)', p3_clean + ' ' + p3_unit,
+# ##                                         mk if leg == None and c == "All" else marker,
+# ##                                        fig_l, b if leg == None and c == "All" else leg, subplt = 3)
 
-                p4 = summaryDict['cbar var'][3] #fourth subplot
-                p4_clean = p4.replace('_', ' ')
-                p4_unit =  self.get_units(p4, df_roi_filter)
-                x4 = summaryDict['x var'][3]
-                x4_clean = x4.replace('_', ' ')
-                x4_unit =  self.get_units(x4, df_roi_filter)
-                y4 = summaryDict['y var'][3]
-                y4_clean = y4.replace('_', ' ')
-                y4_unit =  self.get_units(y4, df_roi_filter)
-                title4 = 'Effect of ' + p4_clean \
-                    if summaryDict['plot type'][0] == "Scatter" else y4_clean
-                fig_a = self.preparePlot(summaryDict['plot type'][0], 
-                                         title4, title_a, df_full, 
-                                         df_roi_filter[x4], df_roi_filter[y4],
-                                        df_roi_filter[p4], self.get_errordata(y4, df_roi_filter),
-                                         x4_clean + x4_unit,
-                                         y4_clean + y4_unit,
-                                         p4_clean + p4_unit, j,
-                                         mk if leg == None and c == "All" else marker,
-                                        fig_a, b if leg == None and c == "All" else leg,
-                                         subplt = 4, fit_flag = summaryDict['fit'][3],
-                                         fit_order = summaryDict['order'][3])
-##                fig_l = self.preparePlot('Effect of ' + p4_clean, title_l, df_full, 
-##                                         df_roi_filter["Pulloff_Length"], df_roi_filter["Adhesion_Force"],
-##                                        df_roi_filter[p4], df_roi_filter["Error_Vertical"],
-##                                         'Contact Length ($' + df_roi_filter["Area_Units"].iloc[0][:-2] + '$)',
-##                                         'Adhesion Force (μN)', p4_clean + ' ' + p4_unit,
-##                                         mk if leg == None and c == "All" else marker,
-##                                        fig_l, b if leg == None and c == "All" else leg, subplt = 4)
+#                 p4 = summaryDict['cbar var'][3] #fourth subplot
+#                 p4_clean = p4.replace('_', ' ')
+#                 p4_unit =  self.get_units(p4, df_roi_filter)
+#                 x4 = summaryDict['x var'][3]
+#                 x4_clean = x4.replace('_', ' ')
+#                 x4_unit =  self.get_units(x4, df_roi_filter)
+#                 y4 = summaryDict['y var'][3]
+#                 y4_clean = y4.replace('_', ' ')
+#                 y4_unit =  self.get_units(y4, df_roi_filter)
+#                 title4 = 'Effect of ' + p4_clean \
+#                     if summaryDict['plot type'][0] == "Scatter" else y4_clean
+#                 fig_a = self.preparePlot(summaryDict['plot type'][0], 
+#                                          title4, title_a, df_full, 
+#                                          df_roi_filter[x4], df_roi_filter[y4],
+#                                         df_roi_filter[p4], self.get_errordata(y4, df_roi_filter),
+#                                          x4_clean + x4_unit,
+#                                          y4_clean + y4_unit,
+#                                          p4_clean + p4_unit, j,
+#                                          mk if leg == None and c == "All" else marker,
+#                                         fig_a, b if leg == None and c == "All" else leg,
+#                                          subplt = 4, fit_flag = summaryDict['fit'][3],
+#                                          fit_order = summaryDict['order'][3])
+# ##                fig_l = self.preparePlot('Effect of ' + p4_clean, title_l, df_full, 
+# ##                                         df_roi_filter["Pulloff_Length"], df_roi_filter["Adhesion_Force"],
+# ##                                        df_roi_filter[p4], df_roi_filter["Error_Vertical"],
+# ##                                         'Contact Length ($' + df_roi_filter["Area_Units"].iloc[0][:-2] + '$)',
+# ##                                         'Adhesion Force (μN)', p4_clean + ' ' + p4_unit,
+# ##                                         mk if leg == None and c == "All" else marker,
+# ##                                        fig_l, b if leg == None and c == "All" else leg, subplt = 4)
 
-                self.figdict[c] = [fig_a]
+#                 self.figdict[c] = [fig_a]
                 
-                if i == 0 and c == "All" and figlist == None: #initialise figlist for "All"
-                    figlist = {}
-                    figlist["All"] = [fig_a]
-                    i = 1
-##        self.df_final = self.df_all.copy()
-##        self.df_all.to_excel("E:/Work/Codes/Test codes/test5.xlsx") #export as excel
+#                 if i == 0 and c == "All" and figlist == None: #initialise figlist for "All"
+#                     figlist = {}
+#                     figlist["All"] = [fig_a]
+#                     i = 1
+# ##        self.df_final = self.df_all.copy()
+# ##        self.df_all.to_excel("E:/Work/Codes/Test codes/test5.xlsx") #export as excel
                 
     
     def preparePlot(self, plot_type, ax_title, fig_title, df_full, xdata, ydata, 
@@ -746,33 +836,34 @@ class SummaryAnal:
     def showSummaryPlot(self): #show summary plots
         print("showSummaryPlot")
         if self.summary_filepath != "":
-            keys = list(self.figdict.keys())
-            for b in keys:
-                print("keys", b)
-                if len(self.figdict.keys())==2 and b == "All":
-                    #close "All" figures
-                    plt.close(self.figdict[b][0])
-##                    plt.close(self.figdict[b][1])
-##                    plt.close(self.figdict[b][2])
-##                    plt.close(self.figdict[b][3])
-##                    plt.close(self.figdict[b][4])
-##                    plt.close(self.figdict[b][5])
-##                    for a in self.figdict[b][6].values():
-##                        plt.close(a)
-##                    for a in self.figdict[b][7].values():
-##                        plt.close(a)
-                else:
-##                    self.figdict[b][0].show()
-                    self.show_figure(self.figdict[b][0])
-##                    self.figdict[b][1].show()
-##                    self.figdict[b][2].show()
-##                    self.figdict[b][3].show()
-##                    self.figdict[b][4].show()
-##                    self.figdict[b][5].show()
-##                    for a in self.figdict[b][6].values():
-##                        a.show()
-##                    for a in self.figdict[b][7].values():
-##                        a.show()
+#             keys = list(self.figdict.keys())
+#             for b in keys:
+#                 print("keys", b)
+#                 if len(self.figdict.keys())==2 and b == "All":
+#                     #close "All" figures
+#                     plt.close(self.figdict[b][0])
+# ##                    plt.close(self.figdict[b][1])
+# ##                    plt.close(self.figdict[b][2])
+# ##                    plt.close(self.figdict[b][3])
+# ##                    plt.close(self.figdict[b][4])
+# ##                    plt.close(self.figdict[b][5])
+# ##                    for a in self.figdict[b][6].values():
+# ##                        plt.close(a)
+# ##                    for a in self.figdict[b][7].values():
+# ##                        plt.close(a)
+#                 else:
+# ##                    self.figdict[b][0].show()
+#                     self.show_figure(self.figdict[b][0])
+# ##                    self.figdict[b][1].show()
+# ##                    self.figdict[b][2].show()
+# ##                    self.figdict[b][3].show()
+# ##                    self.figdict[b][4].show()
+# ##                    self.figdict[b][5].show()
+# ##                    for a in self.figdict[b][6].values():
+# ##                        a.show()
+# ##                    for a in self.figdict[b][7].values():
+# ##                        a.show()
+            self.fig.fig.show()
             plt.show()
 
     def show_figure(self, fig):
@@ -785,15 +876,20 @@ class SummaryAnal:
 
     def saveSummaryPlot(self, plot_format): #save summary plots
         if self.summary_filepath != "":
-            folderpath = os.path.dirname(self.summary_filepath)
-            if not os.path.exists(folderpath):
-                os.makedirs(folderpath)            
-            keys = list(self.figdict.keys())
-            for b in keys:
-                if len(self.figdict.keys())==2 and b == "All":
-                    continue
-                else:
-                    self.savePlot(self.figdict[b][0], plot_format)
+            # folderpath = os.path.dirname(self.summary_filepath)
+            # if not os.path.exists(folderpath):
+            #     os.makedirs(folderpath)
+            filename = os.path.dirname(self.summary_filepath) + '/' + \
+                self.fig.fig.get_label().replace('/','')+ '-' + \
+                    time.strftime("%y%m%d%H%M%S") + '.' + plot_format
+            self.fig.fig.savefig(filename, orientation='landscape',
+                                 transparent = True, dpi = 150)
+            # keys = list(self.figdict.keys())
+            # for b in keys:
+            #     if len(self.figdict.keys())==2 and b == "All":
+            #         continue
+            #     else:
+            #         self.savePlot(self.figdict[b][0], plot_format)
 ##                    self.savePlot(self.figdict[b][1])
 ##                    self.savePlot(self.figdict[b][2])
 ##                    self.savePlot(self.figdict[b][3])
@@ -803,16 +899,19 @@ class SummaryAnal:
 ##                        self.savePlot(a)
 ##                    for a in self.figdict[b][7].values():
 ##                        self.savePlot(a)
-            self.df_final.to_excel(os.path.dirname(self.summary_filepath) +
+            print("saved plot", filename)
+            self.summarydf.to_excel(os.path.dirname(self.summary_filepath) +
                                    '/summary_clean_' +
                                    time.strftime("%y%m%d%H%M%S") + '.xlsx') #export as excel 
 
-
+            print("saved data")
+            
     def savePlot(self, fig, plot_format): #save routine
         filename = os.path.dirname(self.summary_filepath) + '/' + \
                    fig.get_label().replace('/','')+ '-' + time.strftime("%y%m%d%H%M%S") + '.' + plot_format
-        fig.savefig(filename, orientation='landscape',
-                    transparent = True, dpi = 150)
+        # fig.savefig(filename, orientation='landscape',
+        #             transparent = True, dpi = 150)
+
         print("save plot", filename)
 
     def combineSummary(self, summaryDict, legend_parameter): #combine summary data and plot

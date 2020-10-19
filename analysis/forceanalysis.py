@@ -580,7 +580,7 @@ class ForceAnal(Plotting):
         self.deform_pulloff = self.fileDataDict["Deformation"][deform_limits[1]] #deformation at contact loss
         
         #calculate adhesion energy (area under curve) 
-        #CHECK! Last zero1 value of rois taken for energy calculation
+        #TODO! Last zero1 value of rois taken for energy calculation
         pulloff_index = int(self.ptsperstep * int(deform_limits[1]/self.ptsperstep)) #start index of contact loss "step"
         force_shifted = [x-zero1 for x in force_vert1]
         zero_index = (force_shifted[pulloff_index:deform_limits[1]+1].index\

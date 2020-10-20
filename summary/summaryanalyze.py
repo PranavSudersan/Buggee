@@ -14,6 +14,7 @@ from pandas.io.json import json_normalize
 import numpy as np
 from PyQt5.QtWidgets import QFileDialog
 import seaborn as sns
+import cv2
 
 matplotlib.use('Qt5Agg')
 # import random
@@ -365,16 +366,33 @@ class SummaryAnal:
             paramDict = {'Plot type': 'line',
                          'X Variable': 'Measurement number',
                          'Y Variable': 'Adhesion Stress',
-                         'Color Parameter': None,
+                         'Color Parameter': 'Detachment Speed',
                          'Row Parameter': None,
-                         'Column Parameter': 'ROI Label',
-                         'Style Parameter': 'Detachment Speed',
+                         'Column Parameter': 'Detachment Speed',
+                         'Style Parameter': 'ROI Label',
                          'Size Parameter': None,
                          'Show Markers': True,
                          'Opacity': 0.8,
+                         'Title': 'Test PLot',
                          'Plot context': 'talk',
                          'Plot style': 'ticks',
-                         'Color palette': None}
+                         'Color palette': None,
+                         'Zero line': False,
+                         'Legend location': 'lower center',
+                         'Legend columns': 2}
+        
+        #location dictionary
+        locDict = {'best': 0,
+                   'upper right': 1,
+                   'upper left': 2,
+                   'lower left': 3,
+                   'lower right': 4,
+                   'right': 5,
+                   'center left': 6,
+                   'center right': 7,
+                   'lower center': 8,
+                   'upper center': 9,
+                   'center': 10}
             
         sns.set_theme(context = paramDict['Plot context'],
                       style= paramDict['Plot style'])
@@ -423,27 +441,74 @@ class SummaryAnal:
                                    kind = paramDict['Plot type'],
                                    alpha = paramDict['Opacity'])            
         
+        axes = self.fig.axes.flatten() #list of axes
+        
         # ax.fig.set_size_inches(*fig_size)
         self.fig.set_axis_labels(paramDict['X Variable'] + 
                            self.unitDict[paramDict['X Variable']],
                            paramDict['Y Variable'] + 
                            self.unitDict[paramDict['Y Variable']])
 
-        #rename legend text to include units
-        leg = self.fig._legend
-        leg_title = leg.get_title().get_text()
-        if leg_title != '':
-            leg.get_title().set_text(leg_title + self.unitDict[leg_title])
         
-        for text in self.fig._legend.texts:
-            print(text.get_text())
-            if text.get_text() in self.unitDict.keys():
-                text.set_text(text.get_text() + self.unitDict[text.get_text()])  
+        #rename subplot titles with unit
+        for ax in axes:
+            title = ax.get_title().split(' = ')
+            if title[0] in self.unitDict.keys():
+                ax.set_title(' = '.join(title) + 
+                             self.unitDict[title[0]].replace('[', '').replace(']', ''))
         
-        #TODO also rename subplot titles with unit
-        
-        self.fig.tight_layout(w_pad=0)
+        #show dashed zero line
+        if paramDict['Zero line'] == True:
+            self.fig.map(plt.axhline, y=0, color=".7", dashes=(2, 1), zorder=0)
 
+        self.fig.tight_layout(w_pad=0)
+        
+        leg = self.fig._legend
+        handles, labels = axes[0].get_legend_handles_labels()
+        leg_title = leg.get_title().get_text()
+        
+        #rename legend with units
+        i= 0
+        unit = ''
+        for lab in labels:
+            if leg_title == '':
+                if lab in self.unitDict.keys():
+                    unit = self.unitDict[lab]
+                    i += 1
+                    continue
+            else:
+                unit = self.unitDict[leg_title]
+            unit = unit.replace('[', '').replace(']', '') if unit != '' else ''
+            labels[i] = lab + unit
+            i += 1
+        
+        leg.remove()        
+        self.fig.fig.tight_layout()
+        
+        #redraw legend for better control
+        leg = plt.legend(handles, labels, ncol = paramDict['Legend columns'], 
+                         framealpha = 0.5,
+                         title = leg_title if leg_title != ''  else None)
+
+        leg_bbox = leg.get_tightbbox(self.fig.fig.canvas.get_renderer())
+        x0, y0, w, h = leg_bbox.inverse_transformed(self.fig.fig.transFigure).bounds
+        leg.set_bbox_to_anchor((-w, -h, 1 + 2 * w, 1 +  2 * h), 
+                               transform = self.fig.fig.transFigure)
+        leg._loc = locDict[paramDict['Legend location']]
+        
+        self.fig.fig.canvas.set_window_title(paramDict['Title'])
+        self.fig.fig.canvas.mpl_connect("resize_event", self.previewPlot)
+        
+        self.previewPlot()
+
+    #save plot to temporarory location and preview it. Necessary since
+    #legends is outside view in plot show
+    def previewPlot(self, event = None):        
+        self.fig.fig.savefig("samples/_temp_plot.png", bbox_inches='tight', 
+                             transparent = True, dpi = 50)
+        temp_plot = cv2.imread("samples/_temp_plot.png")
+        cv2.imshow("Plot Preview", temp_plot)
+        
 #     def plotSummary(self, summaryDict, df_filter, df_full, group = "ROI Label",
 #                     marker = "o", figlist = None, leg = None):
 
@@ -863,6 +928,7 @@ class SummaryAnal:
 # ##                        a.show()
 # ##                    for a in self.figdict[b][7].values():
 # ##                        a.show()
+            self.previewPlot()
             self.fig.fig.show()
             plt.show()
 
@@ -877,12 +943,12 @@ class SummaryAnal:
     def saveSummaryPlot(self, plot_format): #save summary plots
         if self.summary_filepath != "":
             # folderpath = os.path.dirname(self.summary_filepath)
-            # if not os.path.exists(folderpath):
+            # if not os.path.exists(folderpath):orientation='landscape',
             #     os.makedirs(folderpath)
             filename = os.path.dirname(self.summary_filepath) + '/' + \
-                self.fig.fig.get_label().replace('/','')+ '-' + \
+                self.fig.fig.canvas.get_window_title()+ '-' + \
                     time.strftime("%y%m%d%H%M%S") + '.' + plot_format
-            self.fig.fig.savefig(filename, orientation='landscape',
+            self.fig.fig.savefig(filename, bbox_inches='tight', 
                                  transparent = True, dpi = 150)
             # keys = list(self.figdict.keys())
             # for b in keys:

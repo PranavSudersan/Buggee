@@ -209,11 +209,11 @@ class SummaryDialog:
                 self.comb = True
                 self.statusBar.showMessage("Summary Data combined!")
                 self.summary.filter_df(self.filter_dict)
-                self.summary.plotSummary(self.summaryDict,
-                                         self.summary.df_final,
-                                         self.summary.df_final,
-                                         legend_parameter)
-                self.summary.showSummaryPlot()
+                # self.summary.plotSummary(self.summaryDict,
+                #                          self.summary.df_final,
+                #                          self.summary.df_final,
+                #                          legend_parameter)
+                # self.summary.showSummaryPlot()
             else:
                 self.statusBar.showMessage("No file selected")
                 self.comb = False
@@ -223,11 +223,11 @@ class SummaryDialog:
             self.summary.importSummary()
             if self.summary.summary_filepath != "":
                 self.summary.filter_df(self.filter_dict)
-                self.summary.plotSummary(self.summaryDict,
-                                         self.summary.df_final,
-                                         self.summary.df_final,
-                                         legend_parameter)
-                self.summary.showSummaryPlot()
+                # self.summary.plotSummary(self.summaryDict,
+                #                          self.summary.df_final,
+                #                          self.summary.df_final,
+                #                          legend_parameter)
+                # self.summary.showSummaryPlot()
             else:
                 self.summary = None
         

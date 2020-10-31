@@ -368,7 +368,7 @@ class SummaryAnal:
                          'Y Variable': 'Adhesion Stress',
                          'Color Parameter': 'Detachment Speed',
                          'Row Parameter': None,
-                         'Column Parameter': 'Detachment Speed',
+                         'Column Parameter': None,
                          'Style Parameter': 'ROI Label',
                          'Size Parameter': None,
                          'Show Markers': True,
@@ -378,8 +378,10 @@ class SummaryAnal:
                          'Plot style': 'ticks',
                          'Color palette': None,
                          'Zero line': False,
-                         'Legend location': 'lower center',
-                         'Legend columns': 2}
+                         'Legend outside': False,
+                         'Legend location': 'center right',
+                         'Legend columns': 1,
+                         'X label rotate': 45}
         
         #location dictionary
         locDict = {'best': 0,
@@ -449,7 +451,8 @@ class SummaryAnal:
                            paramDict['Y Variable'] + 
                            self.unitDict[paramDict['Y Variable']])
 
-        
+        self.fig.set_xticklabels(rotation = paramDict['X label rotate'],
+                                 horizontalalignment = 'right')
         #rename subplot titles with unit
         for ax in axes:
             title = ax.get_title().split(' = ')
@@ -489,11 +492,11 @@ class SummaryAnal:
         leg = plt.legend(handles, labels, ncol = paramDict['Legend columns'], 
                          framealpha = 0.5,
                          title = leg_title if leg_title != ''  else None)
-
-        leg_bbox = leg.get_tightbbox(self.fig.fig.canvas.get_renderer())
-        x0, y0, w, h = leg_bbox.inverse_transformed(self.fig.fig.transFigure).bounds
-        leg.set_bbox_to_anchor((-w, -h, 1 + 2 * w, 1 +  2 * h), 
-                               transform = self.fig.fig.transFigure)
+        if paramDict['Legend outside'] == True:
+            leg_bbox = leg.get_tightbbox(self.fig.fig.canvas.get_renderer())
+            x0, y0, w, h = leg_bbox.inverse_transformed(self.fig.fig.transFigure).bounds
+            leg.set_bbox_to_anchor((-w, -h, 1 + 2 * w, 1 +  2 * h), 
+                                   transform = self.fig.fig.transFigure)
         leg._loc = locDict[paramDict['Legend location']]
         
         self.fig.fig.canvas.set_window_title(paramDict['Title'])
@@ -987,110 +990,153 @@ class SummaryAnal:
                                                              "Select experiment list file")
         if self.list_filepath != "":
             list_folderpath = os.path.dirname(self.list_filepath)
-            wb_obj = openpyxl.load_workbook(filename = self.list_filepath,
-                                            read_only = True)# workbook object is created  
-            sheet_obj = wb_obj.active
-
-            m_row = sheet_obj.max_row
-
-            date = []
-            foldername = []
-            species = []
-            sex = []
-            leg = []
-            pad = []
-            weight = []
-            temp = []
-            hum = []
-            medium = []
-            surface = []
-            ca_w = []
-            ca_o = []
-            dataok = []
-            includedata = []
-            label = []
             
-            header1 = ["Date", "Folder_Name", "Species", "Sex", "Leg", "Pad",
-                       "Weight", "Temperature", "Humidity", "Medium",
-                       "Substrate","Contact_Angle-Water", "Contact_Angle-Hexadecane", 
-                       "Data_OK", "Include_Data", "Label"]
-##            header2 = ["Max_Area", "Pulloff_Area","Adhesion_Force",
-##                      "Preload_Force", "Contact_Time", "Speed",
-##                      "Steps", "Friction_Force", "Friction_Area",
-##                      "Measurement_Number", "Measurement_OK", "ROI_Labels",
-##                      "Area_Units"]
-##            headerfull = header1 + header2
-            df = pd.DataFrame(columns = header1)
-
-##            steps_unique = []
-##            speed_def_unique = []
-##            roi_label_unique = []
-            j = 0
+            explistDf = pd.read_excel(self.list_filepath) #experiment list
             
-            for i in range(3, m_row + 1):
-                #import data
-                ok = sheet_obj.cell(row = i, column = 16).value
-                include = sheet_obj.cell(row = i, column = 17).value
-
-                if ok == 'No' or include == 'No': #only consider 'Yes' data in Data OK/Include Data
-                    continue
-                
-                date.append(sheet_obj.cell(row = i, column = 1).value)
-                foldername.append(sheet_obj.cell(row = i, column = 2).value)
-                species.append(sheet_obj.cell(row = i, column = 3).value)
-                sex.append(sheet_obj.cell(row = i, column = 4).value)
-                leg.append(sheet_obj.cell(row = i, column = 5).value)
-                pad.append(sheet_obj.cell(row = i, column = 6).value)
-                weight.append(sheet_obj.cell(row = i, column = 7).value)
-                temp.append(sheet_obj.cell(row = i, column = 8).value)
-                hum.append(sheet_obj.cell(row = i, column = 9).value)
-                medium.append(sheet_obj.cell(row = i, column = 10).value)
-                surface.append(sheet_obj.cell(row = i, column = 11).value)
-                ca_w.append(sheet_obj.cell(row = i, column = 12).value)
-                ca_o.append(sheet_obj.cell(row = i, column = 13).value)
-                dataok.append(ok)
-                includedata.append(include)
-                label.append(sheet_obj.cell(row = i, column = 18).value)
-
-                print(foldername[j], m_row)
-                if foldername[j] != None:
-                    self.importSummary(list_folderpath + "/" + foldername[j] +
-                                  "/Analysis/Summary/summary data.txt")
-##                    steps_unique.append(self.steps_unique)
-##                    roi_label_unique.append(self.roi_label_unique)
-##                    roi_label_unique.append(set(self.df_forcedata["ROI Label"]))
-##                    speed_def_unique.append(self.speed_def_unique)
-                    rownum = len(self.df_forcedata["Max_Area"])
-                    datalist = [[date[j]]*rownum, [foldername[j]]*rownum, 
-                                [species[j]]*rownum,[sex[j]]*rownum, 
-                                [leg[j]]*rownum, [pad[j]]*rownum, 
-                                [weight[j]]*rownum,[temp[j]]*rownum, 
-                                [hum[j]]*rownum, [medium[j]]*rownum, 
-                                [surface[j]]*rownum, [ca_w[j]]*rownum,
-                                [ca_o[j]]*rownum, [dataok[j]]*rownum, 
-                                [includedata[j]]*rownum, [label[j]]*rownum]
-                    datadict = dict(zip(header1, datalist))
-                    df_data = pd.DataFrame(datadict)
-                    df_joined = df_data.join(self.df_forcedata)
-                    df = df.append(df_joined, ignore_index=True, sort=False)
-##                    df.to_excel('E:/Work/Data/Summary/20200213/Sex/summary_comb_' +
-##                                str(random.randint(1, 90000)) + '.xlsx') #export as excel                    
-##                    print(df.to_string())
+            col_list = explistDf.columns
+            listunitDict = {}
+            for col_name in col_list:
+                unit = col_name.split('(')[-1].split(')')[0]
+                if unit == col_name:
+                    listunitDict[col_name] = ''
                 else:
-                    break
-                j += 1
+                    col_clean = col_name.split('(')[0].strip()
+                    explistDf.rename(columns = {col_name : col_clean}, 
+                                     inplace=True)
+                    listunitDict[col_clean] = ' [$' + unit + '$]'
             
-            wb_obj.close()
-            print("import finish")
+            folder_heirarchy = '/Analysis/Summary/'
+            
+            fullDf = None
+            
+            for i in explistDf.index:
+                exp_data = explistDf.loc[i]
+                if exp_data['Data OK?'] == 'Yes' and exp_data['Include Data?'] == 'Yes':
+                    summary_folder = list_folderpath + "/" + \
+                        exp_data['Data Folder name'] + folder_heirarchy
+                    with os.scandir(summary_folder) as folder:
+                        for file in folder:
+                            if file.name.endswith('.txt') and file.is_file():
+                                self.importSummary(file.path)
+                                joinedDf = self.summarydf.merge(
+                                    pd.DataFrame(data = [exp_data.values]*len(exp_data),
+                                                 columns = exp_data.index),
+                                    left_index=True, right_index=True)
+                                if fullDf.__class__.__name__ == 'NoneType':
+                                    fullDf = joinedDf.copy()
+                                else:
+                                    fullDf = fullDf.append(joinedDf, ignore_index=True, 
+                                                           sort=False)
+            
+            self.unitDict = {**listunitDict, **self.unitDict}
+                        
+                
+#             wb_obj = openpyxl.load_workbook(filename = self.list_filepath,
+#                                             read_only = True)# workbook object is created  
+#             sheet_obj = wb_obj.active
 
-            # df['Date'] = df['Date'].dt.strftime('%d/%m/%Y')
-            df['Date'] = pd.to_datetime(df['Date'], format = '%d=%m-%Y').dt.date
+#             m_row = sheet_obj.max_row
 
-##            roi_label_unique = list(set([a for b in roi_label_unique for a in b]))
-##            speed_def_unique = list(set([a for b in speed_def_unique for a in b]))
+#             date = []
+#             foldername = []
+#             species = []
+#             sex = []
+#             leg = []
+#             pad = []
+#             weight = []
+#             temp = []
+#             hum = []
+#             medium = []
+#             surface = []
+#             ca_w = []
+#             ca_o = []
+#             dataok = []
+#             includedata = []
+#             label = []
+            
+#             header1 = ["Date", "Folder_Name", "Species", "Sex", "Leg", "Pad",
+#                        "Weight", "Temperature", "Humidity", "Medium",
+#                        "Substrate","Contact_Angle-Water", "Contact_Angle-Hexadecane", 
+#                        "Data_OK", "Include_Data", "Label"]
+# ##            header2 = ["Max_Area", "Pulloff_Area","Adhesion_Force",
+# ##                      "Preload_Force", "Contact_Time", "Speed",
+# ##                      "Steps", "Friction_Force", "Friction_Area",
+# ##                      "Measurement_Number", "Measurement_OK", "ROI_Labels",
+# ##                      "Area_Units"]
+# ##            headerfull = header1 + header2
+#             df = pd.DataFrame(columns = header1)
+
+# ##            steps_unique = []
+# ##            speed_def_unique = []
+# ##            roi_label_unique = []
+#             j = 0
+            
+#             for i in range(3, m_row + 1):
+#                 #import data
+#                 ok = sheet_obj.cell(row = i, column = 16).value
+#                 include = sheet_obj.cell(row = i, column = 17).value
+
+#                 if ok == 'No' or include == 'No': #only consider 'Yes' data in Data OK/Include Data
+#                     continue
+                
+#                 date.append(sheet_obj.cell(row = i, column = 1).value)
+#                 foldername.append(sheet_obj.cell(row = i, column = 2).value)
+#                 species.append(sheet_obj.cell(row = i, column = 3).value)
+#                 sex.append(sheet_obj.cell(row = i, column = 4).value)
+#                 leg.append(sheet_obj.cell(row = i, column = 5).value)
+#                 pad.append(sheet_obj.cell(row = i, column = 6).value)
+#                 weight.append(sheet_obj.cell(row = i, column = 7).value)
+#                 temp.append(sheet_obj.cell(row = i, column = 8).value)
+#                 hum.append(sheet_obj.cell(row = i, column = 9).value)
+#                 medium.append(sheet_obj.cell(row = i, column = 10).value)
+#                 surface.append(sheet_obj.cell(row = i, column = 11).value)
+#                 ca_w.append(sheet_obj.cell(row = i, column = 12).value)
+#                 ca_o.append(sheet_obj.cell(row = i, column = 13).value)
+#                 dataok.append(ok)
+#                 includedata.append(include)
+#                 label.append(sheet_obj.cell(row = i, column = 18).value)
+
+#                 print(foldername[j], m_row)
+#                 if foldername[j] != None:
+#                     self.importSummary(list_folderpath + "/" + foldername[j] +
+#                                   "/Analysis/Summary/summary data.txt")
+# ##                    steps_unique.append(self.steps_unique)
+# ##                    roi_label_unique.append(self.roi_label_unique)
+# ##                    roi_label_unique.append(set(self.df_forcedata["ROI Label"]))
+# ##                    speed_def_unique.append(self.speed_def_unique)
+#                     rownum = len(self.df_forcedata["Max_Area"])
+#                     datalist = [[date[j]]*rownum, [foldername[j]]*rownum, 
+#                                 [species[j]]*rownum,[sex[j]]*rownum, 
+#                                 [leg[j]]*rownum, [pad[j]]*rownum, 
+#                                 [weight[j]]*rownum,[temp[j]]*rownum, 
+#                                 [hum[j]]*rownum, [medium[j]]*rownum, 
+#                                 [surface[j]]*rownum, [ca_w[j]]*rownum,
+#                                 [ca_o[j]]*rownum, [dataok[j]]*rownum, 
+#                                 [includedata[j]]*rownum, [label[j]]*rownum]
+#                     datadict = dict(zip(header1, datalist))
+#                     df_data = pd.DataFrame(datadict)
+#                     df_joined = df_data.join(self.df_forcedata)
+#                     df = df.append(df_joined, ignore_index=True, sort=False)
+# ##                    df.to_excel('E:/Work/Data/Summary/20200213/Sex/summary_comb_' +
+# ##                                str(random.randint(1, 90000)) + '.xlsx') #export as excel                    
+# ##                    print(df.to_string())
+#                 else:
+#                     break
+#                 j += 1
+            
+#             wb_obj.close()
+#             print("import finish")
+
+#             # df['Date'] = df['Date'].dt.strftime('%d/%m/%Y')
+#             df['Date'] = pd.to_datetime(df['Date'], format = '%d=%m-%Y').dt.date
+
+# ##            roi_label_unique = list(set([a for b in roi_label_unique for a in b]))
+# ##            speed_def_unique = list(set([a for b in speed_def_unique for a in b]))
 
 
-            self.df_final = df.copy()
+#             self.df_final = df.copy()
+
+            self.df_final = fullDf.copy()
 
             #save summary combined
                 

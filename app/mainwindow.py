@@ -35,7 +35,7 @@ from source.analysis.plot2widget import PlotWidget
 # from source.videoTransform import Effects
 # from source.analyze_force import ForceAnal
 # from source.summary.summaryanalyze import SummaryAnal
-from source.summary.summarydialog import SummaryDialog
+from source.summary.summarydialog import SummaryWindow
 from source.config.configroiwindow import ConfigROIWindow
 from source.config.configpathwindow import ConfigPathWindow
 from source.config.configrecwindow import ConfigRecWindow
@@ -67,7 +67,7 @@ from source.analysis.analyzedatawindow import AnalyizeDataWindow
 # %% Main Application Window
 class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions, 
                  MainImportFile, MainParameterChanged, MainRecordFunctions,
-                 MainLivePlot, SummaryDialog, MainMeasurementDialog,
+                 MainLivePlot, MainMeasurementDialog,
                  MainRoiFunctions, ImageSegment, TemplateMatch): #also try inherit Effect, unify self.frame everywhere
     def __init__(self, wd, ht):
         super().__init__()
@@ -86,6 +86,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         self.plotWindow = PlotWindow() #live plot window
         self.analyzeDataWindow = AnalyizeDataWindow()
         self.fitWindow = FitDataWindow() #fit data window
+        self.sumDialog = SummaryWindow() #summarywindow
         
         #initialize force data classes
         self.forceData = ForceAnal(self.fitWindow, self.configPlotWindow,
@@ -179,18 +180,18 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
 
         showSummary = QAction("&Display Summary Plots", self) #show summary Plots
         showSummary.setStatusTip("Displays summary plots based on summary data file")
-        showSummary.triggered.connect(lambda: self.show_summary_plots())
+        showSummary.triggered.connect(lambda: self.sumDialog.show_summary_plots())
 
         exportSummary = QAction("&Export Summary Plots", self) #export summary Plots
         exportSummary.setStatusTip("Exports summary plots based on summary data file")
-        exportSummary.triggered.connect(self.export_summary_plots)
+        exportSummary.triggered.connect(self.sumDialog.export_summary_plots)
 
 ##        combineSummary = QAction("&Combine Summary Data", self) #combine data from list
 ##        combineSummary.setStatusTip("Combines summary data from list of file names")
 ##        combineSummary.triggered.connect(self.summary_dialog)
 ##        self.sumDialog = QDialog(self) #summary dialog
 ##        self.sumDialog.setWindowTitle("Configure Summary Plots")
-        self.summary_dialog_init()
+        # self.summary_dialog_init()
         configureSummary = QAction("&Configure", self) #configure summary plots
         configureSummary.setStatusTip("Configure Summary Plot")
         configureSummary.triggered.connect(lambda: self.sumDialog.show())
@@ -4089,7 +4090,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
             if type(event) is not bool:
                 event.accept()
             self.frameAction = "Stop" #exit play loop
-            self.reset_summary()
+            self.sumDialog.reset_summary()
             cv2.destroyAllWindows()
             
             #TODO: close windows more elegently
@@ -4101,6 +4102,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
             self.analyzeDataWindow.close()
             self.fitWindow.close()
             self.forceData.plotWidget.close()
+            self.sumDialog.close()
             
             QApplication.exit()
         else:

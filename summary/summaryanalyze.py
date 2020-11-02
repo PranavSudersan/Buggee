@@ -363,7 +363,7 @@ class SummaryAnal:
     
     def plotSummary(self, paramDict = None):
         if paramDict == None:
-            paramDict = {'Plot type': 'line',
+            paramDict = {'Plot type': 'scatter',
                          'X Variable': 'Measurement number',
                          'Y Variable': 'Adhesion Stress',
                          'Color Parameter': 'Detachment Speed',
@@ -983,7 +983,7 @@ class SummaryAnal:
 
         print("save plot", filename)
 
-    def combineSummary(self, summaryDict, legend_parameter): #combine summary data and plot
+    def combineSummary(self): #combine summary data and plot
         # root = tk.Tk()
         # root.withdraw()
         self.list_filepath, _ =  QFileDialog.getOpenFileName(caption = 
@@ -1140,10 +1140,10 @@ class SummaryAnal:
 
             #save summary combined
                 
-            excel_folderpath = list_folderpath + '/Summary/' +  \
-                             time.strftime("%Y%m%d") + '/' + legend_parameter
-            excel_filepath = excel_folderpath + '/summary_combined_' +  \
-                             time.strftime("%Y%m%d%H%M%S") + '.xlsx'
+            # excel_folderpath = list_folderpath + '/Summary/' +  \
+            #                  time.strftime("%Y%m%d") + '/' + legend_parameter
+            # excel_filepath = excel_folderpath + '/summary_combined_' +  \
+            #                  time.strftime("%Y%m%d%H%M%S") + '.xlsx'
             
 ##            if not os.path.exists(excel_folderpath):
 ##                os.makedirs(excel_folderpath)
@@ -1151,7 +1151,7 @@ class SummaryAnal:
 ##            self.df_all.to_excel(excel_filepath) #export as excel
 
             # df_good = self.df_final
-            self.summary_filepath = excel_filepath #to save plots in Summary directory
+            self.summary_filepath = 'CHECK' #to save plots in Summary directory
             # self.plotSummary(summaryDict,
             #                  df_good,
             #                  df_good,

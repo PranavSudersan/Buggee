@@ -6,10 +6,13 @@ Created on Wed Jun 24 22:24:56 2020
 """
 import matplotlib.pyplot as plt
 import gc
+import os
+import time
 from PyQt5.QtCore import Qt
 # from PyQt5.QtGui import QSizePolicy
 from PyQt5.QtWidgets import QWidget, QCheckBox, QLabel, QPushButton, QGroupBox,\
-     QComboBox, QSpinBox, QGridLayout, QDialog, QLineEdit, QDoubleSpinBox, QSizePolicy
+    QComboBox, QSpinBox, QGridLayout, QDialog, QLineEdit, QDoubleSpinBox,\
+        QSizePolicy, QFileDialog
 from source.summary.summaryanalyze import SummaryAnal
 from source.threads.summplotthread import SummPlotThread
      
@@ -18,7 +21,7 @@ class SummaryWindow(QWidget):
     def __init__(self):
         super().__init__()
         # self.setWindowFlags(Qt.Window)
-        self.setGeometry(100, 100, 400, 500)
+        self.setGeometry(100, 100, 500, 500)
         self.setWindowTitle("Configure Summary Plots")
         self.layout = QGridLayout()
         
@@ -38,12 +41,13 @@ class SummaryWindow(QWidget):
 ##        self.sumDialog.resize(300, 300)
         
         #import data
-        importButton = QPushButton("Select summary file..", self)
-        
+        importButton = QPushButton("Select summary file..", self)        
         combine = QCheckBox('Combine', self)
+        self.filenameLabel = QLabel("", self)
+        self.filenameLabel.setWordWrap(True)
         
         combine.stateChanged.connect(lambda: self.combine_toggled(combine, importButton))
-        importButton.clicked.connect(lambda: self.combine_summary_data(combine.isChecked()))
+        importButton.clicked.connect(lambda: self.import_data(combine.isChecked()))
         
         #plot data
         plotTypeLabel = QLabel("Plot Type", self)
@@ -52,29 +56,37 @@ class SummaryWindow(QWidget):
         cat_types = ["strip", "swarm", "box", "violin",
                     "boxen", "point", "bar", "count"]
         plotType.addItems(rel_types + cat_types)
+        self.paramDict['Plot type'] = plotType
         
         xLabel = QLabel("X Variable", self)
-        xVar = QComboBox(self)
+        self.xVar = QComboBox(self)
+        self.paramDict['X Variable'] = self.xVar
         
         yLabel = QLabel("Y Variable", self)
-        yVar = QComboBox(self)
+        self.yVar = QComboBox(self)
+        self.paramDict['Y Variable'] = self.yVar
         
         groupVarLabel = QLabel("<b>Group By:</b>", self)
         
         colorLabel = QLabel("Color", self)
-        colorVar = QComboBox(self)
+        self.colorVar = QComboBox(self)
+        self.paramDict['Color Parameter'] = self.colorVar
         
         columnLabel = QLabel("Column", self)
-        columnVar = QComboBox(self)
+        self.columnVar = QComboBox(self)
+        self.paramDict['Column Parameter'] = self.columnVar
         
         rowLabel = QLabel("Row", self)
-        rowVar = QComboBox(self)
+        self.rowVar = QComboBox(self)
+        self.paramDict['Row Parameter'] = self.rowVar
 
         styleLabel = QLabel("Style", self)
-        styleVar = QComboBox(self)
+        self.styleVar = QComboBox(self)
+        self.paramDict['Style Parameter'] = self.styleVar
         
         sizeLabel = QLabel("Size", self)
-        sizeVar = QComboBox(self)
+        self.sizeVar = QComboBox(self)
+        self.paramDict['Size Parameter'] = self.sizeVar
         
         plotTitleLabel = QLabel("Title", self)
         plotTitle =  QLineEdit(self)
@@ -83,52 +95,64 @@ class SummaryWindow(QWidget):
         #                                                                plotTitle.text(),
         #                                                                0))
         plotTitle.setText('Test')
+        self.paramDict['Title'] = plotTitle
         
         self.filter_dialog_init()   #initialize filter dialog
         filterButton = QPushButton("Filter..", self)
         filterButton.clicked.connect(self.filterDialog.show)
         
         #plot format
-
         formatLabel = QLabel("Save as", self)
-        plotFormat = QComboBox(self) #plot save format
-        plotFormat.addItems(['jpg', 'svg', 'pdf', 'png', 'tif', 'tiff'])
+        self.saveFormat = QComboBox(self) #plot save format
+        self.saveFormat.addItems(['jpg', 'svg', 'pdf', 'png', 'tif', 'tiff'])
+        # self.paramDict['Save format'] = saveFormat
         
         showMarkers = QCheckBox('Show Markers', self)
+        self.paramDict['Show Markers'] = showMarkers
         
         opacityLabel = QLabel("Opacity", self)
         opacity = QDoubleSpinBox(self)
+        opacity.setRange(0, 1)
+        self.paramDict['Opacity'] = opacity
         
         contextLabel = QLabel("Context", self)
         context = QComboBox(self)
         context.addItems(['talk'])
+        self.paramDict['Plot context'] = context
         
         plotStyleLabel = QLabel("Style", self)
         plotStyle = QComboBox(self)
         plotStyle.addItems(['ticks'])
+        self.paramDict['Plot style'] = plotStyle
         
-        colorPaletteLabel = QLabel("Context", self)
+        colorPaletteLabel = QLabel("Color Palette", self)
         colorPalette = QComboBox(self)
         colorPalette.addItems(['None'])
+        self.paramDict['Color palette'] = colorPalette
         
         rotateXLabel = QLabel("Rotate X Labels", self)
         rotateX = QSpinBox(self)
         rotateX.setValue(0)
+        self.paramDict['X label rotate'] = rotateX
         
         zeroLine = QCheckBox('Zero Line', self)
+        self.paramDict['Zero line'] = zeroLine
         
         legendSettings = QLabel("<b>Legend Settings:</b>", self)
         legendPos = QCheckBox('Outside plot', self)
+        self.paramDict['Legend outside'] = legendPos
         
         legendLocLabel = QLabel("Location", self)
         legendLoc = QComboBox(self)
         legendLoc.addItems(['best','upper right','upper left','lower left',
                             'lower right','right','center left','center right',
                             'lower center','upper center','center'])
+        self.paramDict['Legend location'] = legendLoc
         
         legendColLabel = QLabel("Columns", self)
         legendCol = QSpinBox(self)
         legendCol.setValue(1)
+        self.paramDict['Legend columns'] = legendCol
         
         
         
@@ -178,9 +202,13 @@ class SummaryWindow(QWidget):
         
 ##        okButton.setDefault(True)
         #buttons
-        showPlot = QPushButton("Show Plot", self)
+        self.showPlot = QPushButton("Show Plot", self)
+        self.showPlot.clicked.connect(self.show_summary_plots)
+        self.showPlot.setEnabled(False)
         
-        savePlot = QPushButton("Save Plot", self)
+        self.savePlot = QPushButton("Save Plot", self)        
+        self.savePlot.clicked.connect(self.export_summary_plots)
+        self.savePlot.setEnabled(False)
         
         resetButton = QPushButton("Reset", self)
         resetButton.clicked.connect(self.reset_summary)
@@ -197,6 +225,7 @@ class SummaryWindow(QWidget):
         importGroupBox.setLayout(importLayout)
         importLayout.addWidget(combine, 0, 0, 1, 1)
         importLayout.addWidget(importButton, 0, 1, 1, 1)
+        importLayout.addWidget(self.filenameLabel, 0, 2, 1, 1)
         
         plotGroupBox = QGroupBox("Plot Data")
         plotGroupBox.setStyleSheet("QGroupBox { font-weight: bold; } ")
@@ -205,9 +234,9 @@ class SummaryWindow(QWidget):
         plotLayout.addWidget(plotTypeLabel, 0, 0, 1, 1)
         plotLayout.addWidget(plotType, 0, 1, 1, 1)
         plotLayout.addWidget(xLabel, 1, 0, 1, 1)
-        plotLayout.addWidget(xVar, 1, 1, 1, 1)
+        plotLayout.addWidget(self.xVar, 1, 1, 1, 1)
         plotLayout.addWidget(yLabel, 2, 0, 1, 1)
-        plotLayout.addWidget(yVar, 2, 1, 1, 1)
+        plotLayout.addWidget(self.yVar, 2, 1, 1, 1)
         plotLayout.addWidget(plotTitleLabel, 3, 0, 1, 1)
         plotLayout.addWidget(plotTitle, 3, 1, 1, 1)
         plotLayout.addWidget(filterButton, 4, 0, 1, 2)
@@ -221,15 +250,15 @@ class SummaryWindow(QWidget):
         #                          'Sliding_Step', gridLayout, 5)
         plotLayout.addWidget(groupVarLabel, 0, 2, 1, 2, alignment = Qt.AlignCenter)
         plotLayout.addWidget(colorLabel, 1, 2, 1, 1)
-        plotLayout.addWidget(colorVar, 1, 3, 1, 1)
+        plotLayout.addWidget(self.colorVar, 1, 3, 1, 1)
         plotLayout.addWidget(columnLabel, 2, 2, 1, 1)
-        plotLayout.addWidget(columnVar, 2, 3, 1, 1)
+        plotLayout.addWidget(self.columnVar, 2, 3, 1, 1)
         plotLayout.addWidget(rowLabel, 3, 2, 1, 1)
-        plotLayout.addWidget(rowVar, 3, 3, 1, 1)
+        plotLayout.addWidget(self.rowVar, 3, 3, 1, 1)
         plotLayout.addWidget(styleLabel, 4, 2, 1, 1)
-        plotLayout.addWidget(styleVar, 4, 3, 1, 1)
+        plotLayout.addWidget(self.styleVar, 4, 3, 1, 1)
         plotLayout.addWidget(sizeLabel, 5, 2, 1, 1)
-        plotLayout.addWidget(sizeVar, 5, 3, 1, 1)        
+        plotLayout.addWidget(self.sizeVar, 5, 3, 1, 1)        
         
         
         plotFormatGroupBox = QGroupBox("Plot Format")
@@ -249,7 +278,7 @@ class SummaryWindow(QWidget):
         plotFormatLayout.addWidget(rotateXLabel, 4, 0, 1, 1)
         plotFormatLayout.addWidget(rotateX, 4, 1, 1, 1)
         plotFormatLayout.addWidget(formatLabel, 5, 0, 1, 1)
-        plotFormatLayout.addWidget(plotFormat, 5, 1, 1, 1)
+        plotFormatLayout.addWidget(self.saveFormat, 5, 1, 1, 1)
         plotFormatLayout.addWidget(showMarkers, 0, 2, 1, 1)        
         plotFormatLayout.addWidget(zeroLine, 1, 2, 1, 1)
         plotFormatLayout.addWidget(legendSettings, 2, 2, 1, 2, alignment = Qt.AlignCenter)
@@ -265,8 +294,8 @@ class SummaryWindow(QWidget):
         buttonGroupBox = QGroupBox()
         buttonLayout= QGridLayout()
         buttonGroupBox.setLayout(buttonLayout)
-        buttonLayout.addWidget(showPlot, 0, 0, 1, 1)
-        buttonLayout.addWidget(savePlot, 0, 1, 1, 1)
+        buttonLayout.addWidget(self.showPlot, 0, 0, 1, 1)
+        buttonLayout.addWidget(self.savePlot, 0, 1, 1, 1)
         buttonLayout.addWidget(resetButton, 0, 2, 1, 1)
         buttonLayout.addWidget(closeButton, 0, 3, 1, 1)
         
@@ -351,35 +380,61 @@ class SummaryWindow(QWidget):
         oktext = "Select summary file.." if combine.isChecked() == False \
                  else "Select experiment list.."
         importButton.setText(oktext)
+    
+    #update list of variables in dropdown
+    def update_dropdown_params(self):
+        self.varlist = list(self.datadf.columns)
+        self.varlist.sort()
+        self.xVar.addItems(['None'] + self.varlist)
+        self.yVar.addItems(['None'] + self.varlist)
+        self.colorVar.addItems(['None'] + self.varlist)
+        self.columnVar.addItems(['None'] + self.varlist)
+        self.rowVar.addItems(['None'] + self.varlist)
+        self.styleVar.addItems(['None'] + self.varlist)
+        self.sizeVar.addItems(['None'] + self.varlist)  
 
-    def update_summary_dict(self, key, value, plotnum):
-        self.summaryDict[key][plotnum] = value
+    # def update_summary_dict(self, key, value, plotnum):
+    #     self.summaryDict[key][plotnum] = value
         
-    def combine_summary_data(self, combine): #combine summary plots
+    def import_data(self, combine): #import summary data
 ##        self.sumDialog.reject()
 ##        legend_parameter = self.sumlistwidget.currentItem().text()
         self.reset_summary()
         self.summary = SummaryAnal()
-        if combine == True:            
-            self.summary.combineSummary()
-            if self.summary.list_filepath != "":
+        if combine == True:
+            self.filepath, _ =  QFileDialog.getOpenFileName(caption =
+                                                            "Select experiment list file")
+            if self.filepath != "":
+                self.datadf = self.summary.combineSummary(self.filepath)
+                self.update_dropdown_params()
+            # if self.summary.list_filepath != "":
                 self.comb = True
-                self.statusBar.showMessage("Summary Data combined!")
-                self.summary.filter_df(self.filter_dict)
+                # self.statusBar.showMessage("Summary Data combined!")
+                self.datadf_filtered = self.summary.filter_df(self.datadf,
+                                                              self.filter_dict)
+                self.showPlot.setEnabled(True)
+                self.filenameLabel.setText(self.filepath)
                 # self.summary.plotSummary(self.summaryDict,
                 #                          self.summary.df_final,
                 #                          self.summary.df_final,
                 #                          legend_parameter)
                 # self.summary.showSummaryPlot()
             else:
-                self.statusBar.showMessage("No file selected")
+                # self.statusBar.showMessage("No file selected")
                 self.comb = False
                 self.summary = None
         else:
-            self.comb = False 
-            self.summary.importSummary()
-            if self.summary.summary_filepath != "":
-                self.summary.filter_df(self.filter_dict)
+            self.comb = False
+            self.filepath, _ = QFileDialog.getOpenFileName(caption =
+                                                           "Select summary data file")
+            if self.filepath != "":
+                self.datadf = self.summary.importSummary(self.filepath)
+                self.update_dropdown_params()
+            # if self.summary.summary_filepath != "":
+                self.datadf_filtered = self.summary.filter_df(self.datadf, 
+                                                              self.filter_dict)
+                self.showPlot.setEnabled(True)
+                self.filenameLabel.setText(self.filepath)
                 # self.summary.plotSummary(self.summaryDict,
                 #                          self.summary.df_final,
                 #                          self.summary.df_final,
@@ -390,18 +445,18 @@ class SummaryWindow(QWidget):
         
         
     def export_summary_plots(self): #export summary plots
-        if self.comb == False and self.summary == None:
-            self.reset_summary()
-            self.summary = SummaryAnal()
-            self.summary.importSummary()
-            if self.summary.summary_filepath != "":
-                # self.summary.filter_df(self.filter_dict)
-                # self.summary.plotSummary(self.summaryDict,
-                #                           self.summary.df_final,
-                #                           self.summary.df_final)
-                self.summary.plotSummary()
-            else:
-                self.summary = None
+        # if self.comb == False and self.summary == None:
+        #     self.reset_summary()
+        #     self.summary = SummaryAnal()
+        #     self.summary.importSummary()
+        #     if self.summary.summary_filepath != "":
+        #         # self.summary.filter_df(self.filter_dict)
+        #         # self.summary.plotSummary(self.summaryDict,
+        #         #                           self.summary.df_final,
+        #         #                           self.summary.df_final)
+        #         self.summary.plotSummary()
+        #     else:
+        #         self.summary = None
         #save summary plots in separate thread
         if self.summary != None:
             # saveSummPlotThread = SummPlotThread(self.summary,
@@ -409,26 +464,36 @@ class SummaryWindow(QWidget):
             # saveSummPlotThread.output.connect(self.process_indicate)
             # saveSummPlotThread.finished.connect(self.save_plot_indicate)
             # saveSummPlotThread.start()
-            self.summary.saveSummaryPlot(self.summaryDict['format'][0])
+            # self.summary.plotSummary(self.datadf_filtered, self.paramDict)
+            self.summary.saveSummaryPlot(self.filepath,
+                                         self.saveFormat.currentText())
+             #export data to excel 
+            self.datadf_filtered.to_excel(os.path.dirname(self.filepath) +
+                                   '/summary_data_' + self.paramDict['Title'].text() + 
+                                   '-' + time.strftime("%y%m%d%H%M%S") + '.xlsx')
 
-    def save_plot_indicate(self):
-        self.statusBar.showMessage("Summary Plots saved!")
+        print("saved data")            
+
+    # def save_plot_indicate(self):
+    #     self.statusBar.showMessage("Summary Plots saved!")
 
     def show_summary_plots(self): #show summary plots
-        if self.comb == False and self.summary == None:
-            self.reset_summary()
-            self.summary = SummaryAnal()
-            self.summary.importSummary()
-            if self.summary.summary_filepath != "":
-                # self.summary.filter_df(self.filter_dict)
-                # self.summary.plotSummary(self.summaryDict,
-                #                          self.summary.df_final,
-                #                          self.summary.df_final)
-                self.summary.plotSummary()
-            else:
-                self.summary = None
+        # if self.comb == False and self.summary == None:
+        #     self.reset_summary()
+        #     self.summary = SummaryAnal()
+        #     self.summary.importSummary()
+        #     if self.summary.summary_filepath != "":
+        #         # self.summary.filter_df(self.filter_dict)
+        #         # self.summary.plotSummary(self.summaryDict,
+        #         #                          self.summary.df_final,
+        #         #                          self.summary.df_final)
+        #         self.summary.plotSummary()
+        #     else:
+        #         self.summary = None
         if self.summary != None:
-            self.summary.showSummaryPlot()
+            self.summary.plotSummary(self.datadf_filtered, self.paramDict)
+            self.savePlot.setEnabled(True)
+            # self.summary.showSummaryPlot()
 
     def reset_summary(self): #reset self.comb to False
         self.comb = False
@@ -552,5 +617,6 @@ class SummaryWindow(QWidget):
         
     def close_filter_dialog(self):
         print(self.filter_dict)
+        self.datadf_filtered = self.summary.filter_df(self.datadf, self.filter_dict)
         # self.summaryDict['filter'] = self.filter_dict
         self.filterDialog.done(0)

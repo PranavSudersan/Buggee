@@ -178,13 +178,13 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         self.fitWindow.applyFitBtn.clicked.connect(lambda: self.performFit(True))
         # self.configPathWindow.okBtn.clicked.connect(self.setPaths)
 
-        showSummary = QAction("&Display Summary Plots", self) #show summary Plots
-        showSummary.setStatusTip("Displays summary plots based on summary data file")
-        showSummary.triggered.connect(lambda: self.sumDialog.show_summary_plots())
+        # showSummary = QAction("&Display Summary Plots", self) #show summary Plots
+        # showSummary.setStatusTip("Displays summary plots based on summary data file")
+        # showSummary.triggered.connect(lambda: self.sumDialog.show_summary_plots())
 
-        exportSummary = QAction("&Export Summary Plots", self) #export summary Plots
-        exportSummary.setStatusTip("Exports summary plots based on summary data file")
-        exportSummary.triggered.connect(self.sumDialog.export_summary_plots)
+        # exportSummary = QAction("&Export Summary Plots", self) #export summary Plots
+        # exportSummary.setStatusTip("Exports summary plots based on summary data file")
+        # exportSummary.triggered.connect(self.sumDialog.export_summary_plots)
 
 ##        combineSummary = QAction("&Combine Summary Data", self) #combine data from list
 ##        combineSummary.setStatusTip("Combines summary data from list of file names")
@@ -192,8 +192,8 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
 ##        self.sumDialog = QDialog(self) #summary dialog
 ##        self.sumDialog.setWindowTitle("Configure Summary Plots")
         # self.summary_dialog_init()
-        configureSummary = QAction("&Configure", self) #configure summary plots
-        configureSummary.setStatusTip("Configure Summary Plot")
+        configureSummary = QAction("&Summary..", self) #configure summary plots
+        configureSummary.setStatusTip("Plot summary data and statistics")
         configureSummary.triggered.connect(lambda: self.sumDialog.show())
         
         mainMenu = self.menuBar() #create main menu
@@ -217,14 +217,15 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         configureMenu.addAction(plot)
         configureMenu.addAction(paths)
         
-        fileMenu = mainMenu.addMenu("&Analysis") #Analysis menu
-        fileMenu.addAction(analyzeData)
-        fileMenu.addAction(fitData)
+        analMenu = mainMenu.addMenu("&Analysis") #Analysis menu
+        analMenu.addAction(analyzeData)
+        analMenu.addAction(fitData)
+        analMenu.addAction(configureSummary)
 
-        plotMenu = mainMenu.addMenu("&Summarize") #Plot menu
-        plotMenu.addAction(configureSummary)
-        plotMenu.addAction(showSummary)
-        plotMenu.addAction(exportSummary)
+        # plotMenu = mainMenu.addMenu("&Summarize") #Plot menu
+        # plotMenu.addAction(configureSummary)
+        # plotMenu.addAction(showSummary)
+        # plotMenu.addAction(exportSummary)
 ##        plotMenu.addAction(combineSummary)
 
 

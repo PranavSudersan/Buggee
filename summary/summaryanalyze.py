@@ -29,34 +29,34 @@ class SummaryAnal:
         self.eq_count["All"] = [1,1,1,1]
         self.summary_filepath = ""
 
-    def importSummary(self, filepath = None): #plot summary plots
+    def importSummary(self, summary_filepath): #plot summary plots
         print("import")
 ##        self.eq_count = [1,1,1,1]
         self.eq_count = {}
         self.eq_count["All"] = [1,1,1,1]
         # root = tk.Tk()
         # root.withdraw()
-        if filepath == None:
-            # self.summary_filepath =  filedialog.askopenfilename(
-            #     title = "Select summary data file")
-             self.summary_filepath, _ = QFileDialog.getOpenFileName(caption = 
-                                                                    "Select summary data file")
-        else:
-            self.summary_filepath = filepath
+        # if filepath == None:
+        #     # self.summary_filepath =  filedialog.askopenfilename(
+        #     #     title = "Select summary data file")
+        #      self.summary_filepath, _ = QFileDialog.getOpenFileName(caption = 
+        #                                                             "Select summary data file")
+        # else:
+        #     self.summary_filepath = filepath
         
-        if self.summary_filepath != "":
-            summarydf = pd.read_csv(self.summary_filepath,delimiter='\t')
-            col_list = summarydf.columns
-            self.unitDict = {}
-            for col_name in col_list:
-                unit = col_name.split('[')[-1].split(']')[0]
-                if unit == col_name:
-                    self.unitDict[col_name] = ''
-                else:
-                    col_clean = col_name.split('[')[0].strip()
-                    summarydf.rename(columns = {col_name : col_clean}, 
-                                     inplace=True)
-                    self.unitDict[col_clean] = ' [$' + unit + '$]'
+        # if self.summary_filepath != "":
+        summarydf = pd.read_csv(summary_filepath,delimiter='\t')
+        col_list = summarydf.columns
+        self.unitDict = {}
+        for col_name in col_list:
+            unit = col_name.split('[')[-1].split(']')[0]
+            if unit == col_name:
+                self.unitDict[col_name] = ''
+            else:
+                col_clean = col_name.split('[')[0].strip()
+                summarydf.rename(columns = {col_name : col_clean}, 
+                                 inplace=True)
+                self.unitDict[col_clean] = ' [$' + unit + '$]'
                 
             # with open(self.summary_filepath, 'r', encoding = "utf_8") as f: #open summary data file
             #     x = f.read().splitlines()
@@ -226,22 +226,23 @@ class SummaryAnal:
             # self.df_forcedata['Normalized_Adhesion_Energy'] = self.df_forcedata['Adhesion_Energy']/self.df_forcedata['Max_Area']
             # self.df_forcedata['Date_of_Experiment'] =  self.df_forcedata['Data_Folder'].str.split(pat = "/").str[-1].str.slice(start=0, stop=9)
             
-            summarydf['Adhesion Stress'] = summarydf['Pulloff Force']/summarydf['Pulloff Area']
-            self.unitDict['Adhesion Stress'] = ' [$' + self.extractUnit('Pulloff Force') + \
-                '/' + self.extractUnit('Pulloff Area') + '$]'
-            summarydf['Friction Stress'] = summarydf['Friction Force']/summarydf['Friction Area']
-            self.unitDict['Friction Stress'] = ' [$' + self.extractUnit('Friction Force') + \
-                '/' + self.extractUnit('Friction Area') + '$]'
-            summarydf['Normalized Adhesion Force'] = summarydf['Pulloff Force']/summarydf['Max Area']
-            self.unitDict['Normalized Adhesion Force'] = ' [$' + self.extractUnit('Pulloff Force') + \
-                '/' + self.extractUnit('Max Area') + '$]'
-            summarydf['Normalized_Adhesion_Energy'] = summarydf['Adhesion Energy']/summarydf['Max Area']
-            self.unitDict['Normalized_Adhesion_Energy'] = ' [$' + self.extractUnit('Adhesion Energy') + \
-                '/' + self.extractUnit('Max Area') + '$]'
-            
-            # summarydf['Date of Experiment'] =  summarydf['Data Folder'].str.split(pat = "/").str[-1].str.slice(start=0, stop=9)
-            # self.unitDict['Date of Experiment'] = ''
-            self.summarydf = summarydf.copy()
+        summarydf['Adhesion Stress'] = summarydf['Pulloff Force']/summarydf['Pulloff Area']
+        self.unitDict['Adhesion Stress'] = ' [$' + self.extractUnit('Pulloff Force') + \
+            '/' + self.extractUnit('Pulloff Area') + '$]'
+        summarydf['Friction Stress'] = summarydf['Friction Force']/summarydf['Friction Area']
+        self.unitDict['Friction Stress'] = ' [$' + self.extractUnit('Friction Force') + \
+            '/' + self.extractUnit('Friction Area') + '$]'
+        summarydf['Normalized Adhesion Force'] = summarydf['Pulloff Force']/summarydf['Max Area']
+        self.unitDict['Normalized Adhesion Force'] = ' [$' + self.extractUnit('Pulloff Force') + \
+            '/' + self.extractUnit('Max Area') + '$]'
+        summarydf['Normalized_Adhesion_Energy'] = summarydf['Adhesion Energy']/summarydf['Max Area']
+        self.unitDict['Normalized_Adhesion_Energy'] = ' [$' + self.extractUnit('Adhesion Energy') + \
+            '/' + self.extractUnit('Max Area') + '$]'
+        
+        # summarydf['Date of Experiment'] =  summarydf['Data Folder'].str.split(pat = "/").str[-1].str.slice(start=0, stop=9)
+        # self.unitDict['Date of Experiment'] = ''
+        # self.summarydf = summarydf.copy()
+        return summarydf
             # print(summarydf)
             # print(self.unitDict)
             
@@ -277,8 +278,9 @@ class SummaryAnal:
     def extractUnit(self, col):
         return self.unitDict[col].split('[')[-1].split(']')[0].replace('$', '')
 
-    def filter_df(self, filter_dict): #filter df based on condition
+    def filter_df(self, df, filter_dict): #filter df based on condition
         print(filter_dict)
+        df_final = df.copy()
         for k in filter_dict.keys():
             col = filter_dict[k][0]
             cond = filter_dict[k][1]
@@ -293,20 +295,20 @@ class SummaryAnal:
                 val = datetime.strptime(filter_dict[k][2], "%d/%m/%Y").date()
             if cond == 'equal to':
                 print("equal condition")
-                self.df_final = self.df_final[self.df_final[col] == val]
+                df_final = df_final[df_final[col] == val]
             elif cond == 'not equal to':
-                self.df_final = self.df_final[self.df_final[col] != val]
+                df_final = df_final[df_final[col] != val]
             elif cond == 'greater than':
-                self.df_final = self.df_final[self.df_final[col] > val]
-                print(self.df_final[col].head())
+                df_final = df_final[df_final[col] > val]
+                print(df_final[col].head())
                 print("greater than", val)
             elif cond == 'less than':
-                self.df_final = self.df_final[self.df_final[col] < val]
+                df_final = df_final[df_final[col] < val]
             elif cond == 'greater than or equal to':
-                self.df_final = self.df_final[self.df_final[col] >= val]
+                df_final = df_final[df_final[col] >= val]
             elif cond == 'less than or equal to':
-                self.df_final = self.df_final[self.df_final[col] <= val]
-        # return df_filtered
+                df_final = df_final[df_final[col] <= val]
+        return df_final
             
     def get_units(self, var, df):
         if var in ["Adhesion_Force", "Adhesion_Preload",
@@ -361,27 +363,44 @@ class SummaryAnal:
             error = None
         return error
     
-    def plotSummary(self, paramDict = None):
-        if paramDict == None:
-            paramDict = {'Plot type': 'scatter',
-                         'X Variable': 'Measurement number',
-                         'Y Variable': 'Adhesion Stress',
-                         'Color Parameter': 'Detachment Speed',
-                         'Row Parameter': None,
-                         'Column Parameter': None,
-                         'Style Parameter': 'ROI Label',
-                         'Size Parameter': None,
-                         'Show Markers': True,
-                         'Opacity': 0.8,
-                         'Title': 'Test PLot',
-                         'Plot context': 'talk',
-                         'Plot style': 'ticks',
-                         'Color palette': None,
-                         'Zero line': False,
-                         'Legend outside': False,
-                         'Legend location': 'center right',
-                         'Legend columns': 1,
-                         'X label rotate': 45}
+    def plotSummary(self, df, paramDict):
+        # if paramDict == None:
+        #     paramDict = {'Plot type': 'scatter',
+        #                  'X Variable': 'Measurement number',
+        #                  'Y Variable': 'Adhesion Stress',
+        #                  'Color Parameter': 'Detachment Speed',
+        #                  'Row Parameter': None,
+        #                  'Column Parameter': None,
+        #                  'Style Parameter': 'ROI Label',
+        #                  'Size Parameter': None,
+        #                  'Show Markers': True,
+        #                  'Opacity': 0.8,
+        #                  'Title': 'Test PLot',
+        #                  'Plot context': 'talk',
+        #                  'Plot style': 'ticks',
+        #                  'Color palette': None,
+        #                  'Zero line': False,
+        #                  'Legend outside': False,
+        #                  'Legend location': 'center right',
+        #                  'Legend columns': 1,
+        #                  'X label rotate': 45}
+        x_var = paramDict['X Variable'].currentText() \
+            if paramDict['X Variable'].currentText() != 'None' else None
+        y_var = paramDict['Y Variable'].currentText() \
+            if paramDict['Y Variable'].currentText() != 'None' else None
+        hue_var = paramDict['Color Parameter'].currentText() \
+            if paramDict['Color Parameter'].currentText() != 'None' else None
+        row_var = paramDict['Row Parameter'].currentText() \
+            if paramDict['Row Parameter'].currentText() != 'None' else None
+        col_var = paramDict['Column Parameter'].currentText() \
+            if paramDict['Column Parameter'].currentText() != 'None' else None
+        style_var = paramDict['Style Parameter'].currentText() \
+            if paramDict['Style Parameter'].currentText() != 'None' else None
+        size_var = paramDict['Size Parameter'].currentText() \
+            if paramDict['Size Parameter'].currentText() != 'None' else None
+        color_pal = paramDict['Color palette'].currentText() \
+            if paramDict['Color palette'].currentText() != 'None' else None
+
         
         #location dictionary
         locDict = {'best': 0,
@@ -396,10 +415,10 @@ class SummaryAnal:
                    'upper center': 9,
                    'center': 10}
             
-        sns.set_theme(context = paramDict['Plot context'],
-                      style= paramDict['Plot style'])
+        sns.set_theme(context = paramDict['Plot context'].currentText(),
+                      style= paramDict['Plot style'].currentText())
         
-        fig_size = (6,6) #figure size
+        # fig_size = (6,6) #figure size
         # x_param = "Distance"
         # x_label = "Distance, d/s"
         # y_param = "Force"
@@ -412,46 +431,45 @@ class SummaryAnal:
         # col_param_order = None
         #set to None if dont want to group and find Max
         # color_list = None#['g', 'b', 'r', 'c'] #corresponding colors
-        fix_marker = 'o' if paramDict['Style Parameter'] == None else None #set to 'o' if style_param is None else set as None
+        fix_marker = 'o' if style_var == None else None #set to 'o' if style_param is None else set as None
         # line_styles = None#[(1, 0), (1, 1)]
         ##group_param = ['Model', 'Contact Angle', 'θ-fa', 'θ-fw',
         ##               'D_p/D_h', 'a_b', 'a_f', 'Fluid data file',
         ##               'Bubble data file'] 
-        if paramDict['Plot type'] in ['line', 'scatter']:
-            self.fig = sns.relplot(data= self.summarydf,
-                                   x = paramDict['X Variable'],
-                                   y = paramDict['Y Variable'],
-                                   hue = paramDict['Color Parameter'],
-                                   row = paramDict['Row Parameter'],
-                                   col = paramDict['Column Parameter'],
-                                   style = paramDict['Style Parameter'],
-                                   size = paramDict['Size Parameter'],
-                                   palette= paramDict['Color palette'],
-                                   kind = paramDict['Plot type'],
-                                   markers = paramDict['Show Markers'],
-                                   marker =  fix_marker,
-                                   alpha = paramDict['Opacity'])
-        elif paramDict['Plot type'] in ["strip", "swarm", "box", "violin",
-                                        "boxen", "point", "bar", "count"]:
-            self.fig = sns.catplot(data= self.summarydf,
-                                   x = paramDict['X Variable'],
-                                   y = paramDict['Y Variable'],
-                                   hue = paramDict['Color Parameter'],
-                                   row = paramDict['Row Parameter'],
-                                   col = paramDict['Column Parameter'],
-                                   palette= paramDict['Color palette'],
-                                   kind = paramDict['Plot type'],
-                                   alpha = paramDict['Opacity'])            
+        if paramDict['Plot type'].currentText() in ['line', 'scatter']:
+            self.fig = sns.relplot(data= df,
+                                   x = x_var,
+                                   y = y_var,
+                                   hue = hue_var,
+                                   row = row_var,
+                                   col = col_var,
+                                   style = style_var,
+                                   size = size_var,
+                                   palette = color_pal,
+                                   kind = paramDict['Plot type'].currentText(),
+                                   markers = paramDict['Show Markers'].isChecked(),
+                                   marker =  fix_marker)
+                                   #alpha = paramDict['Opacity'].value())
+        elif paramDict['Plot type'].currentText() in ["strip", "swarm", "box", 
+                                                      "violin","boxen", "point", 
+                                                      "bar", "count"]:
+            self.fig = sns.catplot(data= df,
+                                   x = x_var,
+                                   y = y_var,
+                                   hue = hue_var,
+                                   row = row_var,
+                                   col = col_var,
+                                   palette = color_pal,
+                                   kind = paramDict['Plot type'].currentText())
+                                   #alpha = paramDict['Opacity'].value())            
         
         axes = self.fig.axes.flatten() #list of axes
         
         # ax.fig.set_size_inches(*fig_size)
-        self.fig.set_axis_labels(paramDict['X Variable'] + 
-                           self.unitDict[paramDict['X Variable']],
-                           paramDict['Y Variable'] + 
-                           self.unitDict[paramDict['Y Variable']])
+        self.fig.set_axis_labels(x_var + self.unitDict[x_var],
+                                 y_var + self.unitDict[y_var])
 
-        self.fig.set_xticklabels(rotation = paramDict['X label rotate'],
+        self.fig.set_xticklabels(rotation = paramDict['X label rotate'].value(),
                                  horizontalalignment = 'right')
         #rename subplot titles with unit
         for ax in axes:
@@ -461,48 +479,51 @@ class SummaryAnal:
                              self.unitDict[title[0]].replace('[', '').replace(']', ''))
         
         #show dashed zero line
-        if paramDict['Zero line'] == True:
+        if paramDict['Zero line'].isChecked() == True:
             self.fig.map(plt.axhline, y=0, color=".7", dashes=(2, 1), zorder=0)
 
         self.fig.tight_layout(w_pad=0)
         
         leg = self.fig._legend
-        handles, labels = axes[0].get_legend_handles_labels()
-        leg_title = leg.get_title().get_text()
+        if leg != None:
+            handles, labels = axes[0].get_legend_handles_labels()
+            leg_title = leg.get_title().get_text()
+            
+            #rename legend with units
+            i= 0
+            unit = ''
+            for lab in labels:
+                if leg_title == '':
+                    if lab in self.unitDict.keys():
+                        unit = self.unitDict[lab]
+                        i += 1
+                        continue
+                else:
+                    unit = self.unitDict[leg_title]
+                unit = unit.replace('[', '').replace(']', '') if unit != '' else ''
+                labels[i] = lab + unit
+                i += 1
+            
+            leg.remove()        
+            self.fig.fig.tight_layout()
+            
+            #redraw legend for better control
+            leg = plt.legend(handles, labels, ncol = paramDict['Legend columns'].value(), 
+                             framealpha = 0.5,
+                             title = leg_title if leg_title != ''  else None)
+            if paramDict['Legend outside'].isChecked() == True:
+                leg_bbox = leg.get_tightbbox(self.fig.fig.canvas.get_renderer())
+                x0, y0, w, h = leg_bbox.inverse_transformed(self.fig.fig.transFigure).bounds
+                leg.set_bbox_to_anchor((-w, -h, 1 + 2 * w, 1 +  2 * h), 
+                                       transform = self.fig.fig.transFigure)
+            leg._loc = locDict[paramDict['Legend location'].currentText()]
         
-        #rename legend with units
-        i= 0
-        unit = ''
-        for lab in labels:
-            if leg_title == '':
-                if lab in self.unitDict.keys():
-                    unit = self.unitDict[lab]
-                    i += 1
-                    continue
-            else:
-                unit = self.unitDict[leg_title]
-            unit = unit.replace('[', '').replace(']', '') if unit != '' else ''
-            labels[i] = lab + unit
-            i += 1
-        
-        leg.remove()        
-        self.fig.fig.tight_layout()
-        
-        #redraw legend for better control
-        leg = plt.legend(handles, labels, ncol = paramDict['Legend columns'], 
-                         framealpha = 0.5,
-                         title = leg_title if leg_title != ''  else None)
-        if paramDict['Legend outside'] == True:
-            leg_bbox = leg.get_tightbbox(self.fig.fig.canvas.get_renderer())
-            x0, y0, w, h = leg_bbox.inverse_transformed(self.fig.fig.transFigure).bounds
-            leg.set_bbox_to_anchor((-w, -h, 1 + 2 * w, 1 +  2 * h), 
-                                   transform = self.fig.fig.transFigure)
-        leg._loc = locDict[paramDict['Legend location']]
-        
-        self.fig.fig.canvas.set_window_title(paramDict['Title'])
+        self.fig.fig.canvas.set_window_title(paramDict['Title'].text())
         self.fig.fig.canvas.mpl_connect("resize_event", self.previewPlot)
         
         self.previewPlot()
+        self.fig.fig.show()
+        plt.show()
 
     #save plot to temporarory location and preview it. Necessary since
     #legends is outside view in plot show
@@ -747,212 +768,213 @@ class SummaryAnal:
 # ##        self.df_all.to_excel("E:/Work/Codes/Test codes/test5.xlsx") #export as excel
                 
     
-    def preparePlot(self, plot_type, ax_title, fig_title, df_full, xdata, ydata, 
-                    bardata, errdata, xlabel, ylabel, barlabel, grp_num, mk = "o", 
-                    figname = None, leg = None, subplt = None, 
-                    fit_flag = False, fit_order = 1):
-        print("preparePlot")
-        group = fig_title.split('(')[1].split(')')[0] #group value
-        ax_num = 2 if plot_type == "Scatter" else 1; #number of axis per subplot
-        if figname == None: #create figure
-            fig = plt.figure(num=fig_title, figsize = [16, 10])
-            plt.clf() #clear figure cache
-##            fig.suptitle(fig_title, fontsize=16)
-            ax = fig.add_subplot(2,2,subplt)
-            ax.set_title(ax_title)
-            plt.cla() #clear axis cache
-            ax.set_title(ax_title)
-            # if plot_type == "Scatter":
-            ax.set_xlabel(xlabel)
-            # else:
-            #     ax.set_xlabel(self.group_name)
-            ax.set_ylabel(ylabel)
-            labels = []
-            cbar_flag = True
-        elif subplt > (len(figname.axes))/ax_num: #create subplot
-            print("a", len(figname.axes))
-            fig = figname
-            ax = fig.add_subplot(2,2,subplt)
-            ax.set_title(ax_title)
-##            plt.cla() #clear axis cache
-##            ax.set_title(title)
-            # if plot_type == "Scatter":
-            ax.set_xlabel(xlabel)
-            # else:
-            #     ax.set_xlabel(self.group_name)
-            ax.set_ylabel(ylabel)
-            labels = []
-            cbar_flag = True
-        else:
-            print("b", len(figname.axes))
-            fig = figname
-            ax = figname.axes[ax_num*(subplt-1)]
-            handles, labels = ax.get_legend_handles_labels()
-            cbar_flag = False
-            #increment for each new data group
-            if fit_flag == True: 
-                self.eq_count[group][subplt-1] += 1
-        print(group, self.eq_count)
+#     def preparePlot(self, plot_type, ax_title, fig_title, df_full, xdata, ydata, 
+#                     bardata, errdata, xlabel, ylabel, barlabel, grp_num, mk = "o", 
+#                     figname = None, leg = None, subplt = None, 
+#                     fit_flag = False, fit_order = 1):
+#         print("preparePlot")
+#         group = fig_title.split('(')[1].split(')')[0] #group value
+#         ax_num = 2 if plot_type == "Scatter" else 1; #number of axis per subplot
+#         if figname == None: #create figure
+#             fig = plt.figure(num=fig_title, figsize = [16, 10])
+#             plt.clf() #clear figure cache
+# ##            fig.suptitle(fig_title, fontsize=16)
+#             ax = fig.add_subplot(2,2,subplt)
+#             ax.set_title(ax_title)
+#             plt.cla() #clear axis cache
+#             ax.set_title(ax_title)
+#             # if plot_type == "Scatter":
+#             ax.set_xlabel(xlabel)
+#             # else:
+#             #     ax.set_xlabel(self.group_name)
+#             ax.set_ylabel(ylabel)
+#             labels = []
+#             cbar_flag = True
+#         elif subplt > (len(figname.axes))/ax_num: #create subplot
+#             print("a", len(figname.axes))
+#             fig = figname
+#             ax = fig.add_subplot(2,2,subplt)
+#             ax.set_title(ax_title)
+# ##            plt.cla() #clear axis cache
+# ##            ax.set_title(title)
+#             # if plot_type == "Scatter":
+#             ax.set_xlabel(xlabel)
+#             # else:
+#             #     ax.set_xlabel(self.group_name)
+#             ax.set_ylabel(ylabel)
+#             labels = []
+#             cbar_flag = True
+#         else:
+#             print("b", len(figname.axes))
+#             fig = figname
+#             ax = figname.axes[ax_num*(subplt-1)]
+#             handles, labels = ax.get_legend_handles_labels()
+#             cbar_flag = False
+#             #increment for each new data group
+#             if fit_flag == True: 
+#                 self.eq_count[group][subplt-1] += 1
+#         print(group, self.eq_count)
         
-        if plot_type == "Scatter":
-            if leg in labels:
-                leg = "_nolegend_"
+#         if plot_type == "Scatter":
+#             if leg in labels:
+#                 leg = "_nolegend_"
     
-            if bardata.dtype == 'object': #for string type data
-                ticklabels = list(set(df_full[bardata.name]))
-                ticklabels.sort()
-                bardata_full = [ticklabels.index(a) for a in df_full[bardata.name]]
-                bardata_new = [ticklabels.index(a) for a in bardata]
-                cmin, cmax = min(bardata_full), max(bardata_full)
-            else:
-                cmin, cmax = df_full[bardata.name].min(), df_full[bardata.name].max()
-                ticklabels = []
-                bardata_new = bardata
+#             if bardata.dtype == 'object': #for string type data
+#                 ticklabels = list(set(df_full[bardata.name]))
+#                 ticklabels.sort()
+#                 bardata_full = [ticklabels.index(a) for a in df_full[bardata.name]]
+#                 bardata_new = [ticklabels.index(a) for a in bardata]
+#                 cmin, cmax = min(bardata_full), max(bardata_full)
+#             else:
+#                 cmin, cmax = df_full[bardata.name].min(), df_full[bardata.name].max()
+#                 ticklabels = []
+#                 bardata_new = bardata
                
-            im = ax.scatter(xdata, ydata, marker = mk, s = 100, alpha = None,
-                            c = bardata_new, cmap="plasma", label = leg,
-                            vmin = cmin, vmax = cmax)
+#             im = ax.scatter(xdata, ydata, marker = mk, s = 100, alpha = None,
+#                             c = bardata_new, cmap="plasma", label = leg,
+#                             vmin = cmin, vmax = cmax)
         
-            if leg != None and leg not in labels:
-                ax.legend(loc = 'upper left')
+#             if leg != None and leg not in labels:
+#                 ax.legend(loc = 'upper left')
     
-            if cbar_flag == True:
-                print(barlabel)
-                if bardata.dtype == 'object':
-                    cbar = fig.colorbar(im, ax = ax, ticks = [ticklabels.index(a) \
-                                                              for a in ticklabels])
-                    cbar.ax.set_yticklabels(ticklabels)
-                else:
-                    cbar = fig.colorbar(im, ax = ax)
-                cbar.set_clim(cmin, cmax)
-                cbar.set_label(barlabel)
-            
-            ax.errorbar(xdata, ydata,yerr= errdata,
-                        capsize = 3, ecolor = 'k', zorder=0,
-                        elinewidth = 1, linestyle="None", label = None)
-    
-            if fit_flag == True:
-                cmap = plt.cm.get_cmap('Set1')
-                vshift = 0.05
-                data = zip(xdata, ydata)
-                data = np.array(sorted(data, key = lambda x: x[0]))
-                coeff = np.polyfit(data[:,0],data[:,1], fit_order) #fitting coeffients
-                p_fit = np.poly1d(coeff)
-                y_fit = p_fit(data[:,0])
-                y_avg = np.sum(data[:,1])/len(data[:,1])
-                r2 = (np.sum((y_fit-y_avg)**2))/(np.sum((data[:,1] - y_avg)**2))
-                sign = '' if coeff[1] < 0 else '+'
-                eq_id = leg.split(' ')[-1] if leg != None else fig_title.split('(')[1].split(')')[0].split(' ')[-1]#[:2]
-                eq_coff = ["$%.1e"%(coeff[i]) + "x^" + str(len(coeff) - i - 1) + "$"\
-                     if i < len(coeff) - 2 else "%.4fx"%(coeff[i]) for i in range(len(coeff)-1)]
-                eq =  "y=" + '+'.join(eq_coff) + "+%.4f"%(coeff[len(coeff)-1]) + "; $R^2$=" + "%.4f"%(r2)  
-                eq_clean = eq.replace('+-', '-')
-                x_fit = np.linspace(min(data[:,0]), max(data[:,0]), 100)
-                ax.plot(x_fit, p_fit(x_fit), color = cmap(self.eq_count[group][subplt-1]*0.1),
-                        linewidth=1, linestyle='dotted')
-                ax.text(1,0.2 - (vshift * self.eq_count[group][subplt-1]),
-                        eq_id + ": " + eq_clean, ha = 'right',
-                        transform=ax.transAxes, color = cmap(self.eq_count[group][subplt-1]*0.1),
-                        bbox=dict(facecolor='white', edgecolor = 'white', alpha=0.5))
-    ##            self.eq_count[subplt-1] += 1
-        
-        elif plot_type in ["Box","Violin"]:                      
-            print("Box",leg)
-            ax.cla()
-            ax.set_ylabel(ylabel)
-            self.violindata[group][subplt-1].append(ydata)
-            datasize = str(len(ydata))
-            if group == "All":
-                # group_size = len(self.group_list)
-                # boxdata = [[]]*group_size
-                # boxdata[grp_num-1] = ydata
-                # boxlabels = self.group_list
-                # # boxlabels = [[]]*group_size
-                # boxlabels[grp_num-1] = leg
-                # boxpositions = list(range(1,group_size+1))
-                self.violinlabels[group][subplt-1].append(str(self.group_val) + 
-                                                          '\n' + '(n=' + 
-                                                          datasize + ')')
-                ax.set_xlabel(self.group_name)
-            else:
-                # boxdata = ydata
-                # boxlabels = [group]
-                # boxpositions = [1]
-                self.violinlabels[group][subplt-1].append(str(group) + '\n' + 
-                                                          '(n=' + datasize + 
-                                                          ')')
-                ax.set_xlabel(None)
-            violinpositions = list(range(1,len(self.violinlabels[group][subplt-1])+1)) 
-            if plot_type == "Box":
-                ax.boxplot(self.violindata[group][subplt-1], positions=violinpositions,
-                           labels=self.violinlabels[group][subplt-1])
-            elif plot_type == "Violin":
-                # self.violindata[group][subplt-1].append(ydata)
-                # self.violinlabels[group][subplt-1].append(leg)
-                # violinpositions = list(range(1,len(self.violinlabels[group][subplt-1])+1))
-                ax.violinplot(self.violindata[group][subplt-1], positions=violinpositions, 
-                              showmedians=True)
-                ax.set_xticks(violinpositions)
-                ax.set_xticklabels(self.violinlabels[group][subplt-1])
-
-        fig.tight_layout()
-##        fig.show()
-##        plt.show()
-        
-        return fig
-
-    def showSummaryPlot(self): #show summary plots
-        print("showSummaryPlot")
-        if self.summary_filepath != "":
-#             keys = list(self.figdict.keys())
-#             for b in keys:
-#                 print("keys", b)
-#                 if len(self.figdict.keys())==2 and b == "All":
-#                     #close "All" figures
-#                     plt.close(self.figdict[b][0])
-# ##                    plt.close(self.figdict[b][1])
-# ##                    plt.close(self.figdict[b][2])
-# ##                    plt.close(self.figdict[b][3])
-# ##                    plt.close(self.figdict[b][4])
-# ##                    plt.close(self.figdict[b][5])
-# ##                    for a in self.figdict[b][6].values():
-# ##                        plt.close(a)
-# ##                    for a in self.figdict[b][7].values():
-# ##                        plt.close(a)
+#             if cbar_flag == True:
+#                 print(barlabel)
+#                 if bardata.dtype == 'object':
+#                     cbar = fig.colorbar(im, ax = ax, ticks = [ticklabels.index(a) \
+#                                                               for a in ticklabels])
+#                     cbar.ax.set_yticklabels(ticklabels)
 #                 else:
-# ##                    self.figdict[b][0].show()
-#                     self.show_figure(self.figdict[b][0])
-# ##                    self.figdict[b][1].show()
-# ##                    self.figdict[b][2].show()
-# ##                    self.figdict[b][3].show()
-# ##                    self.figdict[b][4].show()
-# ##                    self.figdict[b][5].show()
-# ##                    for a in self.figdict[b][6].values():
-# ##                        a.show()
-# ##                    for a in self.figdict[b][7].values():
-# ##                        a.show()
-            self.previewPlot()
-            self.fig.fig.show()
-            plt.show()
+#                     cbar = fig.colorbar(im, ax = ax)
+#                 cbar.set_clim(cmin, cmax)
+#                 cbar.set_label(barlabel)
+            
+#             ax.errorbar(xdata, ydata,yerr= errdata,
+#                         capsize = 3, ecolor = 'k', zorder=0,
+#                         elinewidth = 1, linestyle="None", label = None)
+    
+#             if fit_flag == True:
+#                 cmap = plt.cm.get_cmap('Set1')
+#                 vshift = 0.05
+#                 data = zip(xdata, ydata)
+#                 data = np.array(sorted(data, key = lambda x: x[0]))
+#                 coeff = np.polyfit(data[:,0],data[:,1], fit_order) #fitting coeffients
+#                 p_fit = np.poly1d(coeff)
+#                 y_fit = p_fit(data[:,0])
+#                 y_avg = np.sum(data[:,1])/len(data[:,1])
+#                 r2 = (np.sum((y_fit-y_avg)**2))/(np.sum((data[:,1] - y_avg)**2))
+#                 sign = '' if coeff[1] < 0 else '+'
+#                 eq_id = leg.split(' ')[-1] if leg != None else fig_title.split('(')[1].split(')')[0].split(' ')[-1]#[:2]
+#                 eq_coff = ["$%.1e"%(coeff[i]) + "x^" + str(len(coeff) - i - 1) + "$"\
+#                      if i < len(coeff) - 2 else "%.4fx"%(coeff[i]) for i in range(len(coeff)-1)]
+#                 eq =  "y=" + '+'.join(eq_coff) + "+%.4f"%(coeff[len(coeff)-1]) + "; $R^2$=" + "%.4f"%(r2)  
+#                 eq_clean = eq.replace('+-', '-')
+#                 x_fit = np.linspace(min(data[:,0]), max(data[:,0]), 100)
+#                 ax.plot(x_fit, p_fit(x_fit), color = cmap(self.eq_count[group][subplt-1]*0.1),
+#                         linewidth=1, linestyle='dotted')
+#                 ax.text(1,0.2 - (vshift * self.eq_count[group][subplt-1]),
+#                         eq_id + ": " + eq_clean, ha = 'right',
+#                         transform=ax.transAxes, color = cmap(self.eq_count[group][subplt-1]*0.1),
+#                         bbox=dict(facecolor='white', edgecolor = 'white', alpha=0.5))
+#     ##            self.eq_count[subplt-1] += 1
+        
+#         elif plot_type in ["Box","Violin"]:                      
+#             print("Box",leg)
+#             ax.cla()
+#             ax.set_ylabel(ylabel)
+#             self.violindata[group][subplt-1].append(ydata)
+#             datasize = str(len(ydata))
+#             if group == "All":
+#                 # group_size = len(self.group_list)
+#                 # boxdata = [[]]*group_size
+#                 # boxdata[grp_num-1] = ydata
+#                 # boxlabels = self.group_list
+#                 # # boxlabels = [[]]*group_size
+#                 # boxlabels[grp_num-1] = leg
+#                 # boxpositions = list(range(1,group_size+1))
+#                 self.violinlabels[group][subplt-1].append(str(self.group_val) + 
+#                                                           '\n' + '(n=' + 
+#                                                           datasize + ')')
+#                 ax.set_xlabel(self.group_name)
+#             else:
+#                 # boxdata = ydata
+#                 # boxlabels = [group]
+#                 # boxpositions = [1]
+#                 self.violinlabels[group][subplt-1].append(str(group) + '\n' + 
+#                                                           '(n=' + datasize + 
+#                                                           ')')
+#                 ax.set_xlabel(None)
+#             violinpositions = list(range(1,len(self.violinlabels[group][subplt-1])+1)) 
+#             if plot_type == "Box":
+#                 ax.boxplot(self.violindata[group][subplt-1], positions=violinpositions,
+#                            labels=self.violinlabels[group][subplt-1])
+#             elif plot_type == "Violin":
+#                 # self.violindata[group][subplt-1].append(ydata)
+#                 # self.violinlabels[group][subplt-1].append(leg)
+#                 # violinpositions = list(range(1,len(self.violinlabels[group][subplt-1])+1))
+#                 ax.violinplot(self.violindata[group][subplt-1], positions=violinpositions, 
+#                               showmedians=True)
+#                 ax.set_xticks(violinpositions)
+#                 ax.set_xticklabels(self.violinlabels[group][subplt-1])
 
-    def show_figure(self, fig):
-        # create a dummy figure and use its
-        # manager to display "fig"
-        dummy = plt.figure(num=fig.get_label(), figsize = [16, 10])
-        new_manager = dummy.canvas.manager
-        new_manager.canvas.figure = fig
-        fig.set_canvas(new_manager.canvas)    
+#         fig.tight_layout()
+# ##        fig.show()
+# ##        plt.show()
+        
+#         return fig
 
-    def saveSummaryPlot(self, plot_format): #save summary plots
-        if self.summary_filepath != "":
+#     def showSummaryPlot(self): #show summary plots
+#         print("showSummaryPlot")
+#         # if self.summary_filepath != "":
+# #             keys = list(self.figdict.keys())
+# #             for b in keys:
+# #                 print("keys", b)
+# #                 if len(self.figdict.keys())==2 and b == "All":
+# #                     #close "All" figures
+# #                     plt.close(self.figdict[b][0])
+# # ##                    plt.close(self.figdict[b][1])
+# # ##                    plt.close(self.figdict[b][2])
+# # ##                    plt.close(self.figdict[b][3])
+# # ##                    plt.close(self.figdict[b][4])
+# # ##                    plt.close(self.figdict[b][5])
+# # ##                    for a in self.figdict[b][6].values():
+# # ##                        plt.close(a)
+# # ##                    for a in self.figdict[b][7].values():
+# # ##                        plt.close(a)
+# #                 else:
+# # ##                    self.figdict[b][0].show()
+# #                     self.show_figure(self.figdict[b][0])
+# # ##                    self.figdict[b][1].show()
+# # ##                    self.figdict[b][2].show()
+# # ##                    self.figdict[b][3].show()
+# # ##                    self.figdict[b][4].show()
+# # ##                    self.figdict[b][5].show()
+# # ##                    for a in self.figdict[b][6].values():
+# # ##                        a.show()
+# # ##                    for a in self.figdict[b][7].values():
+# # ##                        a.show()
+#         self.previewPlot()
+#         self.fig.fig.show()
+#         plt.show()
+
+    # def show_figure(self, fig):
+    #     # create a dummy figure and use its
+    #     # manager to display "fig"
+    #     dummy = plt.figure(num=fig.get_label(), figsize = [16, 10])
+    #     new_manager = dummy.canvas.manager
+    #     new_manager.canvas.figure = fig
+    #     fig.set_canvas(new_manager.canvas)    
+    
+    #save summary plots
+    def saveSummaryPlot(self, summary_filepath, plot_format): 
+        # if self.summary_filepath != "":
             # folderpath = os.path.dirname(self.summary_filepath)
             # if not os.path.exists(folderpath):orientation='landscape',
             #     os.makedirs(folderpath)
-            filename = os.path.dirname(self.summary_filepath) + '/' + \
-                self.fig.fig.canvas.get_window_title()+ '-' + \
-                    time.strftime("%y%m%d%H%M%S") + '.' + plot_format
-            self.fig.fig.savefig(filename, bbox_inches='tight', 
-                                 transparent = True, dpi = 150)
+        filename = os.path.dirname(summary_filepath) + '/' + \
+            self.fig.fig.canvas.get_window_title()+ '-' + \
+                time.strftime("%y%m%d%H%M%S") + '.' + plot_format
+        self.fig.fig.savefig(filename, bbox_inches='tight', 
+                             transparent = True, dpi = 150)
             # keys = list(self.figdict.keys())
             # for b in keys:
             #     if len(self.figdict.keys())==2 and b == "All":
@@ -968,67 +990,70 @@ class SummaryAnal:
 ##                        self.savePlot(a)
 ##                    for a in self.figdict[b][7].values():
 ##                        self.savePlot(a)
-            print("saved plot", filename)
-            self.summarydf.to_excel(os.path.dirname(self.summary_filepath) +
-                                   '/summary_clean_' +
-                                   time.strftime("%y%m%d%H%M%S") + '.xlsx') #export as excel 
+        print("saved plot", filename)
+        # self.summarydf.to_excel(os.path.dirname(summary_filepath) +
+        #                        '/summary_clean_' +
+        #                        time.strftime("%y%m%d%H%M%S") + '.xlsx') #export as excel 
 
-            print("saved data")
+        # print("saved data")
             
-    def savePlot(self, fig, plot_format): #save routine
-        filename = os.path.dirname(self.summary_filepath) + '/' + \
-                   fig.get_label().replace('/','')+ '-' + time.strftime("%y%m%d%H%M%S") + '.' + plot_format
-        # fig.savefig(filename, orientation='landscape',
-        #             transparent = True, dpi = 150)
+    # def savePlot(self, fig, plot_format): #save routine
+    #     filename = os.path.dirname(self.summary_filepath) + '/' + \
+    #                fig.get_label().replace('/','')+ '-' + time.strftime("%y%m%d%H%M%S") + '.' + plot_format
+    #     # fig.savefig(filename, orientation='landscape',
+    #     #             transparent = True, dpi = 150)
 
-        print("save plot", filename)
-
-    def combineSummary(self): #combine summary data and plot
+    #     print("save plot", filename)
+    
+    #combine summary data from experiment list
+    def combineSummary(self, list_filepath): 
         # root = tk.Tk()
         # root.withdraw()
-        self.list_filepath, _ =  QFileDialog.getOpenFileName(caption = 
-                                                             "Select experiment list file")
-        if self.list_filepath != "":
-            list_folderpath = os.path.dirname(self.list_filepath)
-            
-            explistDf = pd.read_excel(self.list_filepath) #experiment list
-            
-            col_list = explistDf.columns
-            listunitDict = {}
-            for col_name in col_list:
-                unit = col_name.split('(')[-1].split(')')[0]
-                if unit == col_name:
-                    listunitDict[col_name] = ''
-                else:
-                    col_clean = col_name.split('(')[0].strip()
-                    explistDf.rename(columns = {col_name : col_clean}, 
-                                     inplace=True)
-                    listunitDict[col_clean] = ' [$' + unit + '$]'
-            
-            folder_heirarchy = '/Analysis/Summary/'
-            
-            fullDf = None
-            
-            for i in explistDf.index:
-                exp_data = explistDf.loc[i]
-                if exp_data['Data OK?'] == 'Yes' and exp_data['Include Data?'] == 'Yes':
-                    summary_folder = list_folderpath + "/" + \
-                        exp_data['Data Folder name'] + folder_heirarchy
-                    with os.scandir(summary_folder) as folder:
-                        for file in folder:
-                            if file.name.endswith('.txt') and file.is_file():
-                                self.importSummary(file.path)
-                                joinedDf = self.summarydf.merge(
-                                    pd.DataFrame(data = [exp_data.values]*len(exp_data),
-                                                 columns = exp_data.index),
-                                    left_index=True, right_index=True)
-                                if fullDf.__class__.__name__ == 'NoneType':
-                                    fullDf = joinedDf.copy()
-                                else:
-                                    fullDf = fullDf.append(joinedDf, ignore_index=True, 
-                                                           sort=False)
-            
-            self.unitDict = {**listunitDict, **self.unitDict}
+        # self.list_filepath, _ =  QFileDialog.getOpenFileName(caption = 
+        #                                                      "Select experiment list file")
+        # if self.list_filepath != "":
+        list_folderpath = os.path.dirname(list_filepath)
+        
+        explistDf = pd.read_excel(list_filepath) #experiment list
+        
+        col_list = explistDf.columns
+        listunitDict = {}
+        for col_name in col_list:
+            unit = col_name.split('(')[-1].split(')')[0]
+            if unit == col_name:
+                listunitDict[col_name] = ''
+            else:
+                col_clean = col_name.split('(')[0].strip()
+                explistDf.rename(columns = {col_name : col_clean}, 
+                                 inplace=True)
+                listunitDict[col_clean] = ' [$' + unit + '$]'
+        
+        folder_heirarchy = '/Analysis/Summary/'
+        
+        fullDf = None
+        
+        for i in explistDf.index:
+            exp_data = explistDf.loc[i]
+            if exp_data['Data OK?'] == 'Yes' and exp_data['Include Data?'] == 'Yes':
+                summary_folder = list_folderpath + "/" + \
+                    exp_data['Data Folder name'] + folder_heirarchy
+                with os.scandir(summary_folder) as folder:
+                    for file in folder:
+                        if file.name.endswith('.txt') and file.is_file():
+                            summarydf = self.importSummary(file.path)
+                            joinedDf = summarydf.merge(
+                                pd.DataFrame(data = [exp_data.values]*len(exp_data),
+                                             columns = exp_data.index),
+                                left_index=True, right_index=True)
+                            if fullDf.__class__.__name__ == 'NoneType':
+                                fullDf = joinedDf.copy()
+                            else:
+                                fullDf = fullDf.append(joinedDf, ignore_index=True, 
+                                                       sort=False)
+        
+        self.unitDict = {**listunitDict, **self.unitDict}
+        
+        return fullDf
                         
                 
 #             wb_obj = openpyxl.load_workbook(filename = self.list_filepath,
@@ -1136,7 +1161,7 @@ class SummaryAnal:
 
 #             self.df_final = df.copy()
 
-            self.df_final = fullDf.copy()
+            # self.df_final = fullDf.copy()
 
             #save summary combined
                 
@@ -1151,7 +1176,7 @@ class SummaryAnal:
 ##            self.df_all.to_excel(excel_filepath) #export as excel
 
             # df_good = self.df_final
-            self.summary_filepath = 'CHECK' #to save plots in Summary directory
+            # self.summary_filepath = 'CHECK' #to save plots in Summary directory
             # self.plotSummary(summaryDict,
             #                  df_good,
             #                  df_good,

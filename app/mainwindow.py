@@ -238,7 +238,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         self.videoPath = ""
         self.msrListMode = False
         self.msrmnt_num = None
-        self.comb = False
+        # self.comb = False
         self.bgframeNumber = 0
         
         self.home()

@@ -15,6 +15,8 @@ import numpy as np
 from PyQt5.QtWidgets import QFileDialog
 import seaborn as sns
 import cv2
+import pingouin as pg
+import itertools
 
 matplotlib.use('Qt5Agg')
 # import random
@@ -23,17 +25,18 @@ class SummaryAnal:
 
     def __init__(self): #initialize
         self.df_forcedata = None
-        self.figdict = None
+        # self.figdict = None
 ##        self.eq_count = [1,1,1,1] #fitting equation counter for each subplot
-        self.eq_count = {}
-        self.eq_count["All"] = [1,1,1,1]
-        self.summary_filepath = ""
+        # self.eq_count = {}
+        # self.eq_count["All"] = [1,1,1,1]
+        # self.summary_filepath = ""
 
-    def importSummary(self, summary_filepath): #plot summary plots
+    def importSummary(self, summary_filepath, delim='\t'): #import summary data
         print("import")
+        self.fig = None
 ##        self.eq_count = [1,1,1,1]
-        self.eq_count = {}
-        self.eq_count["All"] = [1,1,1,1]
+        # self.eq_count = {}
+        # self.eq_count["All"] = [1,1,1,1]
         # root = tk.Tk()
         # root.withdraw()
         # if filepath == None:
@@ -45,7 +48,12 @@ class SummaryAnal:
         #     self.summary_filepath = filepath
         
         # if self.summary_filepath != "":
-        summarydf = pd.read_csv(summary_filepath,delimiter='\t')
+        summarydf = pd.read_table(summary_filepath,delimiter=delim)
+        
+        #include paths
+        summarydf['File location'] = summary_filepath #include filepath in data
+        summarydf['File name'] = os.path.splitext(os.path.basename(summary_filepath))[0] #include filename in data
+        
         col_list = summarydf.columns
         self.unitDict = {}
         for col_name in col_list:
@@ -225,7 +233,7 @@ class SummaryAnal:
             # self.df_forcedata['Normalized_Adhesion_Force'] = self.df_forcedata['Adhesion_Force']/self.df_forcedata['Max_Area']
             # self.df_forcedata['Normalized_Adhesion_Energy'] = self.df_forcedata['Adhesion_Energy']/self.df_forcedata['Max_Area']
             # self.df_forcedata['Date_of_Experiment'] =  self.df_forcedata['Data_Folder'].str.split(pat = "/").str[-1].str.slice(start=0, stop=9)
-            
+        #TODO: remove these, make variable definitions in dialog to calculate
         summarydf['Adhesion Stress'] = summarydf['Pulloff Force']/summarydf['Pulloff Area']
         self.unitDict['Adhesion Stress'] = ' [$' + self.extractUnit('Pulloff Force') + \
             '/' + self.extractUnit('Pulloff Area') + '$]'
@@ -384,6 +392,9 @@ class SummaryAnal:
         #                  'Legend location': 'center right',
         #                  'Legend columns': 1,
         #                  'X label rotate': 45}
+        if self.fig != None:
+            plt.close(self.fig.fig)
+        
         x_var = paramDict['X Variable'].currentText() \
             if paramDict['X Variable'].currentText() != 'None' else None
         y_var = paramDict['Y Variable'].currentText() \
@@ -416,7 +427,9 @@ class SummaryAnal:
                    'center': 10}
             
         sns.set_theme(context = paramDict['Plot context'].currentText(),
-                      style= paramDict['Plot style'].currentText())
+                      style= paramDict['Plot style'].currentText(),
+                      palette = color_pal,
+                      font_scale = paramDict['Font scale'].value())
         
         # fig_size = (6,6) #figure size
         # x_param = "Distance"
@@ -445,11 +458,9 @@ class SummaryAnal:
                                    col = col_var,
                                    style = style_var,
                                    size = size_var,
-                                   palette = color_pal,
                                    kind = paramDict['Plot type'].currentText(),
                                    markers = paramDict['Show Markers'].isChecked(),
                                    marker =  fix_marker)
-                                   #alpha = paramDict['Opacity'].value())
         elif paramDict['Plot type'].currentText() in ["strip", "swarm", "box", 
                                                       "violin","boxen", "point", 
                                                       "bar", "count"]:
@@ -459,7 +470,6 @@ class SummaryAnal:
                                    hue = hue_var,
                                    row = row_var,
                                    col = col_var,
-                                   palette = color_pal,
                                    kind = paramDict['Plot type'].currentText())
                                    #alpha = paramDict['Opacity'].value())            
         
@@ -468,9 +478,10 @@ class SummaryAnal:
         # ax.fig.set_size_inches(*fig_size)
         self.fig.set_axis_labels(x_var + self.unitDict[x_var],
                                  y_var + self.unitDict[y_var])
-
-        self.fig.set_xticklabels(rotation = paramDict['X label rotate'].value(),
-                                 horizontalalignment = 'right')
+        
+        if paramDict['X label rotate'].value() != 0:
+            self.fig.set_xticklabels(rotation = paramDict['X label rotate'].value(),
+                                     horizontalalignment = 'right')
         #rename subplot titles with unit
         for ax in axes:
             title = ax.get_title().split(' = ')
@@ -509,7 +520,7 @@ class SummaryAnal:
             
             #redraw legend for better control
             leg = plt.legend(handles, labels, ncol = paramDict['Legend columns'].value(), 
-                             framealpha = 0.5,
+                             framealpha = 0.8,
                              title = leg_title if leg_title != ''  else None)
             if paramDict['Legend outside'].isChecked() == True:
                 leg_bbox = leg.get_tightbbox(self.fig.fig.canvas.get_renderer())
@@ -518,12 +529,18 @@ class SummaryAnal:
                                        transform = self.fig.fig.transFigure)
             leg._loc = locDict[paramDict['Legend location'].currentText()]
         
+        #despine axes
+        if paramDict['Despine'].isChecked() == True:
+            sns.despine(offset=10, trim=True)
+        
         self.fig.fig.canvas.set_window_title(paramDict['Title'].text())
         self.fig.fig.canvas.mpl_connect("resize_event", self.previewPlot)
         
-        self.previewPlot()
-        self.fig.fig.show()
-        plt.show()
+        # self.fig.fig.canvas.draw()
+        
+        # self.previewPlot()
+        # self.fig.fig.show()
+        # plt.show()
 
     #save plot to temporarory location and preview it. Necessary since
     #legends is outside view in plot show
@@ -532,6 +549,151 @@ class SummaryAnal:
                              transparent = True, dpi = 50)
         temp_plot = cv2.imread("samples/_temp_plot.png")
         cv2.imshow("Plot Preview", temp_plot)
+        
+    #calculate statistical comparisons (ANOVA/t-test)
+    def calculateStats(self, df, paramDict):
+        ##reference: https://reneshbedre.github.io/blog/anova.html
+        #IMPORTANT! requirements XlsxWriter==1.3.7, statsmodels==0.12.0
+        
+        # if get_stats == True:
+            # from pingouin import anova, normality, homoscedasticity, pairwise_tukey
+        ##    import statsmodels.api as sm
+        ##    from statsmodels.formula.api import ols
+        ##    # Ordinary Least Squares (OLS) model
+        ##    # C(Label):C(Substrate) represent interaction term
+        ##    model = ols('Adhesion_Force ~ C(Contact_type) + C(Substrate) + C(Contact_type):C(Substrate)',
+        ##                data=exptData).fit()
+        ##    anova_table = sm.stats.anova_lm(model, typ=2)
+        ##    print('ANOVA:\n', anova_table)
+
+        x_var = paramDict['X Variable'].currentText()
+        y_var = paramDict['Y Variable'].currentText()
+        hue_var = paramDict['Color Parameter'].currentText()
+        row_var = paramDict['Row Parameter'].currentText()
+        col_var = paramDict['Column Parameter'].currentText()
+            
+        group_vars = [a for a in [x_var, hue_var, row_var, col_var]  if a != 'None']
+        
+        #Two-way ANOVA test
+        #TODO: also use welch_anova() for unequal variances
+    ##    from pingouin import anova
+        aov = pg.anova(data = df,
+                       dv = y_var,
+                       between = group_vars).round(3)
+        print('ANOVA:\n', aov)
+    
+        # Shapiro-Wilk test used to check the normal distribution of residuals
+    
+    ##    import scipy.stats as stats
+    ##    w, pvalue = stats.shapiro(model.resid)
+    ##    print('Shapiro-Wilk test:\n', w, pvalue)
+    
+    ##    from pingouin import normality
+        norm_glass = pg.normality(exptData[exptData['Substrate'] == 'Glass'],
+                               dv= y_var,
+                               group='Contact_type',
+                               method = 'shapiro').round(3)
+        norm_glass['Substrate'] = 'Glass'
+        print('Shapiro-Wilk test (glass):\n', norm_glass)
+        norm_pfots = pg.normality(exptData[exptData['Substrate'] == 'PFOTS'],
+                               dv='Adhesion_Force',
+                               group='Contact_type',
+                               method = 'shapiro').round(3)
+        norm_pfots['Substrate'] = 'PFOTS'
+        print('Shapiro-Wilk test (PFOTS):\n', norm_pfots)
+    
+        norm_test = norm_glass.append(norm_pfots)
+        
+        #Bartlett’s test to check the Homogeneity of variances
+        ##import scipy.stats as stats
+        ##w, pvalue = stats.bartlett(d['A'], d['B'], d['C'], d['D'])
+        ##print(w, pvalue)
+    
+        #Levene's/Bartlett’s Test to check equality of variance (levene or bartlett)
+    ##    from pingouin import homoscedasticity
+        lev_glass = pg.homoscedasticity(exptData[exptData['Substrate'] == 'Glass'],
+                               dv=y_var,
+                               group='Contact_type',
+                               method = 'levene').round(3)
+        lev_glass['Substrate'] = 'Glass'
+        print('Levene Test (glass):\n', lev_glass)
+        lev_pfots = pg.homoscedasticity(exptData[exptData['Substrate'] == 'PFOTS'],
+                               dv='Adhesion_Force',
+                               group='Contact_type',
+                               method = 'levene').round(3)
+        lev_pfots['Substrate'] = 'PFOTS'
+        print('Levene Test (PFOTS):\n', lev_pfots)
+    
+        var_eq_test = lev_glass.append(lev_pfots)
+    
+        # perform multiple pairwise comparison (Tukey HSD)
+        # for unbalanced (unequal sample size) data, pairwise_tukey uses Tukey-Kramer test
+    ##    from pingouin import pairwise_tukey
+        
+        statDf = pd.DataFrame()
+        #TODO: ALSO USE pairwise_ameshowell() for unequal variances
+        # fixed_params = ["Substrate", "Contact_type"]
+        df_val_dict = {}
+        for var in group_vars:
+            df_val_dict[var] = df[var].unique()
+            
+        for i in range(len(group_vars)):
+            between_var = group_vars[i]
+            var_fixed = [group_vars[a] for a in range(len(group_vars)) \
+                         if a != i]
+            if len(var_fixed) != 0:
+                val_fixed = [df_val_dict[var] for var in var_fixed]
+                #all possible combinations of fixed values
+                fixed_comb = [a for a in itertools.product(*val_fixed)]                
+                for comb in fixed_comb:
+                    cond = [True]*df.shape[0]
+                    #df filter condition based on constant values of var_fixed combinations
+                    for k in range(len(var_fixed)):
+                        cond = (df[var_fixed[k]] == comb[k]) & (cond)
+                    tukey_result = pg.pairwise_tukey(data=df[cond],
+                                                     dv= y_var,
+                                                     between= between_var,
+                                                     effsize = 'r')
+                    tukey_result['Fixed_Parameter'] = str(dict(zip(var_fixed, comb))).\
+                                                      replace('{','').replace('}','').\
+                                                      replace("'",'')
+                    statDf = statDf.append(tukey_result).round(3)
+            else:
+                tukey_result = pg.pairwise_tukey(data=df,
+                                                 dv= y_var,
+                                                 between= between_var,
+                                                 effsize = 'r')
+                tukey_result['Fixed_Parameter'] = None
+                statDf = statDf.append(tukey_result).round(3)
+                
+        # i = 0
+        # for var in group_vars:
+        #     fixed_vars = group_vars.remove(var)
+        #     for f_var in fixed_vars:
+                
+        #     for val in exptData[fixed].unique():
+        #         cond1 = df['bbh'] == 3
+        #         df[cond1 & cond2]
+        #         m_comp = pg.pairwise_tukey(data=df[df[fixed] == val],
+        #                                 dv= y_var,
+        #                                 between= fixed_params[i-1],
+        #                                 effsize = 'r')
+        #         m_comp['Fixed_Parameter'] = val
+        #         statDf = statDf.append(m_comp).round(3)
+        # ##        print(m_comp)
+        #     i += 1
+    
+        print(statDf)
+    
+        #save statistics
+        if save == True:
+            writer = pd.ExcelWriter("summary_statistics-" + timestamp + ".xlsx",
+                                    engine='xlsxwriter')
+            statDf.to_excel(writer, sheet_name='pairwise_t-test')
+            aov.to_excel(writer, sheet_name='anova')
+            norm_test.to_excel(writer, sheet_name='norm_test')
+            var_eq_test.to_excel(writer, sheet_name='variance_eq_test')
+            writer.save()
         
 #     def plotSummary(self, summaryDict, df_filter, df_full, group = "ROI Label",
 #                     marker = "o", figlist = None, leg = None):
@@ -922,39 +1084,39 @@ class SummaryAnal:
         
 #         return fig
 
-#     def showSummaryPlot(self): #show summary plots
-#         print("showSummaryPlot")
-#         # if self.summary_filepath != "":
-# #             keys = list(self.figdict.keys())
-# #             for b in keys:
-# #                 print("keys", b)
-# #                 if len(self.figdict.keys())==2 and b == "All":
-# #                     #close "All" figures
-# #                     plt.close(self.figdict[b][0])
-# # ##                    plt.close(self.figdict[b][1])
-# # ##                    plt.close(self.figdict[b][2])
-# # ##                    plt.close(self.figdict[b][3])
-# # ##                    plt.close(self.figdict[b][4])
-# # ##                    plt.close(self.figdict[b][5])
-# # ##                    for a in self.figdict[b][6].values():
-# # ##                        plt.close(a)
-# # ##                    for a in self.figdict[b][7].values():
-# # ##                        plt.close(a)
-# #                 else:
-# # ##                    self.figdict[b][0].show()
-# #                     self.show_figure(self.figdict[b][0])
-# # ##                    self.figdict[b][1].show()
-# # ##                    self.figdict[b][2].show()
-# # ##                    self.figdict[b][3].show()
-# # ##                    self.figdict[b][4].show()
-# # ##                    self.figdict[b][5].show()
-# # ##                    for a in self.figdict[b][6].values():
-# # ##                        a.show()
-# # ##                    for a in self.figdict[b][7].values():
-# # ##                        a.show()
-#         self.previewPlot()
-#         self.fig.fig.show()
-#         plt.show()
+    def showSummaryPlot(self): #show summary plots
+        print("showSummaryPlot")
+        # if self.summary_filepath != "":
+#             keys = list(self.figdict.keys())
+#             for b in keys:
+#                 print("keys", b)
+#                 if len(self.figdict.keys())==2 and b == "All":
+#                     #close "All" figures
+#                     plt.close(self.figdict[b][0])
+# ##                    plt.close(self.figdict[b][1])
+# ##                    plt.close(self.figdict[b][2])
+# ##                    plt.close(self.figdict[b][3])
+# ##                    plt.close(self.figdict[b][4])
+# ##                    plt.close(self.figdict[b][5])
+# ##                    for a in self.figdict[b][6].values():
+# ##                        plt.close(a)
+# ##                    for a in self.figdict[b][7].values():
+# ##                        plt.close(a)
+#                 else:
+# ##                    self.figdict[b][0].show()
+#                     self.show_figure(self.figdict[b][0])
+# ##                    self.figdict[b][1].show()
+# ##                    self.figdict[b][2].show()
+# ##                    self.figdict[b][3].show()
+# ##                    self.figdict[b][4].show()
+# ##                    self.figdict[b][5].show()
+# ##                    for a in self.figdict[b][6].values():
+# ##                        a.show()
+# ##                    for a in self.figdict[b][7].values():
+# ##                        a.show()
+        self.previewPlot()
+        self.fig.fig.show()
+        plt.show()
 
     # def show_figure(self, fig):
     #     # create a dummy figure and use its
@@ -965,12 +1127,12 @@ class SummaryAnal:
     #     fig.set_canvas(new_manager.canvas)    
     
     #save summary plots
-    def saveSummaryPlot(self, summary_filepath, plot_format): 
+    def saveSummaryPlot(self, folderpath, plot_format): 
         # if self.summary_filepath != "":
             # folderpath = os.path.dirname(self.summary_filepath)
             # if not os.path.exists(folderpath):orientation='landscape',
             #     os.makedirs(folderpath)
-        filename = os.path.dirname(summary_filepath) + '/' + \
+        filename = folderpath + '/' + \
             self.fig.fig.canvas.get_window_title()+ '-' + \
                 time.strftime("%y%m%d%H%M%S") + '.' + plot_format
         self.fig.fig.savefig(filename, bbox_inches='tight', 
@@ -1006,7 +1168,7 @@ class SummaryAnal:
     #     print("save plot", filename)
     
     #combine summary data from experiment list
-    def combineSummary(self, list_filepath): 
+    def combineSummaryFromList(self, list_filepath): 
         # root = tk.Tk()
         # root.withdraw()
         # self.list_filepath, _ =  QFileDialog.getOpenFileName(caption = 
@@ -1054,6 +1216,22 @@ class SummaryAnal:
         self.unitDict = {**listunitDict, **self.unitDict}
         
         return fullDf
+    
+    #combine text files from same folder
+    def combineSummaryFromFolder(self, folderpath):
+        fullDf = None        
+        with os.scandir(folderpath + '/') as folder:
+            for file in folder:
+                if file.name.endswith('.txt') and file.is_file():
+                    summarydf = self.importSummary(file.path)
+                    if fullDf.__class__.__name__ == 'NoneType':
+                        fullDf = summarydf.copy()
+                    else:
+                        fullDf = fullDf.append(summarydf, ignore_index=True, 
+                                               sort=False)
+        
+        return fullDf
+    
                         
                 
 #             wb_obj = openpyxl.load_workbook(filename = self.list_filepath,

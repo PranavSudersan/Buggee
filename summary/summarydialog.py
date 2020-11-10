@@ -9,13 +9,15 @@ import gc
 import os
 import time
 import cv2
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QAbstractTableModel
 # from PyQt5.QtGui import QSizePolicy
 from PyQt5.QtWidgets import QWidget, QCheckBox, QLabel, QPushButton, QGroupBox,\
     QComboBox, QSpinBox, QGridLayout, QDialog, QLineEdit, QDoubleSpinBox,\
-        QSizePolicy, QFileDialog
+        QSizePolicy, QFileDialog, QTabWidget, QTableWidgetItem, QTableWidget
 from source.summary.summaryanalyze import SummaryAnal
-from source.threads.summplotthread import SummPlotThread
+# from source.threads.summplotthread import 
+import pandas as pd
+from tabulate import tabulate
      
 class SummaryWindow(QWidget):
     
@@ -44,6 +46,13 @@ class SummaryWindow(QWidget):
         dataSourceLabel = QLabel("From:", self)
         dataSource = QComboBox(self)
         dataSource.addItems(['ASCII file', 'Folder', 'File list'])
+        self.paramDict['Data source'] = dataSource
+        
+        subfolderLabel = QLabel("Sub folder:", self)
+        self.subfolder =  QLineEdit(self)
+        self.subfolder.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
+        self.subfolder.setText('/Analysis/Summary/')
+        self.paramDict['Subfolder'] = self.subfolder
         
         #import data
         importButton = QPushButton("Select..", self)    
@@ -51,6 +60,7 @@ class SummaryWindow(QWidget):
         
         self.filenameLabel = QLabel("", self)
         self.filenameLabel.setWordWrap(True)
+        self.paramDict['File name'] = self.filenameLabel
         
         # dataSource.indexChanged.connect(lambda: self.source_changed(dataSource, 
         #                                                           importButton))        
@@ -97,7 +107,7 @@ class SummaryWindow(QWidget):
         
         plotTitleLabel = QLabel("Title", self)
         plotTitle =  QLineEdit(self)
-        plotTitle.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+        plotTitle.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
         # plotTitle.textChanged.connect(lambda: self.update_summary_dict('title',
         #                                                                plotTitle.text(),
         #                                                                0))
@@ -107,6 +117,8 @@ class SummaryWindow(QWidget):
         self.filter_dialog_init()   #initialize filter dialog
         filterButton = QPushButton("Filter..", self)
         filterButton.clicked.connect(self.filterDialog.show)
+        
+        # self.calcStats = QCheckBox('Calculate Stats', self)
         
         #plot format
         formatLabel = QLabel("Save as", self)
@@ -228,8 +240,10 @@ class SummaryWindow(QWidget):
         self.savePlot.clicked.connect(self.export_summary_plots)
         self.savePlot.setEnabled(False)
         
-        statsButton = QPushButton("Show Stats", self)
-        statsButton.clicked.connect(self.show_stats)
+        self.show_data_init()   #initialize data dialog
+        self.statsButton = QPushButton("Show Stats", self)
+        self.statsButton.clicked.connect(self.show_stats)
+        self.statsButton.setEnabled(False)
         
         closeButton = QPushButton("Close", self)
         closeButton.clicked.connect(self.close)
@@ -243,8 +257,10 @@ class SummaryWindow(QWidget):
         importGroupBox.setLayout(importLayout)
         importLayout.addWidget(dataSourceLabel, 0, 0, 1, 1)
         importLayout.addWidget(dataSource, 0, 1, 1, 1)
+        importLayout.addWidget(subfolderLabel, 1, 0, 1, 1)
+        importLayout.addWidget(self.subfolder, 1, 1, 1, 2)
         importLayout.addWidget(importButton, 0, 2, 1, 1)
-        importLayout.addWidget(self.filenameLabel, 0, 3, 1, 2)
+        importLayout.addWidget(self.filenameLabel, 0, 3, 2, 2)
         
         plotGroupBox = QGroupBox("Plot Data")
         plotGroupBox.setStyleSheet("QGroupBox { font-weight: bold; } ")
@@ -259,6 +275,7 @@ class SummaryWindow(QWidget):
         plotLayout.addWidget(plotTitleLabel, 3, 0, 1, 1)
         plotLayout.addWidget(plotTitle, 3, 1, 1, 1)
         plotLayout.addWidget(filterButton, 4, 0, 1, 2)
+        # plotLayout.addWidget(self.calcStats, 5, 0, 1, 2)
         # self.summary_layout_make(1, 'Pulloff_Area', 'Adhesion_Force',
         #                          'Detachment Speed', gridLayout, 2)
         # self.summary_layout_make(2, 'Pulloff_Area', 'Adhesion_Force',
@@ -316,7 +333,7 @@ class SummaryWindow(QWidget):
         buttonGroupBox.setLayout(buttonLayout)
         buttonLayout.addWidget(self.showPlot, 0, 0, 1, 1)
         buttonLayout.addWidget(self.savePlot, 0, 1, 1, 1)
-        buttonLayout.addWidget(statsButton, 0, 2, 1, 1)
+        buttonLayout.addWidget(self.statsButton, 0, 2, 1, 1)
         buttonLayout.addWidget(closeButton, 0, 3, 1, 1)
         
         
@@ -405,13 +422,20 @@ class SummaryWindow(QWidget):
     def update_dropdown_params(self):
         self.varlist = list(self.datadf.columns)
         self.varlist.sort()
-        self.xVar.addItems(['None'] + self.varlist)
-        self.yVar.addItems(['None'] + self.varlist)
-        self.colorVar.addItems(['None'] + self.varlist)
-        self.columnVar.addItems(['None'] + self.varlist)
-        self.rowVar.addItems(['None'] + self.varlist)
-        self.styleVar.addItems(['None'] + self.varlist)
-        self.sizeVar.addItems(['None'] + self.varlist)  
+        var_list = ['None'] + self.varlist
+        combobox_wids = [self.xVar, self.yVar, self.colorVar, self.columnVar,
+                         self.rowVar, self.styleVar, self.sizeVar]
+        for wid in combobox_wids:
+            if var_list != [wid.itemText(i) for i in range(wid.count())]:
+                wid.clear()
+                wid.addItems(var_list)
+        # self.xVar.addItems(['None'] + self.varlist)
+        # self.yVar.addItems(['None'] + self.varlist)
+        # self.colorVar.addItems(['None'] + self.varlist)
+        # self.columnVar.addItems(['None'] + self.varlist)
+        # self.rowVar.addItems(['None'] + self.varlist)
+        # self.styleVar.addItems(['None'] + self.varlist)
+        # self.sizeVar.addItems(['None'] + self.varlist)  
     
     # disable/enable relevant combo boxes
     def plot_type_changed(self, plot_type):
@@ -437,7 +461,8 @@ class SummaryWindow(QWidget):
                                                             "Select experiment list file")
             if self.filepath != "":
                 self.folderpath = os.path.dirname(self.filepath)
-                self.datadf = self.summary.combineSummaryFromList(self.filepath)
+                self.datadf = self.summary.combineSummaryFromList(self.filepath,
+                                                                  self.subfolder.text())
                 self.update_dropdown_params()
             # if self.summary.list_filepath != "":
                 # self.comb = True
@@ -445,6 +470,8 @@ class SummaryWindow(QWidget):
                 self.datadf_filtered = self.summary.filter_df(self.datadf,
                                                               self.filter_dict)
                 self.showPlot.setEnabled(True)
+                self.savePlot.setEnabled(False)
+                self.statsButton.setEnabled(True)
                 self.filenameLabel.setText(self.filepath)
                 # self.summary.plotSummary(self.summaryDict,
                 #                          self.summary.df_final,
@@ -462,11 +489,15 @@ class SummaryWindow(QWidget):
             if self.filepath != "":
                 self.folderpath = os.path.dirname(self.filepath)
                 self.datadf = self.summary.importSummary(self.filepath)
+                self.create_var('test var [mPa^2]', '''['Pulloff Force']/['Pulloff Area']''') #CHECK
                 self.update_dropdown_params()
             # if self.summary.summary_filepath != "":
                 self.datadf_filtered = self.summary.filter_df(self.datadf, 
                                                               self.filter_dict)
+                
                 self.showPlot.setEnabled(True)
+                self.savePlot.setEnabled(False)
+                self.statsButton.setEnabled(True)
                 self.filenameLabel.setText(self.filepath)
                 # self.summary.plotSummary(self.summaryDict,
                 #                          self.summary.df_final,
@@ -479,12 +510,15 @@ class SummaryWindow(QWidget):
             self.folderpath = QFileDialog.getExistingDirectory(caption =
                                                            "Select folder")
             if self.folderpath != "":
-                self.datadf = self.summary.combineSummaryFromFolder(self.folderpath)
+                self.datadf = self.summary.combineSummaryFromFolder(self.folderpath,
+                                                                    self.subfolder.text())
                 self.update_dropdown_params()
             # if self.summary.summary_filepath != "":
                 self.datadf_filtered = self.summary.filter_df(self.datadf, 
                                                               self.filter_dict)
                 self.showPlot.setEnabled(True)
+                self.savePlot.setEnabled(False)
+                self.statsButton.setEnabled(True)
                 self.filenameLabel.setText(self.folderpath)
                 # self.summary.plotSummary(self.summaryDict,
                 #                          self.summary.df_final,
@@ -519,14 +553,71 @@ class SummaryWindow(QWidget):
             self.summary.saveSummaryPlot(self.folderpath,
                                          self.saveFormat.currentText())
              #export data to excel 
-            self.datadf_filtered.to_excel(self.folderpath +
-                                   '/summary_data_' + self.paramDict['Title'].text() + 
-                                   '-' + time.strftime("%y%m%d%H%M%S") + '.xlsx')
+            # self.datadf_filtered.to_excel(self.folderpath +
+            #                        '/summary_data_' + self.paramDict['Title'].text() + 
+            #                        '-' + time.strftime("%y%m%d%H%M%S") + '.xlsx')
+            
+            #export data and stats to excel
+            filepath = self.folderpath + '/summary_data_' + \
+                self.paramDict['Title'].text() + '-' + \
+                    time.strftime("%y%m%d%H%M%S") + '.xlsx'
+            writer = pd.ExcelWriter(filepath, engine='xlsxwriter')
+            self.datadf_filtered.to_excel(writer, sheet_name='data')
+            #save statistics
+            self.summary.calculateStats(self.datadf_filtered, self.paramDict)
+            for key in self.summary.statDf.keys():
+                self.summary.statDf[key].to_excel(writer, sheet_name=key)
+                
+            #export settings
+            self.make_param_series()
+            self.paramSeries.to_excel(writer, sheet_name='settings')
+            # aov.to_excel(writer, sheet_name='anova')
+            # norm_test.to_excel(writer, sheet_name='norm_test')
+            # var_eq_test.to_excel(writer, sheet_name='variance_eq_test')
+            writer.save()              
 
         print("saved data")            
 
+    #create series of parameter values
+    def make_param_series(self):
+        self.paramSeries = pd.Series(name = 'Value')
+        for key in self.paramDict.keys():
+            wid = self.paramDict[key]
+            widtype = wid.__class__.__name__
+            if widtype in ["QCheckBox", "QGroupBox"]:
+                self.paramSeries[key] = str(wid.isChecked())
+            elif widtype in ["QComboBox"]:
+                self.paramSeries[key] = str(wid.currentText())
+            elif widtype in ["QLineEdit", "QLabel"]:
+                self.paramSeries[key] = wid.text()
+            elif widtype in ["QTextEdit"]:
+                self.paramSeries[key] = wid.toPlainText()
+            elif widtype in ["dict", 'list', 'NoneType']: #dictionary/tuple/None
+                self.paramSeries[key] = str(wid)
+            else:    
+                self.paramSeries[key] = str(wid.value())
+        
+        filter_cond = ' '.join([' '.join(map(str,cond)) for cond in self.filter_dict.values()])
+        self.paramSeries['Filter condition'] = filter_cond
+
+                
     # def save_plot_indicate(self):
     #     self.statusBar.showMessage("Summary Plots saved!")
+    #export data and stats
+    # def export_data(self):
+
+    #     filepath = self.folderpath + '/summary_data_' + \
+    #         self.paramDict['Title'].text() + '-' + \
+    #             time.strftime("%y%m%d%H%M%S") + '.xlsx'
+    #     writer = pd.ExcelWriter(filepath, engine='xlsxwriter')
+    #     self.datadf_filtered..to_excel(writer, sheet_name='data')
+    #     #save statistics
+    #     for key in self.summary.statDf.keys():
+    #         df[key].to_excel(writer, sheet_name=key)
+    #     # aov.to_excel(writer, sheet_name='anova')
+    #     # norm_test.to_excel(writer, sheet_name='norm_test')
+    #     # var_eq_test.to_excel(writer, sheet_name='variance_eq_test')
+    #     writer.save()        
 
     def show_summary_plots(self): #show summary plots
         # if self.comb == False and self.summary == None:
@@ -549,8 +640,60 @@ class SummaryWindow(QWidget):
             # self.summary.showSummaryPlot()
     
     #show statistical data
-    def show_stats():
-        pass
+    def show_stats(self):
+        if self.summary != None:
+            self.summary.calculateStats(self.datadf_filtered, self.paramDict)
+            dataframes = self.summary.statDf.copy()
+            dataframes['data'] = self.datadf_filtered
+            
+            # data_display = QWidget()
+            # data_display.setWindowTitle("Data")
+            # data_display.resize(100, 100)
+            
+            # layout = QGridLayout(data_display)
+            
+            # data_tabs = QTabWidget() #B&C and flitering tabs
+            self.dataTab.clear()
+            
+            for key in dataframes.keys():
+                # table = tabulate(dataframes[key], headers='keys', tablefmt = 'pretty')
+                # wid = QTextEdit()
+                # wid.setText(table)
+                df = dataframes[key]
+                table = QTableWidget()
+                # model = PandasModel(df)
+                # table.setModel(model)
+                r, c = df.shape
+                table.setColumnCount(c)
+                table.setRowCount(r)
+                for j in range(c):
+                    table.setHorizontalHeaderItem(j, QTableWidgetItem(df.columns[j]))
+                    for i in range(r):
+                        table.setItem(i, j, QTableWidgetItem(str(df.iloc[i,j])))
+                
+                self.dataTab.addTab(table,key)
+                
+            # layout.addWidget(data_tabs, 0, 0, 1, 0)  
+            
+            self.dataDialog.show()
+    
+    #initialize data dialog
+    def show_data_init(self):
+        self.dataDialog = QDialog(self)
+        self.dataDialog.setWindowTitle("Data")
+        self.dataDialog.resize(600, 400)
+        
+        layout = QGridLayout(self.dataDialog)
+        
+        self.dataTab = QTabWidget() #B&C and flitering tabs
+        
+        # for key in dataframes.keys():
+        #     table = tabulate(dataframes[key], headers='keys', tablefmt = 'psql')
+        #     wid = QTextEdit()
+        #     wid.setText(table)
+        #     data_tabs.addTab(wid,key)
+            
+        layout.addWidget(self.dataTab, 0, 0, 1, 0)
     
     #update plot data and draw canvas
     # def update_plot(self):
@@ -559,6 +702,7 @@ class SummaryWindow(QWidget):
     def reset_summary(self): #reset self.comb to False
         # self.comb = False
         self.summary = None
+
         # self.filter_dialog_init()
 ##        self.summary_dialog_init()
         cv2.destroyAllWindows()
@@ -570,9 +714,21 @@ class SummaryWindow(QWidget):
 
     # def close_summary(self):
     #     self.sumDialog.done(0)
-        
+   #create new variable
+    def create_var(self, var_name, formula):
+        df = self.datadf.copy()
+        self.datadf[var_name] = eval(formula.replace('[','df['))
+        unit = var_name.split('[')[-1].split(']')[0]
+        if unit == var_name:
+            self.summary.unitDict[var_name] = ''
+        else:
+            col_clean = var_name.split('[')[0].strip()
+            self.datadf.rename(columns = {var_name : col_clean},
+                               inplace=True)
+            self.summary.unitDict[col_clean] = ' [$' + unit + '$]'
+                
     def filter_dialog_init(self):
-        self.filterDialog = QDialog()
+        self.filterDialog = QDialog(self)
         self.filterDialog.setWindowTitle("Filter")
         self.filterDialog.resize(468, 69)
         
@@ -592,11 +748,20 @@ class SummaryWindow(QWidget):
         # self.filter_dialog_widgets(self.filter_count)
     
     def filter_dialog_widgets(self, rownum):
+        
+        filterValue =  QLineEdit()
+        filterValue.textChanged.connect(lambda:
+                                       self.update_filter_dict(rownum, 2,
+                                            filterValue.text()))
+        
+        
         groupVar = QComboBox()
         groupVar.addItems(self.varlist)
         groupVar.currentIndexChanged.connect(lambda:
-                                             self.update_filter_dict(rownum, 0,
-                                                    groupVar.currentText()))
+                                             self.filter_var_change(groupVar,
+                                                                    filterValue, 
+                                                                    rownum))
+        filterValue.setToolTip('Example: ' + str(self.datadf[groupVar.currentText()][0]))
         
         conditionVar = QComboBox()
         conditionVar.addItems(["equal to", "not equal to", "less than", 
@@ -606,10 +771,7 @@ class SummaryWindow(QWidget):
                                                  self.update_filter_dict(rownum, 1,
                                                     conditionVar.currentText()))
             
-        filterValue =  QLineEdit()
-        filterValue.textChanged.connect(lambda:
-                                       self.update_filter_dict(rownum, 2,
-                                            filterValue.text()))
+        
             
         connectiveVar = QComboBox()
         connectiveVar.addItems(["None", "AND", "OR", "Delete"])
@@ -627,6 +789,10 @@ class SummaryWindow(QWidget):
         #filter dictionary: variable, condition, value, connective operator
         self.filter_dict[rownum] = [groupVar.currentText(), conditionVar.currentText(),
                                     filterValue.text(), connectiveVar.currentText()]
+    
+    def filter_var_change(self, groupVar, filterValue, rownum):
+        self.update_filter_dict(rownum, 0, groupVar.currentText())
+        filterValue.setToolTip('Example: ' + str(self.datadf[groupVar.currentText()][0]))
     
     def filter_add_widgets(self, var, key, itemnum=None, groupVar=None, 
                            conditionVar=None, filterValue=None, connectiveVar=None):
@@ -682,3 +848,40 @@ class SummaryWindow(QWidget):
         self.datadf_filtered = self.summary.filter_df(self.datadf, self.filter_dict)
         # self.summaryDict['filter'] = self.filter_dict
         self.filterDialog.done(0)
+
+# #model for QTableView for dataframe display        
+# class PandasModel(QAbstractTableModel):
+#     """
+#     Class to populate a table view with a pandas dataframe
+#     """
+#     def __init__(self, data, parent=None):
+#         QAbstractTableModel.__init__(self, parent)
+#         self._data = data
+    
+#     def rowCount(self, parent=None):
+#         return len(self._data.values)
+    
+#     def columnCount(self, parent=None):
+#         return self._data.columns.size
+    
+#     def data(self, index, role=Qt.DisplayRole):
+#         if index.isValid():
+#             if role == Qt.DisplayRole:
+#                 if(index.column() != 0):
+#                     return str('%.2f'%self._data.values[index.row()][index.column()])
+#                 else:
+#                     return str(self._data.values[index.row()][index.column()])
+#         return None
+    
+#     def headerData(self, section, orientation, role):
+#         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
+#             return self._data.columns[section]
+#         elif orientation == Qt.Vertical and role == Qt.DisplayRole:
+#             return str(self._data.index[section])
+#         return None
+    
+#     def flags(self, index):
+#         flags = super(self.__class__, self).flags(index)
+#         flags |= Qt.ItemIsSelectable
+#         flags |= Qt.ItemIsEnabled
+#         return flags

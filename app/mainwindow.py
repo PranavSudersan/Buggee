@@ -4104,6 +4104,8 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
             self.fitWindow.close()
             self.forceData.plotWidget.close()
             self.sumDialog.close()
+            self.sumDialog.dataDialog.done(0)
+            self.sumDialog.filterDialog.done(0)
             
             QApplication.exit()
         else:

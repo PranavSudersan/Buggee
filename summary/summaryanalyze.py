@@ -24,7 +24,8 @@ matplotlib.use('Qt5Agg')
 class SummaryAnal:
 
     def __init__(self): #initialize
-        self.df_forcedata = None
+        self.statDf = {}
+        # self.df_forcedata = None
         # self.figdict = None
 ##        self.eq_count = [1,1,1,1] #fitting equation counter for each subplot
         # self.eq_count = {}
@@ -65,6 +66,8 @@ class SummaryAnal:
                 summarydf.rename(columns = {col_name : col_clean}, 
                                  inplace=True)
                 self.unitDict[col_clean] = ' [$' + unit + '$]'
+                
+        summarydf.reset_index(inplace = True) # include index as a column
                 
             # with open(self.summary_filepath, 'r', encoding = "utf_8") as f: #open summary data file
             #     x = f.read().splitlines()
@@ -234,18 +237,18 @@ class SummaryAnal:
             # self.df_forcedata['Normalized_Adhesion_Energy'] = self.df_forcedata['Adhesion_Energy']/self.df_forcedata['Max_Area']
             # self.df_forcedata['Date_of_Experiment'] =  self.df_forcedata['Data_Folder'].str.split(pat = "/").str[-1].str.slice(start=0, stop=9)
         #TODO: remove these, make variable definitions in dialog to calculate
-        summarydf['Adhesion Stress'] = summarydf['Pulloff Force']/summarydf['Pulloff Area']
-        self.unitDict['Adhesion Stress'] = ' [$' + self.extractUnit('Pulloff Force') + \
-            '/' + self.extractUnit('Pulloff Area') + '$]'
-        summarydf['Friction Stress'] = summarydf['Friction Force']/summarydf['Friction Area']
-        self.unitDict['Friction Stress'] = ' [$' + self.extractUnit('Friction Force') + \
-            '/' + self.extractUnit('Friction Area') + '$]'
-        summarydf['Normalized Adhesion Force'] = summarydf['Pulloff Force']/summarydf['Max Area']
-        self.unitDict['Normalized Adhesion Force'] = ' [$' + self.extractUnit('Pulloff Force') + \
-            '/' + self.extractUnit('Max Area') + '$]'
-        summarydf['Normalized_Adhesion_Energy'] = summarydf['Adhesion Energy']/summarydf['Max Area']
-        self.unitDict['Normalized_Adhesion_Energy'] = ' [$' + self.extractUnit('Adhesion Energy') + \
-            '/' + self.extractUnit('Max Area') + '$]'
+        # summarydf['Adhesion Stress'] = summarydf['Pulloff Force']/summarydf['Pulloff Area']
+        # self.unitDict['Adhesion Stress'] = ' [$' + self.extractUnit('Pulloff Force') + \
+        #     '/' + self.extractUnit('Pulloff Area') + '$]'
+        # summarydf['Friction Stress'] = summarydf['Friction Force']/summarydf['Friction Area']
+        # self.unitDict['Friction Stress'] = ' [$' + self.extractUnit('Friction Force') + \
+        #     '/' + self.extractUnit('Friction Area') + '$]'
+        # summarydf['Normalized Adhesion Force'] = summarydf['Pulloff Force']/summarydf['Max Area']
+        # self.unitDict['Normalized Adhesion Force'] = ' [$' + self.extractUnit('Pulloff Force') + \
+        #     '/' + self.extractUnit('Max Area') + '$]'
+        # summarydf['Normalized_Adhesion_Energy'] = summarydf['Adhesion Energy']/summarydf['Max Area']
+        # self.unitDict['Normalized_Adhesion_Energy'] = ' [$' + self.extractUnit('Adhesion Energy') + \
+        #     '/' + self.extractUnit('Max Area') + '$]'
         
         # summarydf['Date of Experiment'] =  summarydf['Data Folder'].str.split(pat = "/").str[-1].str.slice(start=0, stop=9)
         # self.unitDict['Date of Experiment'] = ''
@@ -292,15 +295,16 @@ class SummaryAnal:
         for k in filter_dict.keys():
             col = filter_dict[k][0]
             cond = filter_dict[k][1]
-            if col in ["Weight","Temperature","Humidity","Contact_Angle-Water", 
-                       "Contact_Angle-Hexadecane","Measurement_Number","Contact_Time", 
-                       "Detachment Speed", "Attachment Speed", "Sliding Speed"]:
-                val = float(filter_dict[k][2])
-            elif col in ["Folder_Name", "Species", "Sex", "Leg", "Pad","Medium",
-                           "Substrate","Label", "ROI Label","Sliding_Step"]:
-                val = filter_dict[k][2]
-            elif col in ["Date"]:
-                val = datetime.strptime(filter_dict[k][2], "%d/%m/%Y").date()
+            val = np.array([filter_dict[k][2]]).astype(df_final[col].dtype)[0]
+            # if col in ["Weight","Temperature","Humidity","Contact_Angle-Water", 
+            #            "Contact_Angle-Hexadecane","Measurement_Number","Contact_Time", 
+            #            "Detachment Speed", "Attachment Speed", "Sliding Speed"]:
+            #     val = float(filter_dict[k][2])
+            # elif col in ["Folder_Name", "Species", "Sex", "Leg", "Pad","Medium",
+            #                "Substrate","Label", "ROI Label","Sliding_Step"]:
+            #     val = filter_dict[k][2]
+            # elif col in ["Date"]:
+            #     val = datetime.strptime(filter_dict[k][2], "%d/%m/%Y").date()
             if cond == 'equal to':
                 print("equal condition")
                 df_final = df_final[df_final[col] == val]
@@ -565,22 +569,30 @@ class SummaryAnal:
         ##                data=exptData).fit()
         ##    anova_table = sm.stats.anova_lm(model, typ=2)
         ##    print('ANOVA:\n', anova_table)
-
-        x_var = paramDict['X Variable'].currentText()
-        y_var = paramDict['Y Variable'].currentText()
-        hue_var = paramDict['Color Parameter'].currentText()
-        row_var = paramDict['Row Parameter'].currentText()
-        col_var = paramDict['Column Parameter'].currentText()
+        
+        #remove spaces from column names
+        df_clean = df.copy()
+        col_list = df_clean.columns
+        for col_name in col_list:
+            col_clean = col_name.replace(' ', '_')
+            df_clean.rename(columns = {col_name : col_clean},
+                            inplace=True)
+                
+        x_var = paramDict['X Variable'].currentText().replace(' ', '_')
+        y_var = paramDict['Y Variable'].currentText().replace(' ', '_')
+        hue_var = paramDict['Color Parameter'].currentText().replace(' ', '_')
+        row_var = paramDict['Row Parameter'].currentText().replace(' ', '_')
+        col_var = paramDict['Column Parameter'].currentText().replace(' ', '_')
             
         group_vars = [a for a in [x_var, hue_var, row_var, col_var]  if a != 'None']
         
         #Two-way ANOVA test
         #TODO: also use welch_anova() for unequal variances
     ##    from pingouin import anova
-        aov = pg.anova(data = df,
-                       dv = y_var,
-                       between = group_vars).round(3)
-        print('ANOVA:\n', aov)
+        anovaDf = pg.anova(data = df_clean,
+                           dv = y_var,
+                           between = group_vars).round(3)
+        print('ANOVA:\n', anovaDf)
     
         # Shapiro-Wilk test used to check the normal distribution of residuals
     
@@ -589,53 +601,55 @@ class SummaryAnal:
     ##    print('Shapiro-Wilk test:\n', w, pvalue)
     
     ##    from pingouin import normality
-        norm_glass = pg.normality(exptData[exptData['Substrate'] == 'Glass'],
-                               dv= y_var,
-                               group='Contact_type',
-                               method = 'shapiro').round(3)
-        norm_glass['Substrate'] = 'Glass'
-        print('Shapiro-Wilk test (glass):\n', norm_glass)
-        norm_pfots = pg.normality(exptData[exptData['Substrate'] == 'PFOTS'],
-                               dv='Adhesion_Force',
-                               group='Contact_type',
-                               method = 'shapiro').round(3)
-        norm_pfots['Substrate'] = 'PFOTS'
-        print('Shapiro-Wilk test (PFOTS):\n', norm_pfots)
+    #     norm_glass = pg.normality(exptData[exptData['Substrate'] == 'Glass'],
+    #                            dv= y_var,
+    #                            group='Contact_type',
+    #                            method = 'shapiro').round(3)
+    #     norm_glass['Substrate'] = 'Glass'
+    #     print('Shapiro-Wilk test (glass):\n', norm_glass)
+    #     norm_pfots = pg.normality(exptData[exptData['Substrate'] == 'PFOTS'],
+    #                            dv='Adhesion_Force',
+    #                            group='Contact_type',
+    #                            method = 'shapiro').round(3)
+    #     norm_pfots['Substrate'] = 'PFOTS'
+    #     print('Shapiro-Wilk test (PFOTS):\n', norm_pfots)
     
-        norm_test = norm_glass.append(norm_pfots)
+    #     norm_test = norm_glass.append(norm_pfots)
         
-        #Bartlett’s test to check the Homogeneity of variances
-        ##import scipy.stats as stats
-        ##w, pvalue = stats.bartlett(d['A'], d['B'], d['C'], d['D'])
-        ##print(w, pvalue)
+    #     #Bartlett’s test to check the Homogeneity of variances
+    #     ##import scipy.stats as stats
+    #     ##w, pvalue = stats.bartlett(d['A'], d['B'], d['C'], d['D'])
+    #     ##print(w, pvalue)
     
-        #Levene's/Bartlett’s Test to check equality of variance (levene or bartlett)
-    ##    from pingouin import homoscedasticity
-        lev_glass = pg.homoscedasticity(exptData[exptData['Substrate'] == 'Glass'],
-                               dv=y_var,
-                               group='Contact_type',
-                               method = 'levene').round(3)
-        lev_glass['Substrate'] = 'Glass'
-        print('Levene Test (glass):\n', lev_glass)
-        lev_pfots = pg.homoscedasticity(exptData[exptData['Substrate'] == 'PFOTS'],
-                               dv='Adhesion_Force',
-                               group='Contact_type',
-                               method = 'levene').round(3)
-        lev_pfots['Substrate'] = 'PFOTS'
-        print('Levene Test (PFOTS):\n', lev_pfots)
+    #     #Levene's/Bartlett’s Test to check equality of variance (levene or bartlett)
+    # ##    from pingouin import homoscedasticity
+    #     lev_glass = pg.homoscedasticity(exptData[exptData['Substrate'] == 'Glass'],
+    #                            dv=y_var,
+    #                            group='Contact_type',
+    #                            method = 'levene').round(3)
+    #     lev_glass['Substrate'] = 'Glass'
+    #     print('Levene Test (glass):\n', lev_glass)
+    #     lev_pfots = pg.homoscedasticity(exptData[exptData['Substrate'] == 'PFOTS'],
+    #                            dv='Adhesion_Force',
+    #                            group='Contact_type',
+    #                            method = 'levene').round(3)
+    #     lev_pfots['Substrate'] = 'PFOTS'
+    #     print('Levene Test (PFOTS):\n', lev_pfots)
     
-        var_eq_test = lev_glass.append(lev_pfots)
+    #     var_eq_test = lev_glass.append(lev_pfots)
     
         # perform multiple pairwise comparison (Tukey HSD)
         # for unbalanced (unequal sample size) data, pairwise_tukey uses Tukey-Kramer test
     ##    from pingouin import pairwise_tukey
         
-        statDf = pd.DataFrame()
+        tukeyDf = pd.DataFrame()
+        normDf = pd.DataFrame()
+        vareqDf = pd.DataFrame()
         #TODO: ALSO USE pairwise_ameshowell() for unequal variances
         # fixed_params = ["Substrate", "Contact_type"]
         df_val_dict = {}
         for var in group_vars:
-            df_val_dict[var] = df[var].unique()
+            df_val_dict[var] = df_clean[var].unique()
             
         for i in range(len(group_vars)):
             between_var = group_vars[i]
@@ -646,25 +660,77 @@ class SummaryAnal:
                 #all possible combinations of fixed values
                 fixed_comb = [a for a in itertools.product(*val_fixed)]                
                 for comb in fixed_comb:
-                    cond = [True]*df.shape[0]
+                    cond = [True]*df_clean.shape[0]
                     #df filter condition based on constant values of var_fixed combinations
                     for k in range(len(var_fixed)):
-                        cond = (df[var_fixed[k]] == comb[k]) & (cond)
-                    tukey_result = pg.pairwise_tukey(data=df[cond],
+                        cond = (df_clean[var_fixed[k]] == comb[k]) & (cond)
+                    #round numeric value    
+                    comb = map(lambda a: round(a,3),comb) \
+                        if comb[0].__class__.__name__ in ['float', 'float64'] \
+                            else comb
+                    # print([a for a in comb], var_fixed, 'comb')
+                    # print(str(dict(zip(var_fixed, comb))))
+                    fixed_param_string = str(dict(zip(var_fixed, comb))).\
+                        replace('{','').replace('}','').replace("'",'')
+
+                    # perform multiple pairwise comparison (Tukey HSD)
+                    # for unbalanced (unequal sample size) data, pairwise_tukey uses Tukey-Kramer test                        
+                    tukey_result = pg.pairwise_tukey(data=df_clean[cond],
                                                      dv= y_var,
                                                      between= between_var,
                                                      effsize = 'r')
-                    tukey_result['Fixed_Parameter'] = str(dict(zip(var_fixed, comb))).\
-                                                      replace('{','').replace('}','').\
-                                                      replace("'",'')
-                    statDf = statDf.append(tukey_result).round(3)
+                    tukey_result['Variable_Parameter'] = between_var
+                    tukey_result['Fixed_Parameter'] = fixed_param_string
+                    tukeyDf = tukeyDf.append(tukey_result.round(3))
+                    
+                    #Shapiro-Wilk test used to check the normal distribution of residuals
+                    norm_result = pg.normality(data = df_clean[cond],
+                                               dv = y_var,
+                                               group = between_var,
+                                               method = 'shapiro')
+                    norm_result['Variable_Parameter'] = between_var
+                    norm_result['Fixed_Parameter'] = fixed_param_string
+                    norm_result.reset_index(inplace = True)
+                    norm_result.rename(columns = {'index': 'Variable_Value'}, inplace = True)
+                    normDf = normDf.append(norm_result.round(3))
+                    
+                    #Levene's/Bartlett’s Test to check equality of variance (levene or bartlett)
+                    vareq_result = pg.homoscedasticity(data = df_clean[cond],
+                                                       dv = y_var,
+                                                       group = between_var,
+                                                       method = 'levene')
+                    vareq_result['Variable_Parameter'] = between_var
+                    vareq_result['Fixed_Parameter'] = fixed_param_string
+                    vareqDf = vareqDf.append(vareq_result.round(3))
+                    
             else:
-                tukey_result = pg.pairwise_tukey(data=df,
+                tukey_result = pg.pairwise_tukey(data=df_clean,
                                                  dv= y_var,
                                                  between= between_var,
                                                  effsize = 'r')
+                tukey_result['Variable_Parameter'] = between_var
                 tukey_result['Fixed_Parameter'] = None
-                statDf = statDf.append(tukey_result).round(3)
+                tukeyDf = tukeyDf.append(tukey_result.round(3))
+                
+                #Shapiro-Wilk test used to check the normal distribution of residuals
+                norm_result = pg.normality(data = df_clean,
+                                           dv = y_var,
+                                           group = between_var,
+                                           method = 'shapiro')
+                norm_result['Variable_Parameter'] = between_var
+                norm_result['Fixed_Parameter'] = None
+                norm_result.reset_index(inplace = True)
+                norm_result.rename(columns = {'index': 'Variable_Value'}, inplace = True)
+                normDf = normDf.append(norm_result.round(3))
+                
+                #Levene's/Bartlett’s Test to check equality of variance (levene or bartlett)
+                vareq_result = pg.homoscedasticity(data = df_clean,
+                                                   dv = y_var,
+                                                   group = between_var,
+                                                   method = 'levene')
+                vareq_result['Variable_Parameter'] = between_var
+                vareq_result['Fixed_Parameter'] = None
+                vareqDf = vareqDf.append(vareq_result.round(3))
                 
         # i = 0
         # for var in group_vars:
@@ -682,18 +748,32 @@ class SummaryAnal:
         #         statDf = statDf.append(m_comp).round(3)
         # ##        print(m_comp)
         #     i += 1
-    
-        print(statDf)
+        # normDf.reset_index(inplace = True)
+        # normDf.rename(columns = {'index': 'Variable_Value'}, inplace = True)
+        # normDf.sort_values('Variable', inplace = True)
+        
+        vareqDf.reset_index(inplace = True)
+        vareqDf.rename(columns = {'index': 'method'}, inplace = True)
+        vareqDf.sort_values(['method', 'Fixed_Parameter'], inplace = True)
+        
+        self.statDf['anova test'] = anovaDf
+        self.statDf['pairwise tukey test'] = tukeyDf
+        self.statDf['normality test'] = normDf
+        self.statDf['variance-equality test'] = vareqDf
+        
+        print(tukeyDf)
+        print(normDf)
+        print(vareqDf)
     
         #save statistics
-        if save == True:
-            writer = pd.ExcelWriter("summary_statistics-" + timestamp + ".xlsx",
-                                    engine='xlsxwriter')
-            statDf.to_excel(writer, sheet_name='pairwise_t-test')
-            aov.to_excel(writer, sheet_name='anova')
-            norm_test.to_excel(writer, sheet_name='norm_test')
-            var_eq_test.to_excel(writer, sheet_name='variance_eq_test')
-            writer.save()
+        # if save == True:
+        #     writer = pd.ExcelWriter("summary_statistics-" + timestamp + ".xlsx",
+        #                             engine='xlsxwriter')
+        #     tukeyDf.to_excel(writer, sheet_name='pairwise_t-test')
+        #     aov.to_excel(writer, sheet_name='anova')
+        #     norm_test.to_excel(writer, sheet_name='norm_test')
+        #     var_eq_test.to_excel(writer, sheet_name='variance_eq_test')
+        #     writer.save()
         
 #     def plotSummary(self, summaryDict, df_filter, df_full, group = "ROI Label",
 #                     marker = "o", figlist = None, leg = None):
@@ -1168,7 +1248,7 @@ class SummaryAnal:
     #     print("save plot", filename)
     
     #combine summary data from experiment list
-    def combineSummaryFromList(self, list_filepath): 
+    def combineSummaryFromList(self, list_filepath, subfolder): 
         # root = tk.Tk()
         # root.withdraw()
         # self.list_filepath, _ =  QFileDialog.getOpenFileName(caption = 
@@ -1190,7 +1270,7 @@ class SummaryAnal:
                                  inplace=True)
                 listunitDict[col_clean] = ' [$' + unit + '$]'
         
-        folder_heirarchy = '/Analysis/Summary/'
+        # folder_heirarchy = '/Analysis/Summary/'
         
         fullDf = None
         
@@ -1198,7 +1278,7 @@ class SummaryAnal:
             exp_data = explistDf.loc[i]
             if exp_data['Data OK?'] == 'Yes' and exp_data['Include Data?'] == 'Yes':
                 summary_folder = list_folderpath + "/" + \
-                    exp_data['Data Folder name'] + folder_heirarchy
+                    exp_data['Data Folder name'] + subfolder
                 with os.scandir(summary_folder) as folder:
                     for file in folder:
                         if file.name.endswith('.txt') and file.is_file():
@@ -1218,17 +1298,28 @@ class SummaryAnal:
         return fullDf
     
     #combine text files from same folder
-    def combineSummaryFromFolder(self, folderpath):
+    def combineSummaryFromFolder(self, folderpath, subfolder):
         fullDf = None        
         with os.scandir(folderpath + '/') as folder:
             for file in folder:
-                if file.name.endswith('.txt') and file.is_file():
+                if file.name.endswith('.txt') and file.is_file() and subfolder == '':
                     summarydf = self.importSummary(file.path)
                     if fullDf.__class__.__name__ == 'NoneType':
                         fullDf = summarydf.copy()
                     else:
                         fullDf = fullDf.append(summarydf, ignore_index=True, 
                                                sort=False)
+                elif file.is_dir() and subfolder != '':
+                    dir_path = folderpath + '/' + file.name + '/'
+                    with os.scandir(dir_path) as dir_inside:
+                        for file_in in dir_inside:
+                            if file_in.name.endswith('.txt') and file_in.is_file():
+                                summarydf = self.importSummary(file_in.path)
+                                if fullDf.__class__.__name__ == 'NoneType':
+                                    fullDf = summarydf.copy()
+                                else:
+                                    fullDf = fullDf.append(summarydf, ignore_index=True, 
+                                                           sort=False)                    
         
         return fullDf
     

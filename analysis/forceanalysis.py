@@ -125,13 +125,14 @@ class ForceAnal(Plotting):
 
     def importData(self, msrListMode):
         if msrListMode == False:
-            self.force_filepath, _ = QFileDialog.getOpenFileName(caption = "Select force data file")
+            force_filepath, _ = QFileDialog.getOpenFileName(caption = "Select force data file")
             # root = tk.Tk()
             # root.withdraw()
             # self.force_filepath =  filedialog.askopenfilename(title =
             #                                              "Select force data file")
             # root.destroy()
-        if self.force_filepath != "":
+        if force_filepath != "":
+            self.force_filepath = force_filepath
             with open(self.force_filepath, 'r') as f: #open force data file
                 x1 = f.read().splitlines()
             

@@ -8,7 +8,6 @@ from PyQt5.QtWidgets import QCheckBox, QLabel, QPushButton, \
      QComboBox, QLineEdit, QSpinBox, QDoubleSpinBox, \
      QGroupBox, QGridLayout, QWidget, QColorDialog
 from PyQt5.QtGui import QColor
-from PyQt5.QtCore import Qt
      
 # %% Configure Plot Window
 class ConfigPlotWindow(QWidget):
@@ -74,8 +73,8 @@ class ConfigPlotWindow(QWidget):
         showTitle.setChecked(True)
         showLegend2 = QCheckBox('Show step legend', self) #region legend
         showLegend2.setChecked(True)
-        fixYBound = QCheckBox('Fix Y Bounds', self) #fix Y axis
-        fixYBound.setChecked(True)
+        self.fixYBound = QCheckBox('Fix Y Bounds', self) #fix Y axis
+        self.fixYBound.setChecked(True)
         zeroShiftY = QCheckBox('Zero shift Y', self) #shift Y axis to zero
         zeroShiftY.setChecked(False)
         self.setYBounds = QPushButton("Update Y Bounds", self) #set y bounds from current figure
@@ -396,7 +395,7 @@ class ConfigPlotWindow(QWidget):
         plotLayout.addWidget(showTitle, 0, 2, 1, 1)        
         plotLayout.addWidget(showLegend2, 1, 2, 1, 1)
         plotLayout.addWidget(zeroShiftY, 2, 2, 1, 1)
-        plotLayout.addWidget(fixYBound, 3, 2, 1, 1)
+        plotLayout.addWidget(self.fixYBound, 3, 2, 1, 1)
         plotLayout.addWidget(self.setYBounds, 4, 2, 1, 1)
         plotLayout.addWidget(xAxisLabel, 0, 0, 1, 1)
         plotLayout.addWidget(xAxisParam, 0, 1, 1, 1)
@@ -432,7 +431,7 @@ class ConfigPlotWindow(QWidget):
         self.plotDict['plot settings']['legend position'] = legendPos
         self.plotDict['plot settings']['show title'] = showTitle
         self.plotDict['plot settings']['show step legend'] = showLegend2
-        self.plotDict['plot settings']['fix y bounds'] = fixYBound
+        self.plotDict['plot settings']['fix y bounds'] = self.fixYBound
         self.plotDict['plot settings']['zero shift Y'] = zeroShiftY
         # self.plotDict['plot settings']['plot range'] = slice(0,1) #CHECK!!
         

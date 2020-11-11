@@ -9,7 +9,7 @@ import gc
 import os
 import time
 import cv2
-from PyQt5.QtCore import Qt, QAbstractTableModel
+from PyQt5.QtCore import Qt
 # from PyQt5.QtGui import QSizePolicy
 from PyQt5.QtWidgets import QWidget, QCheckBox, QLabel, QPushButton, QGroupBox,\
     QComboBox, QSpinBox, QGridLayout, QDialog, QLineEdit, QDoubleSpinBox,\
@@ -17,7 +17,6 @@ from PyQt5.QtWidgets import QWidget, QCheckBox, QLabel, QPushButton, QGroupBox,\
 from source.summary.summaryanalyze import SummaryAnal
 # from source.threads.summplotthread import 
 import pandas as pd
-from tabulate import tabulate
      
 class SummaryWindow(QWidget):
     
@@ -52,11 +51,17 @@ class SummaryWindow(QWidget):
         self.subfolder =  QLineEdit(self)
         self.subfolder.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
         self.subfolder.setText('/Analysis/Summary/')
-        self.paramDict['Subfolder'] = self.subfolder
-        
+        self.paramDict['Subfolder'] = self.subfolder    
+              
         #import data
         importButton = QPushButton("Select..", self)    
         importButton.clicked.connect(lambda: self.import_data(dataSource))
+        
+        self.variable_dialog_init()
+        
+        #create variable
+        createVar = QPushButton("Create Variable..", self)    
+        createVar.clicked.connect(self.makeVarDialog.show)
         
         self.filenameLabel = QLabel("", self)
         self.filenameLabel.setWordWrap(True)
@@ -259,8 +264,9 @@ class SummaryWindow(QWidget):
         importLayout.addWidget(dataSource, 0, 1, 1, 1)
         importLayout.addWidget(subfolderLabel, 1, 0, 1, 1)
         importLayout.addWidget(self.subfolder, 1, 1, 1, 2)
+        importLayout.addWidget(createVar, 2, 0, 1, 2)
         importLayout.addWidget(importButton, 0, 2, 1, 1)
-        importLayout.addWidget(self.filenameLabel, 0, 3, 2, 2)
+        importLayout.addWidget(self.filenameLabel, 0, 3, 3, 2)
         
         plotGroupBox = QGroupBox("Plot Data")
         plotGroupBox.setStyleSheet("QGroupBox { font-weight: bold; } ")
@@ -489,7 +495,7 @@ class SummaryWindow(QWidget):
             if self.filepath != "":
                 self.folderpath = os.path.dirname(self.filepath)
                 self.datadf = self.summary.importSummary(self.filepath)
-                self.create_var('test var [mPa^2]', '''['Pulloff Force']/['Pulloff Area']''') #CHECK
+                # self.create_var('test var [mPa^2]', '''['Pulloff Force']/['Pulloff Area']''') #CHECK
                 self.update_dropdown_params()
             # if self.summary.summary_filepath != "":
                 self.datadf_filtered = self.summary.filter_df(self.datadf, 
@@ -714,18 +720,92 @@ class SummaryWindow(QWidget):
 
     # def close_summary(self):
     #     self.sumDialog.done(0)
-   #create new variable
-    def create_var(self, var_name, formula):
-        df = self.datadf.copy()
-        self.datadf[var_name] = eval(formula.replace('[','df['))
-        unit = var_name.split('[')[-1].split(']')[0]
-        if unit == var_name:
-            self.summary.unitDict[var_name] = ''
-        else:
-            col_clean = var_name.split('[')[0].strip()
-            self.datadf.rename(columns = {var_name : col_clean},
-                               inplace=True)
-            self.summary.unitDict[col_clean] = ' [$' + unit + '$]'
+    
+    def variable_dialog_init(self):
+        self.makeVarDialog = QDialog(self)
+        self.makeVarDialog.setWindowTitle("Create New Variable")
+        self.makeVarDialog.resize(468, 69)
+        
+        self.makeVarLayout = QGridLayout(self.makeVarDialog)
+        
+        varNameLabel = QLabel('Variable Name')
+        formulaLabel = QLabel('Formula')
+        
+        self.makeVarAdd = QPushButton("ADD")
+        self.makeVarAdd.clicked.connect(self.vardialog_add_widgets)
+        
+        self.makeVarOk = QPushButton("OK")
+        self.makeVarOk.clicked.connect(self.close_variable_dialog)
+        
+        self.makeVarLayout.addWidget(varNameLabel, 0, 0, 1, 1)
+        self.makeVarLayout.addWidget(formulaLabel, 0, 1, 1, 1)
+        self.makeVarLayout.addWidget(self.makeVarAdd, 1, 0, 1, 1)
+        self.makeVarLayout.addWidget(self.makeVarOk, 1, 1, 1, 1)
+        
+        self.newVarDict = {} #variable name and formula dictionary
+        self.newVarNum = 0 #number of defined varaibles (or rows)
+        
+        # self.vardialog_add_widgets()
+    
+    #add row of new variable input widgets
+    def vardialog_add_widgets(self):
+        self.newVarNum += 1
+        self.newVarDict[self.newVarNum] = ['', '']
+        
+        varName =  QLineEdit()
+        formula =  QLineEdit()
+        
+        varName.textChanged.connect(lambda: self.update_varname_dict(self.newVarNum,
+                                                                     varName.text(),
+                                                                    formula.text()))
+        formula.textChanged.connect(lambda: self.update_varname_dict(self.newVarNum,
+                                                                     varName.text(),
+                                                                    formula.text()))
+
+        varPlus = QPushButton("+")
+        varMinus = QPushButton("-")
+        
+        widget_list = [varName, formula, varPlus, varMinus]
+        
+        varPlus.clicked.connect(lambda: self.add_remove_newvar('+', widget_list, 
+                                                               self.newVarNum))
+        varMinus.clicked.connect(lambda: self.add_remove_newvar('-', widget_list,
+                                                                self.newVarNum))
+        
+        self.makeVarLayout.addWidget(varName, self.newVarNum, 0, 1, 1)
+        self.makeVarLayout.addWidget(formula, self.newVarNum, 1, 1, 1)
+        self.makeVarLayout.addWidget(varPlus, self.newVarNum, 2, 1, 1)
+        self.makeVarLayout.addWidget(varMinus, self.newVarNum, 3, 1, 1)
+        self.makeVarLayout.addWidget(self.makeVarAdd, self.newVarNum + 1, 0, 1, 1)
+        self.makeVarLayout.addWidget(self.makeVarOk, self.newVarNum + 1, 1, 1, 1)
+        
+    def add_remove_newvar(self, action, wid_list, rownum):
+        if action == '+':
+            self.vardialog_add_widgets()
+        elif action == '-':
+            for wid in wid_list:
+                self.makeVarLayout.removeWidget(wid)
+                wid.deleteLater()
+            self.newVarNum -= 1
+            del self.newVarDict[rownum]
+            self.makeVarDialog.resize(468, 69)
+            
+    
+    def update_varname_dict(self, rownum, var_name, formula):
+        if var_name != '' and formula != '':
+            self.newVarDict[rownum] = [var_name, formula]
+        
+    
+    def close_variable_dialog(self):
+        for key in self.newVarDict.keys():
+            self.datadf = self.summary.create_var(var_name = self.newVarDict[key][0],
+                                                  formula = self.newVarDict[key][1],
+                                                  datadf = self.datadf_filtered)
+        self.update_dropdown_params()
+
+        self.datadf_filtered = self.summary.filter_df(self.datadf, 
+                                                      self.filter_dict)
+        self.makeVarDialog.done(0)
                 
     def filter_dialog_init(self):
         self.filterDialog = QDialog(self)

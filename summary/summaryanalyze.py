@@ -1,18 +1,10 @@
 import matplotlib
-from matplotlib import rc
 import matplotlib.pyplot as plt
 import time
-from datetime import datetime
 import os
 import os.path
-from tkinter import filedialog
-import tkinter as tk
-import ast
-import openpyxl
 import pandas as pd
-from pandas.io.json import json_normalize
 import numpy as np
-from PyQt5.QtWidgets import QFileDialog
 import seaborn as sns
 import cv2
 import pingouin as pg
@@ -321,48 +313,62 @@ class SummaryAnal:
             elif cond == 'less than or equal to':
                 df_final = df_final[df_final[col] <= val]
         return df_final
-            
-    def get_units(self, var, df):
-        if var in ["Adhesion_Force", "Adhesion_Preload",
-                   "Friction_Force", "Friction_Preload"]: #force
-            unit = ' $(μN)$'
-        elif var in ["Max_Area", "Pulloff_Area",
-                     "Friction_Area", "ROI_Max_Area",
-                     "ROI_Pulloff_Area", "Max_Bounding_Area"]: #area
-            unit = ' $(' + df["Area_Units"].iloc[0] + ')$'
-        elif var in ["Max_Length", "Pulloff_Length",
-                     "ROI_Max_Length", "ROI_Pulloff_Length",
-                     "Max_Bounding_Perimeter", "Max_Bounding_Length", 
-                     "Max_Bounding_Width"]: #length
-            unit = ' $(' + df["Area_Units"].iloc[0][:-2] + ')$'
-        elif var in ["Detachment Speed", "Attachment Speed",
-                     "Sliding Speed"]: #speed
-            unit = ' $(μm/s)$'
-        elif var in ["Contact_Time"]: #time
-            unit = ' $(s)$'
-        elif var in ["Slope"]: #slope
-            unit = self.slope_unit
-        elif var in ["Adhesion_Stress", "Friction_Stress", "Normalized_Adhesion_Force"]:
-            unit = ' $(μN' + '/' + df["Area_Units"].iloc[0] + ')$'
-        elif var in ["Beam_Spring_Constant"]:
-            unit = ' $(μN/μm)$'
-        elif var in ["Initial_Deformation", "Pulloff_Deformation"]:
-            unit = ' $(μm)$'
-        elif var in ["Adhesion_Energy"]:
-            unit = ' $(pJ)$'
-        elif var in ["Normalized_Adhesion_Energy"]:
-            unit = ' $(J/m^2)$'
-        elif var in ["Contact_Angle-Water", "Contact_Angle-Hexadecane"]:
-            unit = r' $(°)$'
-        elif var in ["Temperature"]:
-            unit = r' $(°C)$'
-        elif var in ["Humidity"]:
-            unit = ' $(%)$'
-        elif var in ["Weight"]:
-            unit = ' $(g)$'
+    
+   #create new variable
+    def create_var(self, var_name, formula, datadf):
+        df = datadf.copy()
+        df[var_name] = eval(formula.replace('[','df['))
+        unit = var_name.split('[')[-1].split(']')[0]
+        if unit == var_name:
+            self.unitDict[var_name] = ''
         else:
-            unit = ''
-        return unit
+            col_clean = var_name.split('[')[0].strip()
+            df.rename(columns = {var_name : col_clean},
+                               inplace=True)
+            self.unitDict[col_clean] = ' [$' + unit + '$]'
+        return df
+            
+    # def get_units(self, var, df):
+    #     if var in ["Adhesion_Force", "Adhesion_Preload",
+    #                "Friction_Force", "Friction_Preload"]: #force
+    #         unit = ' $(μN)$'
+    #     elif var in ["Max_Area", "Pulloff_Area",
+    #                  "Friction_Area", "ROI_Max_Area",
+    #                  "ROI_Pulloff_Area", "Max_Bounding_Area"]: #area
+    #         unit = ' $(' + df["Area_Units"].iloc[0] + ')$'
+    #     elif var in ["Max_Length", "Pulloff_Length",
+    #                  "ROI_Max_Length", "ROI_Pulloff_Length",
+    #                  "Max_Bounding_Perimeter", "Max_Bounding_Length", 
+    #                  "Max_Bounding_Width"]: #length
+    #         unit = ' $(' + df["Area_Units"].iloc[0][:-2] + ')$'
+    #     elif var in ["Detachment Speed", "Attachment Speed",
+    #                  "Sliding Speed"]: #speed
+    #         unit = ' $(μm/s)$'
+    #     elif var in ["Contact_Time"]: #time
+    #         unit = ' $(s)$'
+    #     elif var in ["Slope"]: #slope
+    #         unit = self.slope_unit
+    #     elif var in ["Adhesion_Stress", "Friction_Stress", "Normalized_Adhesion_Force"]:
+    #         unit = ' $(μN' + '/' + df["Area_Units"].iloc[0] + ')$'
+    #     elif var in ["Beam_Spring_Constant"]:
+    #         unit = ' $(μN/μm)$'
+    #     elif var in ["Initial_Deformation", "Pulloff_Deformation"]:
+    #         unit = ' $(μm)$'
+    #     elif var in ["Adhesion_Energy"]:
+    #         unit = ' $(pJ)$'
+    #     elif var in ["Normalized_Adhesion_Energy"]:
+    #         unit = ' $(J/m^2)$'
+    #     elif var in ["Contact_Angle-Water", "Contact_Angle-Hexadecane"]:
+    #         unit = r' $(°)$'
+    #     elif var in ["Temperature"]:
+    #         unit = r' $(°C)$'
+    #     elif var in ["Humidity"]:
+    #         unit = ' $(%)$'
+    #     elif var in ["Weight"]:
+    #         unit = ' $(g)$'
+    #     else:
+    #         unit = ''
+    #     return unit
 
     def get_errordata(self, var, df): #get errorbar data
         if var in ["Adhesion_Force", "Adhesion_Preload"]:
@@ -586,13 +592,12 @@ class SummaryAnal:
             
         group_vars = [a for a in [x_var, hue_var, row_var, col_var]  if a != 'None']
         
-        #Two-way ANOVA test
-        #TODO: also use welch_anova() for unequal variances
-    ##    from pingouin import anova
+        #N-way ANOVA test for equal variances
         anovaDf = pg.anova(data = df_clean,
                            dv = y_var,
                            between = group_vars).round(3)
         print('ANOVA:\n', anovaDf)
+        
     
         # Shapiro-Wilk test used to check the normal distribution of residuals
     
@@ -641,11 +646,12 @@ class SummaryAnal:
         # perform multiple pairwise comparison (Tukey HSD)
         # for unbalanced (unequal sample size) data, pairwise_tukey uses Tukey-Kramer test
     ##    from pingouin import pairwise_tukey
-        
+        welchAnovaDf = pd.DataFrame()
+        gameshowellDf = pd.DataFrame() 
         tukeyDf = pd.DataFrame()
         normDf = pd.DataFrame()
         vareqDf = pd.DataFrame()
-        #TODO: ALSO USE pairwise_ameshowell() for unequal variances
+
         # fixed_params = ["Substrate", "Contact_type"]
         df_val_dict = {}
         for var in group_vars:
@@ -672,9 +678,29 @@ class SummaryAnal:
                     # print(str(dict(zip(var_fixed, comb))))
                     fixed_param_string = str(dict(zip(var_fixed, comb))).\
                         replace('{','').replace('}','').replace("'",'')
-
-                    # perform multiple pairwise comparison (Tukey HSD)
-                    # for unbalanced (unequal sample size) data, pairwise_tukey uses Tukey-Kramer test                        
+                    
+                    #one-way welch anova test for unequal variances
+                    welch_anova_result = pg.welch_anova(data=df_clean[cond],
+                                                        dv= y_var,
+                                                        between= between_var)
+                    welch_anova_result['Variable_Parameter'] = between_var
+                    welch_anova_result['Fixed_Parameter'] = fixed_param_string
+                    welchAnovaDf = welchAnovaDf.append(welch_anova_result.round(3))
+                    
+                    # perform multiple pairwise comparison
+                    
+                    #Games-Howell test. Suitable to be used along with Welch Anova
+                    #suitable for unequal variances
+                    gameshowell_result = pg.pairwise_gameshowell(data=df_clean[cond],
+                                                                 dv= y_var,
+                                                                 between= between_var,
+                                                                 effsize = 'r')
+                    gameshowell_result['Variable_Parameter'] = between_var
+                    gameshowell_result['Fixed_Parameter'] = fixed_param_string
+                    gameshowellDf = gameshowellDf.append(gameshowell_result.round(3))
+                                        
+                    #Tukey-HSD test for balanced group and equal variances. suitable for classic ANOVA
+                    # for unbalanced (unequal sample size) data, pairwise_tukey uses Tukey-Kramer test
                     tukey_result = pg.pairwise_tukey(data=df_clean[cond],
                                                      dv= y_var,
                                                      between= between_var,
@@ -683,27 +709,77 @@ class SummaryAnal:
                     tukey_result['Fixed_Parameter'] = fixed_param_string
                     tukeyDf = tukeyDf.append(tukey_result.round(3))
                     
-                    #Shapiro-Wilk test used to check the normal distribution of residuals
-                    norm_result = pg.normality(data = df_clean[cond],
-                                               dv = y_var,
-                                               group = between_var,
-                                               method = 'shapiro')
-                    norm_result['Variable_Parameter'] = between_var
-                    norm_result['Fixed_Parameter'] = fixed_param_string
-                    norm_result.reset_index(inplace = True)
-                    norm_result.rename(columns = {'index': 'Variable_Value'}, inplace = True)
-                    normDf = normDf.append(norm_result.round(3))
+                    #univariate normality test
+                    #TODO: simpligy logic. results are repetative here
+                    #Shapiro-Wilk test (suitable for small sample size)
+                    norm_result_shap = pg.normality(data = df_clean[cond],
+                                                    dv = y_var,
+                                                    group = between_var,
+                                                    method = 'shapiro')
+                    norm_result_shap['Variable_Parameter'] = between_var
+                    norm_result_shap['Fixed_Parameter'] = fixed_param_string
+                    norm_result_shap['method'] = 'Shapiro-Wilk'
+                    norm_result_shap.reset_index(inplace = True)
+                    norm_result_shap.rename(columns = {'index': 'Variable_Value'}, 
+                                            inplace = True)
+                    normDf = normDf.append(norm_result_shap.round(3))
                     
-                    #Levene's/Bartlett’s Test to check equality of variance (levene or bartlett)
-                    vareq_result = pg.homoscedasticity(data = df_clean[cond],
-                                                       dv = y_var,
-                                                       group = between_var,
-                                                       method = 'levene')
-                    vareq_result['Variable_Parameter'] = between_var
-                    vareq_result['Fixed_Parameter'] = fixed_param_string
-                    vareqDf = vareqDf.append(vareq_result.round(3))
+                    #omnibus test (suitable for large sample sizes)
+                    try:
+                        norm_result_omni = pg.normality(data = df_clean[cond],
+                                                        dv = y_var,
+                                                        group = between_var,
+                                                        method = 'normaltest')
+                        norm_result_omni['Variable_Parameter'] = between_var
+                        norm_result_omni['Fixed_Parameter'] = fixed_param_string
+                        norm_result_omni['method'] = 'Omnibus'
+                        norm_result_omni.reset_index(inplace = True)
+                        norm_result_omni.rename(columns = {'index': 'Variable_Value'},
+                                                inplace = True)
+                        normDf = normDf.append(norm_result_omni.round(3))
+                    except Exception as e:
+                        print(e)
+                    
+                    #check equality of variance 
+                    #Levene's test (more robust to departure from normality)
+                    vareq_result_lev = pg.homoscedasticity(data = df_clean[cond],
+                                                           dv = y_var,
+                                                           group = between_var,
+                                                           method = 'levene')
+                    vareq_result_lev['Variable_Parameter'] = between_var
+                    vareq_result_lev['Fixed_Parameter'] = fixed_param_string
+                    
+                    #Bartlett’s Test
+                    vareq_result_bar = pg.homoscedasticity(data = df_clean[cond],
+                                                           dv = y_var,
+                                                           group = between_var,
+                                                           method = 'bartlett')
+                    vareq_result_bar['Variable_Parameter'] = between_var
+                    vareq_result_bar['Fixed_Parameter'] = fixed_param_string
+                    
+                    vareqDf = vareqDf.append(vareq_result_lev.round(3))
+                    vareqDf = vareqDf.append(vareq_result_bar.round(3))
                     
             else:
+                #one-way welch anova test for unequal variances
+                welch_anova_result = pg.welch_anova(data=df_clean,
+                                                    dv= y_var,
+                                                    between= between_var)
+                welch_anova_result['Variable_Parameter'] = between_var
+                welch_anova_result['Fixed_Parameter'] = None
+                welchAnovaDf = welchAnovaDf.append(welch_anova_result.round(3))
+
+                #Games-Howell test. Suitable to be used along with Welch Anova
+                #suitable for unequal variances
+                gameshowell_result = pg.pairwise_gameshowell(data=df_clean,
+                                                             dv= y_var,
+                                                             between= between_var,
+                                                             effsize = 'r')
+                gameshowell_result['Variable_Parameter'] = between_var
+                gameshowell_result['Fixed_Parameter'] = None
+                gameshowellDf = gameshowellDf.append(gameshowell_result.round(3))
+                
+                #Tukey-HSD test
                 tukey_result = pg.pairwise_tukey(data=df_clean,
                                                  dv= y_var,
                                                  between= between_var,
@@ -712,25 +788,58 @@ class SummaryAnal:
                 tukey_result['Fixed_Parameter'] = None
                 tukeyDf = tukeyDf.append(tukey_result.round(3))
                 
-                #Shapiro-Wilk test used to check the normal distribution of residuals
-                norm_result = pg.normality(data = df_clean,
-                                           dv = y_var,
-                                           group = between_var,
-                                           method = 'shapiro')
-                norm_result['Variable_Parameter'] = between_var
-                norm_result['Fixed_Parameter'] = None
-                norm_result.reset_index(inplace = True)
-                norm_result.rename(columns = {'index': 'Variable_Value'}, inplace = True)
-                normDf = normDf.append(norm_result.round(3))
+                #univariate normality test
+                #Shapiro-Wilk test (suitable for small sample size)
+                norm_result_shap = pg.normality(data = df_clean,
+                                                dv = y_var,
+                                                group = between_var,
+                                                method = 'shapiro')
+                norm_result_shap['Variable_Parameter'] = between_var
+                norm_result_shap['Fixed_Parameter'] = None
+                norm_result_shap['method'] = 'Shapiro-Wilk'
+                norm_result_shap.reset_index(inplace = True)
+                norm_result_shap.rename(columns = {'index': 'Variable_Value'}, 
+                                        inplace = True)
+                normDf = normDf.append(norm_result_shap.round(3))
                 
-                #Levene's/Bartlett’s Test to check equality of variance (levene or bartlett)
-                vareq_result = pg.homoscedasticity(data = df_clean,
-                                                   dv = y_var,
-                                                   group = between_var,
-                                                   method = 'levene')
-                vareq_result['Variable_Parameter'] = between_var
-                vareq_result['Fixed_Parameter'] = None
-                vareqDf = vareqDf.append(vareq_result.round(3))
+                #omnibus test (suitable for large sample sizes)
+                try:
+                    norm_result_omni = pg.normality(data = df_clean,
+                                                    dv = y_var,
+                                                    group = between_var,
+                                                    method = 'normaltest')
+                    norm_result_omni['Variable_Parameter'] = between_var
+                    norm_result_omni['Fixed_Parameter'] = None
+                    norm_result_omni['method'] = 'Omnibus'
+                    norm_result_omni.reset_index(inplace = True)
+                    norm_result_omni.rename(columns = {'index': 'Variable_Value'},
+                                            inplace = True)
+                    normDf = normDf.append(norm_result_omni.round(3))
+                except Exception as e:
+                    print(e)                
+                
+                
+                
+                
+                #test equality of variances 
+                #Levene's test (more robust to departure from normality)
+                vareq_result_lev = pg.homoscedasticity(data = df_clean,
+                                                       dv = y_var,
+                                                       group = between_var,
+                                                       method = 'levene')
+                vareq_result_lev['Variable_Parameter'] = between_var
+                vareq_result_lev['Fixed_Parameter'] = None
+                
+                #Bartlett’s Test
+                vareq_result_bar = pg.homoscedasticity(data = df_clean,
+                                                       dv = y_var,
+                                                       group = between_var,
+                                                       method = 'bartlett')
+                vareq_result_bar['Variable_Parameter'] = between_var
+                vareq_result_bar['Fixed_Parameter'] = None
+                
+                vareqDf = vareqDf.append(vareq_result_lev.round(3))
+                vareqDf = vareqDf.append(vareq_result_bar.round(3))
                 
         # i = 0
         # for var in group_vars:
@@ -757,6 +866,7 @@ class SummaryAnal:
         vareqDf.sort_values(['method', 'Fixed_Parameter'], inplace = True)
         
         self.statDf['anova test'] = anovaDf
+        self.statDf['welch anova test'] = welchAnovaDf
         self.statDf['pairwise tukey test'] = tukeyDf
         self.statDf['normality test'] = normDf
         self.statDf['variance-equality test'] = vareqDf

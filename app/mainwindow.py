@@ -72,7 +72,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
     def __init__(self, wd, ht):
         super().__init__()
         self.setGeometry(0, 0, wd, ht)
-        self.appVersion = "AdheSee v1.4"
+        self.appVersion = "Buggee v1.4"
         self.setWindowTitle(self.appVersion)
         self.layout = QGridLayout()
         self.layout.setColumnMinimumWidth(0,650)
@@ -144,7 +144,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         plot.setStatusTip("Configure plot and force curves")
         plot.triggered.connect(self.configPlotWindow.show_window)
         self.configPlotWindow.plotRangeButton.clicked.connect(self.setPlotRange)
-        self.configPlotWindow.setYBounds.clicked.connect(self.forceData.updateYBounds)
+        self.configPlotWindow.setYBounds.clicked.connect(self.updatePlotYRange)
         self.configPlotWindow.okBtn.clicked.connect(self.configurePlot)
         self.configPlotWindow.updateBtn.clicked.connect(self.plotSequence)
 
@@ -2994,6 +2994,14 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
     def updateCursorRange(self, label): #update range of datafile analysis params
         if self.forceData.force_filepath != "":
             self.forceData.setCursorPosition(label)
+    
+    #update plot range automatically
+    def updatePlotYRange(self):
+        checked_state = self.configPlotWindow.fixYBound.isChecked()
+        self.configPlotWindow.fixYBound.setChecked(False)
+        self.plotSequence()        
+        self.forceData.updateYBounds()
+        self.configPlotWindow.fixYBound.setChecked(checked_state)
         
     # def init_plotconfig(self): #initialize plot configuration window
     #     pass
@@ -4106,6 +4114,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
             self.sumDialog.close()
             self.sumDialog.dataDialog.done(0)
             self.sumDialog.filterDialog.done(0)
+            self.sumDialog.makeVarDialog.done(0)
             
             QApplication.exit()
         else:

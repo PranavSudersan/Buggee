@@ -14,7 +14,7 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import QWidget, QCheckBox, QLabel, QPushButton, QGroupBox,\
     QComboBox, QSpinBox, QGridLayout, QDialog, QLineEdit, QDoubleSpinBox,\
         QSizePolicy, QFileDialog, QTabWidget, QTableWidgetItem, QTableWidget,\
-            QListWidget, QAbstractItemView
+            QListWidget, QAbstractItemView, QTextEdit
 from source.summary.summaryanalyze import SummaryAnal
 # from source.threads.summplotthread import 
 import pandas as pd
@@ -69,6 +69,12 @@ class SummaryWindow(QWidget):
         #create pivot table
         createPivot = QPushButton("Pivot..", self)    
         createPivot.clicked.connect(self.pivotDialog.show)
+        
+        self.melt_dialog_init()
+        
+        #melt data (reshape)
+        meltData = QPushButton("Reshape..", self)    
+        meltData.clicked.connect(self.meltDialog.show)
         
         self.filenameLabel = QLabel("", self)
         self.filenameLabel.setWordWrap(True)
@@ -273,6 +279,7 @@ class SummaryWindow(QWidget):
         importLayout.addWidget(self.subfolder, 1, 1, 1, 2)
         importLayout.addWidget(createVar, 2, 0, 1, 1)
         importLayout.addWidget(createPivot, 2, 1, 1, 1)
+        importLayout.addWidget(meltData, 2, 2, 1, 1)
         importLayout.addWidget(importButton, 0, 2, 1, 1)
         importLayout.addWidget(self.filenameLabel, 0, 3, 3, 2)
         
@@ -445,7 +452,7 @@ class SummaryWindow(QWidget):
                 wid.clear()
                 wid.addItems(var_list)
         
-        list_wids = [self.pivotVars] #list widgets
+        list_wids = [self.pivotVars, self.varListWid, self.meltVars] #list widgets
         for wid in list_wids:
             if self.varlist != [wid.item(i).text() for i in range(wid.count())]:
                 wid.clear()
@@ -757,10 +764,23 @@ class SummaryWindow(QWidget):
         self.makeVarOk = QPushButton("OK")
         self.makeVarOk.clicked.connect(self.close_variable_dialog)
         
+        #variable list dialog
+        self.varListWid = DraggableListWidget(copyItem = True)
+        
+        varListDlg = QDialog(self)
+        varListDlg.setWindowTitle("Drag and drop variable")
+        varListDlg.resize(250, 400)
+        layout = QGridLayout(varListDlg)
+        layout.addWidget(self.varListWid, 0, 0, 1, 1)
+        
+        
+        self.varListBtn = QPushButton("Variables..")
+        self.varListBtn.clicked.connect(varListDlg.show)
+        
         self.makeVarLayout.addWidget(varNameLabel, 0, 0, 1, 1)
         self.makeVarLayout.addWidget(formulaLabel, 0, 1, 1, 1)
-        self.makeVarLayout.addWidget(self.makeVarAdd, 1, 0, 1, 1)
-        self.makeVarLayout.addWidget(self.makeVarOk, 1, 1, 1, 1)
+        self.makeVarLayout.addWidget(self.makeVarAdd, 1, 1, 1, 1)
+        self.makeVarLayout.addWidget(self.makeVarOk, 1, 0, 1, 1)
         
         self.newVarDict = {} #variable name and formula dictionary
         self.newVarNum = 0 #number of defined varaibles (or rows)
@@ -768,20 +788,19 @@ class SummaryWindow(QWidget):
         # self.vardialog_add_widgets()
     
     #add row of new variable input widgets
-    #TODO: neat way to select variable into formula (using drag maybe)
     def vardialog_add_widgets(self):
         self.newVarNum += 1
         self.newVarDict[self.newVarNum] = ['', '']
         
         varName =  QLineEdit()
-        formula =  QLineEdit()
+        formula =  QTextEdit()
         
         varName.textChanged.connect(lambda: self.update_varname_dict(self.newVarNum,
                                                                      varName.text(),
-                                                                    formula.text()))
+                                                                    formula.toPlainText()))
         formula.textChanged.connect(lambda: self.update_varname_dict(self.newVarNum,
                                                                      varName.text(),
-                                                                    formula.text()))
+                                                                    formula.toPlainText()))
 
         varPlus = QPushButton("+")
         varMinus = QPushButton("-")
@@ -797,7 +816,8 @@ class SummaryWindow(QWidget):
         self.makeVarLayout.addWidget(formula, self.newVarNum, 1, 1, 1)
         self.makeVarLayout.addWidget(varPlus, self.newVarNum, 2, 1, 1)
         self.makeVarLayout.addWidget(varMinus, self.newVarNum, 3, 1, 1)
-        self.makeVarLayout.addWidget(self.makeVarAdd, self.newVarNum + 1, 0, 1, 1)
+        self.makeVarLayout.addWidget(self.varListBtn, self.newVarNum + 1, 0, 1, 1)
+        # self.makeVarLayout.addWidget(self.makeVarAdd, self.newVarNum + 1, 2, 1, 2)
         self.makeVarLayout.addWidget(self.makeVarOk, self.newVarNum + 1, 1, 1, 1)
         
     def add_remove_newvar(self, action, wid_list, rownum):
@@ -809,6 +829,10 @@ class SummaryWindow(QWidget):
                 wid.deleteLater()
             self.newVarNum -= 1
             del self.newVarDict[rownum]
+            if self.newVarNum == 0:
+                self.makeVarLayout.removeWidget(self.varListBtn)
+                self.makeVarLayout.addWidget(self.makeVarAdd, 1, 1, 1, 1)
+                self.makeVarLayout.addWidget(self.makeVarOk, 1, 0, 1, 1)
             self.makeVarDialog.resize(468, 69)
             
     
@@ -827,8 +851,56 @@ class SummaryWindow(QWidget):
         # self.datadf_filtered = self.summary.filter_df(self.datadf, 
         #                                               self.filter_dict)
         self.makeVarDialog.done(0)
-    
-    #TODO: create pivot dialog and melt dialog
+
+
+    #melt dialog to reshape datafame from wide-form to long-form
+    def melt_dialog_init(self):
+        self.meltDialog = QDialog(self)
+        self.meltDialog.setWindowTitle("Reshape data")
+        self.meltDialog.resize(400, 400)
+        
+        layout = QGridLayout(self.meltDialog)
+        
+        meltVarsLabel = QLabel('VARIABLES')
+        self.meltVars = DraggableListWidget(copyItem = False)
+        
+        rowLabel = QLabel('ROWS')
+        self.meltRowVars = DraggableListWidget(copyItem = False)
+        
+        varNameLabel = QLabel('VARIABLE NAME')
+        self.meltVarName = QLineEdit()
+        
+        valueNameLabel = QLabel('VALUE NAME')
+        self.meltValueName = QLineEdit()
+        
+        okbutton = QPushButton("OK")
+        okbutton.clicked.connect(self.close_melt_dialog)
+
+        layout.addWidget(meltVarsLabel, 0, 0, 1, 1)
+        layout.addWidget(self.meltVars, 1, 0, 5, 1)
+        layout.addWidget(rowLabel, 0, 1, 1, 1)
+        layout.addWidget(self.meltRowVars, 1, 1, 1, 1)
+        layout.addWidget(varNameLabel, 2, 1, 1, 1)
+        layout.addWidget(self.meltVarName, 3, 1, 1, 1)
+        layout.addWidget(valueNameLabel, 4, 1, 1, 1)
+        layout.addWidget(self.meltValueName, 5, 1, 1, 1)
+        layout.addWidget(okbutton, 6, 0, 1, 2)
+
+    def close_melt_dialog(self):
+        row_list = [self.meltRowVars.item(i).text() for i in range(self.meltRowVars.count())]
+       
+        if row_list != []:
+            meltDict = {'Variable columns': row_list,
+                        'Variable name': self.meltVarName.text(),
+                        'Value name': self.meltValueName.text()}
+            
+            self.datadf_filtered = self.summary.melt_df(df = self.datadf_filtered,
+                                                        melt_dict = meltDict)
+            self.update_dropdown_params()
+        self.meltDialog.done(0)
+        
+    #pivot table dialog
+    #TODO: drag variable to trash
     def pivot_dialog_init(self):
         self.pivotDialog = QDialog(self)
         self.pivotDialog.setWindowTitle("Pivot data")
@@ -837,16 +909,16 @@ class SummaryWindow(QWidget):
         layout = QGridLayout(self.pivotDialog)
         
         pivotVarsLabel = QLabel('VARIABLES')
-        self.pivotVars = DraggableListWidget()
+        self.pivotVars = DraggableListWidget(copyItem = False)
         
         rowLabel = QLabel('ROWS')
-        self.pivotRowVars = DraggableListWidget()
+        self.pivotRowVars = DraggableListWidget(copyItem = False)
         
         columnLabel = QLabel('COLUMNS')
-        self.pivotColumnVars = DraggableListWidget()
+        self.pivotColumnVars = DraggableListWidget(copyItem = False)
         
         valueLabel = QLabel('VALUES')
-        self.pivotValueVars = DraggableListWidget()
+        self.pivotValueVars = DraggableListWidget(copyItem = False)
         
         groupbyLabel = QLabel('GROUP BY')
         self.pivotGroupFuncs = QComboBox(self.pivotDialog)
@@ -1008,17 +1080,34 @@ class SummaryWindow(QWidget):
         self.datadf_filtered = self.summary.filter_df(self.datadf, self.filter_dict)
         # self.summaryDict['filter'] = self.filter_dict
         self.filterDialog.done(0)
+        
+#draggable list widget
+class DraggableTextListWidget(QListWidget):
+    def mimeData(self, items):
+        md = super().mimeData(items)
+        text = ''.join([it.text() for it in items])
+        md.setText(text)
+        return md
 
 #draggable list widget
 class DraggableListWidget(QListWidget):
-    def __init__(self):
+    def __init__(self, copyItem):
         super().__init__()
         # self.setIconSize(QtCore.QSize(124, 124))
         self.setDragDropMode(QAbstractItemView.DragDrop)
-        self.setDefaultDropAction(Qt.MoveAction) # this was the magic line
+        if copyItem == True:
+            self.setDefaultDropAction(Qt.CopyAction)
+        else:
+            self.setDefaultDropAction(Qt.MoveAction)
+        
         self.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.setAcceptDrops(True)
 
+    def mimeData(self, items):
+        md = super().mimeData(items)
+        text = "['" + ''.join([it.text() for it in items]) + "']"
+        md.setText(text)
+        return md
 
     def dragEnterEvent(self, event):
         if event.mimeData().hasUrls():

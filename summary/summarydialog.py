@@ -9,11 +9,12 @@ import gc
 import os
 import time
 import cv2
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSignal
 # from PyQt5.QtGui import QSizePolicy
 from PyQt5.QtWidgets import QWidget, QCheckBox, QLabel, QPushButton, QGroupBox,\
     QComboBox, QSpinBox, QGridLayout, QDialog, QLineEdit, QDoubleSpinBox,\
-        QSizePolicy, QFileDialog, QTabWidget, QTableWidgetItem, QTableWidget
+        QSizePolicy, QFileDialog, QTabWidget, QTableWidgetItem, QTableWidget,\
+            QListWidget, QAbstractItemView
 from source.summary.summaryanalyze import SummaryAnal
 # from source.threads.summplotthread import 
 import pandas as pd
@@ -62,6 +63,12 @@ class SummaryWindow(QWidget):
         #create variable
         createVar = QPushButton("Create Variable..", self)    
         createVar.clicked.connect(self.makeVarDialog.show)
+        
+        self.pivot_dialog_init()
+        
+        #create pivot table
+        createPivot = QPushButton("Pivot..", self)    
+        createPivot.clicked.connect(self.pivotDialog.show)
         
         self.filenameLabel = QLabel("", self)
         self.filenameLabel.setWordWrap(True)
@@ -264,7 +271,8 @@ class SummaryWindow(QWidget):
         importLayout.addWidget(dataSource, 0, 1, 1, 1)
         importLayout.addWidget(subfolderLabel, 1, 0, 1, 1)
         importLayout.addWidget(self.subfolder, 1, 1, 1, 2)
-        importLayout.addWidget(createVar, 2, 0, 1, 2)
+        importLayout.addWidget(createVar, 2, 0, 1, 1)
+        importLayout.addWidget(createPivot, 2, 1, 1, 1)
         importLayout.addWidget(importButton, 0, 2, 1, 1)
         importLayout.addWidget(self.filenameLabel, 0, 3, 3, 2)
         
@@ -426,15 +434,22 @@ class SummaryWindow(QWidget):
     
     #update list of variables in dropdown
     def update_dropdown_params(self):
-        self.varlist = list(self.datadf.columns)
+        self.varlist = list(map(str,self.datadf_filtered.columns))
         self.varlist.sort()
         var_list = ['None'] + self.varlist
+        #combobox widgets
         combobox_wids = [self.xVar, self.yVar, self.colorVar, self.columnVar,
                          self.rowVar, self.styleVar, self.sizeVar]
         for wid in combobox_wids:
             if var_list != [wid.itemText(i) for i in range(wid.count())]:
                 wid.clear()
                 wid.addItems(var_list)
+        
+        list_wids = [self.pivotVars] #list widgets
+        for wid in list_wids:
+            if self.varlist != [wid.item(i).text() for i in range(wid.count())]:
+                wid.clear()
+                wid.addItems(self.varlist)
         # self.xVar.addItems(['None'] + self.varlist)
         # self.yVar.addItems(['None'] + self.varlist)
         # self.colorVar.addItems(['None'] + self.varlist)
@@ -469,12 +484,14 @@ class SummaryWindow(QWidget):
                 self.folderpath = os.path.dirname(self.filepath)
                 self.datadf = self.summary.combineSummaryFromList(self.filepath,
                                                                   self.subfolder.text())
-                self.update_dropdown_params()
+                
             # if self.summary.list_filepath != "":
                 # self.comb = True
                 # self.statusBar.showMessage("Summary Data combined!")
                 self.datadf_filtered = self.summary.filter_df(self.datadf,
                                                               self.filter_dict)
+                self.update_dropdown_params()
+                
                 self.showPlot.setEnabled(True)
                 self.savePlot.setEnabled(False)
                 self.statsButton.setEnabled(True)
@@ -496,10 +513,11 @@ class SummaryWindow(QWidget):
                 self.folderpath = os.path.dirname(self.filepath)
                 self.datadf = self.summary.importSummary(self.filepath)
                 # self.create_var('test var [mPa^2]', '''['Pulloff Force']/['Pulloff Area']''') #CHECK
-                self.update_dropdown_params()
+                
             # if self.summary.summary_filepath != "":
                 self.datadf_filtered = self.summary.filter_df(self.datadf, 
                                                               self.filter_dict)
+                self.update_dropdown_params()
                 
                 self.showPlot.setEnabled(True)
                 self.savePlot.setEnabled(False)
@@ -518,10 +536,12 @@ class SummaryWindow(QWidget):
             if self.folderpath != "":
                 self.datadf = self.summary.combineSummaryFromFolder(self.folderpath,
                                                                     self.subfolder.text())
-                self.update_dropdown_params()
+                
             # if self.summary.summary_filepath != "":
                 self.datadf_filtered = self.summary.filter_df(self.datadf, 
                                                               self.filter_dict)
+                self.update_dropdown_params()
+                
                 self.showPlot.setEnabled(True)
                 self.savePlot.setEnabled(False)
                 self.statsButton.setEnabled(True)
@@ -673,7 +693,7 @@ class SummaryWindow(QWidget):
                 table.setColumnCount(c)
                 table.setRowCount(r)
                 for j in range(c):
-                    table.setHorizontalHeaderItem(j, QTableWidgetItem(df.columns[j]))
+                    table.setHorizontalHeaderItem(j, QTableWidgetItem(str(df.columns[j])))
                     for i in range(r):
                         table.setItem(i, j, QTableWidgetItem(str(df.iloc[i,j])))
                 
@@ -748,6 +768,7 @@ class SummaryWindow(QWidget):
         # self.vardialog_add_widgets()
     
     #add row of new variable input widgets
+    #TODO: neat way to select variable into formula (using drag maybe)
     def vardialog_add_widgets(self):
         self.newVarNum += 1
         self.newVarDict[self.newVarNum] = ['', '']
@@ -798,14 +819,73 @@ class SummaryWindow(QWidget):
     
     def close_variable_dialog(self):
         for key in self.newVarDict.keys():
-            self.datadf = self.summary.create_var(var_name = self.newVarDict[key][0],
-                                                  formula = self.newVarDict[key][1],
-                                                  datadf = self.datadf_filtered)
+            self.datadf_filtered = self.summary.create_var(var_name = self.newVarDict[key][0],
+                                                           formula = self.newVarDict[key][1],
+                                                           datadf = self.datadf_filtered)
         self.update_dropdown_params()
 
-        self.datadf_filtered = self.summary.filter_df(self.datadf, 
-                                                      self.filter_dict)
+        # self.datadf_filtered = self.summary.filter_df(self.datadf, 
+        #                                               self.filter_dict)
         self.makeVarDialog.done(0)
+    
+    #TODO: create pivot dialog and melt dialog
+    def pivot_dialog_init(self):
+        self.pivotDialog = QDialog(self)
+        self.pivotDialog.setWindowTitle("Pivot data")
+        self.pivotDialog.resize(400, 400)
+        
+        layout = QGridLayout(self.pivotDialog)
+        
+        pivotVarsLabel = QLabel('VARIABLES')
+        self.pivotVars = DraggableListWidget()
+        
+        rowLabel = QLabel('ROWS')
+        self.pivotRowVars = DraggableListWidget()
+        
+        columnLabel = QLabel('COLUMNS')
+        self.pivotColumnVars = DraggableListWidget()
+        
+        valueLabel = QLabel('VALUES')
+        self.pivotValueVars = DraggableListWidget()
+        
+        groupbyLabel = QLabel('GROUP BY')
+        self.pivotGroupFuncs = QComboBox(self.pivotDialog)
+        func_list = ['sum', 'min', 'max', 'count', 'mean', 'median', 'std dev']
+        self.pivotGroupFuncs.addItems(func_list)
+        
+        okbutton = QPushButton("OK")
+        okbutton.clicked.connect(self.close_pivot_dialog)
+
+        layout.addWidget(pivotVarsLabel, 0, 0, 1, 1)
+        layout.addWidget(self.pivotVars, 1, 0, 5, 1)
+        layout.addWidget(rowLabel, 0, 1, 1, 1)
+        layout.addWidget(self.pivotRowVars, 1, 1, 1, 1)
+        layout.addWidget(columnLabel, 2, 1, 1, 1)
+        layout.addWidget(self.pivotColumnVars, 3, 1, 1, 1)
+        layout.addWidget(valueLabel, 4, 1, 1, 1)
+        layout.addWidget(self.pivotValueVars, 5, 1, 1, 1)
+        layout.addWidget(groupbyLabel, 6, 0, 1, 1)
+        layout.addWidget(self.pivotGroupFuncs, 6, 1, 1, 1)
+        layout.addWidget(okbutton, 7, 0, 1, 2)
+    
+        #TODO: fix  logic of dataframe update. include reset option, with possibility to undo previous data operation
+    def close_pivot_dialog(self):
+        val_list = [self.pivotValueVars.item(i).text() for i in range(self.pivotValueVars.count())]
+        row_list = [self.pivotRowVars.item(i).text() for i in range(self.pivotRowVars.count())]
+        col_list = [self.pivotColumnVars.item(i).text() for i in range(self.pivotColumnVars.count())]
+        
+        #BUG: only first value taken
+        val_list = val_list[0] if val_list != [] else None
+        row_list = row_list if row_list != [] else None
+        col_list = col_list if col_list != [] else None
+        
+        self.datadf_filtered = self.summary.create_pivot(df = self.datadf_filtered,
+                                                          vals = val_list,
+                                                          rows = row_list,
+                                                          cols = col_list,
+                                                          agg = self.pivotGroupFuncs.currentText())
+        self.update_dropdown_params()
+        self.pivotDialog.done(0)
                 
     def filter_dialog_init(self):
         self.filterDialog = QDialog(self)
@@ -929,6 +1009,42 @@ class SummaryWindow(QWidget):
         # self.summaryDict['filter'] = self.filter_dict
         self.filterDialog.done(0)
 
+#draggable list widget
+class DraggableListWidget(QListWidget):
+    def __init__(self):
+        super().__init__()
+        # self.setIconSize(QtCore.QSize(124, 124))
+        self.setDragDropMode(QAbstractItemView.DragDrop)
+        self.setDefaultDropAction(Qt.MoveAction) # this was the magic line
+        self.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.setAcceptDrops(True)
+
+
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.accept()
+        else:
+            super().dragEnterEvent(event)
+
+    def dragMoveEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.setDropAction(Qt.CopyAction)
+            event.accept()
+        else:
+            super().dragMoveEvent(event)
+
+    def dropEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.setDropAction(Qt.CopyAction)
+            event.accept()
+            links = []
+            for url in event.mimeData().urls():
+                links.append(str(url.toLocalFile()))
+            self.emit(pyqtSignal("dropped"), links)
+        else:
+            event.setDropAction(Qt.MoveAction)
+            super().dropEvent(event)
+            
 # #model for QTableView for dataframe display        
 # class PandasModel(QAbstractTableModel):
 #     """

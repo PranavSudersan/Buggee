@@ -72,7 +72,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
     def __init__(self, wd, ht):
         super().__init__()
         self.setGeometry(0, 0, wd, ht)
-        self.appVersion = "Buggee v1.5"
+        self.appVersion = "Buggee v1.6"
         self.setWindowTitle(self.appVersion)
         self.layout = QGridLayout()
         self.layout.setColumnMinimumWidth(0,650)
@@ -4115,6 +4115,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
             self.sumDialog.dataDialog.done(0)
             self.sumDialog.filterDialog.done(0)
             self.sumDialog.makeVarDialog.done(0)
+            self.sumDialog.pivotDialog.done(0)
             
             QApplication.exit()
         else:

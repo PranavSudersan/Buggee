@@ -281,9 +281,21 @@ class SummaryAnal:
     def extractUnit(self, col):
         return self.unitDict[col].split('[')[-1].split(']')[0].replace('$', '')
 
-    def filter_df(self, df, filter_dict): #filter df based on condition
+    def filter_df(self, df, filter_dict, melt_dict = None): #filter df based on condition
         print(filter_dict)
         df_final = df.copy()
+        
+        #reshape data to long form
+        if melt_dict != None:
+            column_list = list(df_final.columns)
+            id_vars_list = [x for x in column_list if x not in melt_dict['Variable columns']]
+            df_final = pd.melt(df_final,
+                               id_vars = id_vars_list,
+                               var_name = melt_dict['Variable name'],
+                               value_name = melt_dict['Value name'])
+        
+        
+        #filter data
         for k in filter_dict.keys():
             col = filter_dict[k][0]
             cond = filter_dict[k][1]
@@ -327,6 +339,21 @@ class SummaryAnal:
                                inplace=True)
             self.unitDict[col_clean] = ' [$' + unit + '$]'
         return df
+    
+    #create pivot table
+    def create_pivot(self, df, vals, rows, cols, agg):
+        funcDict = {'sum': np.sum,
+                    'mean': np.mean,
+                    'max': max,
+                    'min': min,
+                    'count': np.size,
+                    'median': np.median,
+                    'std dev': np.std,
+                    }
+        df_pivot = pd.pivot_table(df, values=vals, index=rows,
+                                  columns=cols, aggfunc=funcDict[agg])
+        df_pivot.reset_index(inplace=True)
+        return df_pivot
             
     # def get_units(self, var, df):
     #     if var in ["Adhesion_Force", "Adhesion_Preload",

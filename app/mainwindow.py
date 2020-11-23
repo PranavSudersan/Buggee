@@ -69,10 +69,11 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                  MainImportFile, MainParameterChanged, MainRecordFunctions,
                  MainLivePlot, MainMeasurementDialog,
                  MainRoiFunctions, ImageSegment, TemplateMatch): #also try inherit Effect, unify self.frame everywhere
-    def __init__(self, wd, ht):
+    def __init__(self, width, height, version):
         super().__init__()
-        self.setGeometry(0, 0, wd, ht)
-        self.appVersion = "Buggee v1.6"
+        self.setGeometry(0, 0, width, height)
+        self.appVersion = "Buggee v" + version
+        
         self.setWindowTitle(self.appVersion)
         self.layout = QGridLayout()
         self.layout.setColumnMinimumWidth(0,650)

@@ -7,6 +7,10 @@ from PyQt5.QtCore import QFile, QTextStream
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QApplication, QMessageBox, QSplashScreen
 
+__author__ = 'Pranav Sudersan'
+__email__ = 'pranavsudersan@gmail.com'
+__version__ = '1.6'
+__license__ = 'MIT'
 
 #include source dirctory into module search path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -40,7 +44,9 @@ def run():
     file.open(QFile.ReadOnly | QFile.Text)
     stream = QTextStream(file)
     app.setStyleSheet(stream.readAll())
-    Gui = MainWindow(0.95*w,0.9*h)
+    Gui = MainWindow(width = 0.95*w,
+                     height = 0.9*h,
+                     version = __version__)
     Gui.setWindowIcon(QIcon('images/icon.ico'))
     # sys.exit(app.exec_())
     Gui.show()

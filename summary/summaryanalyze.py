@@ -41,11 +41,16 @@ class SummaryAnal:
         #     self.summary_filepath = filepath
         
         # if self.summary_filepath != "":
+        #TODO: include parameter series from file (encoding option 'latin-1' add)
+        # pd.read_table(filepath, header=0, nrows=20, index_col=0, 
+        #               error_bad_lines=False,encoding='utf-8')
+        
         summarydf = pd.read_table(summary_filepath,delimiter=delim)
         
         #include paths
         summarydf['File location'] = summary_filepath #include filepath in data
         summarydf['File name'] = os.path.splitext(os.path.basename(summary_filepath))[0] #include filename in data
+        summarydf['File date modified'] = pd.Timestamp(time.ctime(os.path.getmtime(summary_filepath)))
         
         col_list = summarydf.columns
         self.unitDict = {}
@@ -425,7 +430,8 @@ class SummaryAnal:
             error = None
         return error
     
-    def plotSummary(self, df, paramDict):
+    def plotSummary(self, datadf, paramDict):
+        df = datadf.copy()
         # if paramDict == None:
         #     paramDict = {'Plot type': 'scatter',
         #                  'X Variable': 'Measurement number',
@@ -465,8 +471,17 @@ class SummaryAnal:
             if paramDict['Size Parameter'].currentText() != 'None' else None
         color_pal = paramDict['Color palette'].currentText() \
             if paramDict['Color palette'].currentText() != 'None' else None
-
         
+        #convert date-time format
+        dt_format = paramDict['Datetime format'].currentText()
+        for var in [x_var, y_var, hue_var, row_var, col_var, style_var, size_var]:
+            if var != None:
+                if df[var].dtype.kind == 'M':
+                    if dt_format == 'Date':
+                        df[var] = df[var].dt.date
+                    elif dt_format == 'Time':
+                        df[var] = df[var].dt.time
+    
         #location dictionary
         locDict = {'best': 0,
                    'upper right': 1,

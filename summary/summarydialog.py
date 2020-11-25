@@ -24,7 +24,7 @@ class SummaryWindow(QWidget):
     def __init__(self):
         super().__init__()
         # self.setWindowFlags(Qt.Window)
-        self.setGeometry(100, 100, 500, 500)
+        self.setGeometry(100, 100, 500, 650)
         self.setWindowTitle("Configure Summary Plots")
         self.layout = QGridLayout()
         
@@ -50,13 +50,22 @@ class SummaryWindow(QWidget):
         dataSource.addItems(['File', 'Folder', 'Filelist sheet'])
         self.paramDict['Data source'] = dataSource
         
-        #TODO: include format in data import
         dataFormatLabel = QLabel("Format:", self)
         dataFormat = QComboBox(self)
-        dataFormat.addItems(['txt', 'xlsx', 'csv'])
+        dataFormat.addItems(['ASCII', 'Excel'])
         self.paramDict['Data format'] = dataFormat
         
-        #TODO: separate by comma for list of sub folders
+        delimLabel = QLabel("Delimiter:", self)
+        delimText =  QComboBox(self)
+        delimText.addItems(['tab', 'space', 'comma', 'semicolon', 'colon', 'dot',
+                            'pipe', 'double pipe', 'backslash', 'forward slash'])
+        self.paramDict['Delimiter'] = delimText
+        
+        headerLabel = QLabel("Header line:", self)
+        headerLine =  QSpinBox(self)
+        headerLine.setValue(0)
+        self.paramDict['Header line'] = headerLine
+        
         subfolderLabel = QLabel("Sub folder:", self)
         self.subfolder =  QTextEdit(self)
         self.subfolder.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
@@ -156,11 +165,11 @@ class SummaryWindow(QWidget):
         plotTitle.setText('Test')
         self.paramDict['Title'] = plotTitle
         
-        #TODO: assign functions to calcStats and PreviewPlot
         calcStats = QCheckBox('Calculate stats', self)
         self.paramDict['Calculate stats'] = calcStats
         
-        previewPlot = QCheckBox('Preview Plot', self)
+        previewPlot = QCheckBox('Preview plot', self)
+        self.paramDict['Preview'] = previewPlot
         
         # self.calcStats = QCheckBox('Calculate Stats', self)
         #datetime format
@@ -309,10 +318,14 @@ class SummaryWindow(QWidget):
         importLayout.addWidget(dataSource, 0, 1, 1, 1)
         importLayout.addWidget(dataFormatLabel, 0, 2, 1, 1)
         importLayout.addWidget(dataFormat, 0, 3, 1, 1)
-        importLayout.addWidget(subfolderLabel, 1, 0, 1, 1)
-        importLayout.addWidget(self.subfolder, 1, 1, 1, 3)
-        importLayout.addWidget(importButton, 2, 0, 1, 1)
-        importLayout.addWidget(self.filenameLabel, 2, 1, 1, 3)
+        importLayout.addWidget(delimLabel, 1, 0, 1, 1)
+        importLayout.addWidget(delimText, 1, 1, 1, 1)
+        importLayout.addWidget(headerLabel, 1, 2, 1, 1)
+        importLayout.addWidget(headerLine, 1, 3, 1, 1)
+        importLayout.addWidget(subfolderLabel, 2, 0, 1, 1)
+        importLayout.addWidget(self.subfolder, 2, 1, 1, 3)
+        importLayout.addWidget(importButton, 3, 0, 1, 1)
+        importLayout.addWidget(self.filenameLabel, 3, 1, 1, 3)
         
         transformGroupBox = QGroupBox("Transform Data")
         transformGroupBox.setStyleSheet("QGroupBox { font-weight: bold; } ")
@@ -396,6 +409,7 @@ class SummaryWindow(QWidget):
         
         
         buttonGroupBox = QGroupBox()
+        buttonGroupBox.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Fixed)
         buttonLayout= QGridLayout()
         buttonGroupBox.setLayout(buttonLayout)
         buttonLayout.addWidget(self.showPlot, 0, 0, 1, 1)
@@ -563,8 +577,11 @@ class SummaryWindow(QWidget):
                 self.dataTransformList = []
                 self.transformList = []
                 self.folderpath = os.path.dirname(self.filepath)
-                self.datadf = self.summary.combineSummaryFromList(self.filepath,
-                                                                  self.subfolder.toPlainText())
+                self.datadf = self.summary.combineSummaryFromList(list_filepath = self.filepath,
+                                                                  subfolder = self.subfolder.toPlainText(),
+                                                                  data_format = self.paramDict['Data format'].currentText(),
+                                                                  delimiter = self.paramDict['Delimiter'].currentText(),
+                                                                  header_line = self.paramDict['Header line'].value())
                 
             # if self.summary.list_filepath != "":
                 # self.comb = True
@@ -598,7 +615,10 @@ class SummaryWindow(QWidget):
                 self.dataTransformList = []
                 self.transformList = []
                 self.folderpath = os.path.dirname(self.filepath)
-                self.datadf = self.summary.importSummary(self.filepath)
+                self.datadf = self.summary.importSummary(filepath = self.filepath,
+                                                         data_format = self.paramDict['Data format'].currentText(),
+                                                         delimiter = self.paramDict['Delimiter'].currentText(),
+                                                         header_line = self.paramDict['Header line'].value())
                 # self.create_var('test var [mPa^2]', '''['Pulloff Force']/['Pulloff Area']''') #CHECK
                 
             # if self.summary.summary_filepath != "":
@@ -627,8 +647,11 @@ class SummaryWindow(QWidget):
             if self.folderpath != "":
                 self.dataTransformList = []
                 self.transformList = []
-                self.datadf = self.summary.combineSummaryFromFolder(self.folderpath,
-                                                                    self.subfolder.toPlainText())
+                self.datadf = self.summary.combineSummaryFromFolder(folderpath = self.folderpath,
+                                                                    subfolder = self.subfolder.toPlainText(),
+                                                                    data_format = self.paramDict['Data format'].currentText(),
+                                                                    delimiter = self.paramDict['Delimiter'].currentText(),
+                                                                    header_line = self.paramDict['Header line'].value())
                 
             # if self.summary.summary_filepath != "":
                 # self.datadf_filtered = self.summary.filter_df(self.datadf, 
@@ -758,7 +781,7 @@ class SummaryWindow(QWidget):
         if self.summary != None:
             self.summary.plotSummary(self.dataTransformList[-1], self.paramDict)
             # self.update_plot()
-            self.summary.showSummaryPlot()
+            self.summary.showSummaryPlot(self.paramDict)
             self.savePlot.setEnabled(True)
             # self.summary.showSummaryPlot()
     

@@ -17,6 +17,7 @@ import pandas as pd
 import copy
 import ast
 import pickle
+import logging
 from cv2_rolling_ball import subtract_background_rolling_ball
 # import gc
 from PyQt5.QtGui import QPixmap, QImage, QColor#, QIcon, QPolygonF, QBrush
@@ -69,10 +70,10 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                  MainImportFile, MainParameterChanged, MainRecordFunctions,
                  MainLivePlot, MainMeasurementDialog,
                  MainRoiFunctions, ImageSegment, TemplateMatch): #also try inherit Effect, unify self.frame everywhere
-    def __init__(self, width, height, version):
+    def __init__(self, width, height, appname, version):
         super().__init__()
         self.setGeometry(0, 0, width, height)
-        self.appVersion = "Buggee v" + version
+        self.appVersion = appname + " v" + version
         
         self.setWindowTitle(self.appVersion)
         self.layout = QGridLayout()
@@ -244,7 +245,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         
         self.home()
         
-
+        logging.info('Gui initialized')
         
         #initialization routines
         self.definePaths()

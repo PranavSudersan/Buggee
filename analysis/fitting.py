@@ -20,6 +20,7 @@ import sympy as sp
 import numpy as np
 from scipy.optimize import curve_fit
 from source.analysis.plot2widget import PlotWidget
+import logging
 
 class MathTextLabel(QWidget):
 
@@ -224,16 +225,16 @@ class FitDataWindow(QWidget):
       
             
     def updateFitFunction(self):
-        print('test0')
+        logging.debug('test0')
         _key = self.fittingFunctionType.currentText()
         self.fittingFunctionText.blockSignals(True)
         self.fittingFunctionText.setText(self.functionDict[_key][0])
         self.fittingFunctionText.blockSignals(False)
-        print('test')
+        logging.debug('test')
         self.fittingParams.blockSignals(True)
         self.fittingParams.setText(self.functionDict[_key][1])
         self.fittingParams.blockSignals(False)
-        print('test2')
+        logging.debug('test2')
         self.guessValues.setText(self.functionDict[_key][2])
         self.lowBound.setText(self.functionDict[_key][3])
         self.upBound.setText(self.functionDict[_key][4])
@@ -305,9 +306,9 @@ class FitDataWindow(QWidget):
                                                             ln_notation = True) + '$'
 
             self.func = sp.lambdify(list(var),eval(equation_fit))
-            print(self.mathText)
+            logging.debug(self.mathText)
         except Exception as e:
-            print('error', e)
+            logging.error(str(e))
             self.mathText = None
 
     def plotInitialize(self):
@@ -388,7 +389,7 @@ class FitDataWindow(QWidget):
             
     # data fitting
     def fitData(self, update_slice = True):
-        print("fit data")
+        logging.debug("fit data")
         if self.enableFitting.isChecked() == True:
             self.generateFunction()
             #draw equation
@@ -404,10 +405,10 @@ class FitDataWindow(QWidget):
         
                 self.fit_range[:] = [np.searchsorted(self.plotxdata, [xlim1])[0],
                                   np.searchsorted(self.plotxdata, [xlim2])[0]+1]
-                print("inside")
+                logging.debug("inside")
             
             fit_slice = slice(*self.fit_range)
-            print(fit_slice)
+            logging.debug('%s', fit_slice)
             
             guess_vals = self.guessValues.text()
             l_bounds = self.lowBound.text()
@@ -431,7 +432,7 @@ class FitDataWindow(QWidget):
                 self.axes.lines.remove(self.ax_constr)
     
             try:
-                print("test")
+                logging.debug("test")
                 #normal fit
             
                 # popt, pcov = curve_fit(self.func, self.xdata[fit_slice],
@@ -448,7 +449,7 @@ class FitDataWindow(QWidget):
                                        self.ydata[fit_slice],
                                        [float(_x) for _x in guess_vals.split(',')],
                                        bounds=(l_bounds_val,u_bounds_val))
-                print("constrained", popt)
+                logging.debug('%s, %s', "constrained", popt)
                 
                 self.fit_ydata = self.func(self.xdata[fit_slice], *popt)
                 fit_label = labeltext % tuple(popt)
@@ -459,10 +460,10 @@ class FitDataWindow(QWidget):
                 self.fitResult.setText('Fit values:\n' + fit_label + '\n' + error_label)
                 self.fitParams = dict(zip(self.fittingParams.text().split(','),
                                           popt))
-                print(self.fitParams)
+                logging.debug('%s', self.fitParams)
     
             except Exception as e: #on fitting failure
-                print(e)
+                logging.error(str(e))
                 self.fitResult.setText(str(e))
                 # self.ax_norm = None
                 self.ax_constr = None

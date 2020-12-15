@@ -16,6 +16,7 @@ from scipy.signal import savgol_filter, medfilt
 from tkinter import messagebox
 # import ast
 from scipy import integrate
+import logging
 
 from source.analysis.plotting import Plotting
 
@@ -152,7 +153,7 @@ class ForceAnal(Plotting):
             self.summaryDataDict['measurement params']["Data Folder"] = folder_name
             
             self.waveform = x1[5].split('\t')[1]
-            print(self.waveform)
+            logging.debug('%s', self.waveform)
 
             if self.waveform == 'custom': #index adjust for force data
                 ir = 1
@@ -170,7 +171,7 @@ class ForceAnal(Plotting):
                                                       for y in x1[23+ir:]] #nm to μm units
                 speed1 = [int(float(y)) for y in x1[8].split('\t')[1:]]
                 self.steps = [y for y in x1[7].split('\t')[1:]]
-                print(self.steps)
+                logging.debug('%s', self.steps)
                 self.step_num = len(x1[7].split('\t')[1:])
                 self.pause = [int(float(y)) for y in x1[9].split('\t')[1:]]
             else:
@@ -192,7 +193,7 @@ class ForceAnal(Plotting):
             #               else speed1[self.steps.index(a)] for a in self.steps]
             self.speed = [-speed1[i] if self.steps[i] == 'Back' \
                           else speed1[i] for i in range(len(self.steps))]
-            print(self.ptsnumber)
+            logging.debug('%s', self.ptsnumber)
             
             self.fileDataDict["Index"] = np.linspace(0, self.ptsnumber-1, 
                                                      self.ptsnumber, 
@@ -257,10 +258,10 @@ class ForceAnal(Plotting):
             ['noise steps'].text().split(",")
         data_new = data.copy()
         if steps_bad[0] == '':
-            print("no steps")
+            logging.debug("no steps")
             return data
         for i in steps_bad:
-            print("step", i)
+            logging.debug('%s, %s', "step", i)
             if i == '':
                 continue
             ind = int((int(i)-1) * self.ptsnumber/self.step_num)
@@ -291,7 +292,7 @@ class ForceAnal(Plotting):
         
     def calcData(self): #datafile related calculations
 ##            self.calib_lat1 = "-10.249*1000*x"
-        print("calc")
+        logging.debug("calc")
         dataAnalDict = self.analyzeDataWindow.dataAnalDict
         
         #update plot slice
@@ -404,7 +405,7 @@ class ForceAnal(Plotting):
         
         roi_list = dataAnalDict["Vertical force"]["ranges"].keys()
         for k in roi_list:
-            print(roi_list)
+            logging.debug('%s', roi_list)
             if len(roi_list) > 1 and k == "Default":
                 continue
             #initialize dict for the given roi label
@@ -427,7 +428,7 @@ class ForceAnal(Plotting):
                                        force_lat1[friction_slice]. \
                                        index(force_lat_min)
             force_friction = abs(force_lat_max - force_lat_min)
-            print(friction_slice, force_lat_max_index, force_lat_min_index)
+            logging.debug('%s, %s, %s', friction_slice, force_lat_max_index, force_lat_min_index)
 ##            else:
 ##                force_friction = 0
 ##                force_lat_min = 0
@@ -491,7 +492,7 @@ class ForceAnal(Plotting):
             # else:
             #     force_preload2 = 0
             force_adhesion1 = abs(force_min1 - zero1)
-            print(force_preload1, force_adhesion1, self.speed_um)
+            logging.debug('%s, %s, %s', force_preload1, force_adhesion1, self.speed_um)
 
             self.summaryDataDict['Vertical force'][k]["Pulloff Force"] = force_adhesion1
             self.summaryDataDict['Vertical force'][k]["Adhesion Preload"] = force_preload1
@@ -513,7 +514,7 @@ class ForceAnal(Plotting):
             self.indDict[k]["force_lat_min_index"] = force_lat_min_index
 ##            self.indDict["contact_time1"].append(contact_time1)
             self.indDict[k]["time1_max"] = time1_max
-            print("end")
+            logging.debug("end")
 
         #IMP: CHECK zero1 VARIABLE BELOW. DIFFERENT ZEROS NOT CONSIDERED BELOW!
         #shift force data for plotting
@@ -534,7 +535,7 @@ class ForceAnal(Plotting):
         # self.speedDict = {} #step number corresponding to sliding/attachment detachment
         self.ptsperstep = int(self.ptsnumber/self.step_num) #number of points per step
         force_lat_index = int(mean([force_lat_min_index, force_lat_max_index]))
-        print(force_lat_index, self.ptsperstep, self.ptsnumber)
+        logging.debug('%s, %s, %s', force_lat_index, self.ptsperstep, self.ptsnumber)
         if self.steps[0] == "Up/Down":
             self.summaryDataDict['data params']['Speed']["Sliding Speed"] = 0
             self.summaryDataDict['data params']['Speed']["Detachment Speed"] = self.speed[0]
@@ -549,7 +550,7 @@ class ForceAnal(Plotting):
                                            self.steps[ind_detach::-1].index('Down')]
             #lateral sliding step
             self.slideStep = self.steps[int(force_lat_index/self.ptsperstep)]
-            print("slide step ", force_lat_index, self.ptsperstep)
+            logging.debug('%s, %s, %s', "slide step ", force_lat_index, self.ptsperstep)
             # print("Speed dict", self.speedDict)
                    
         self.contact_time1 = sum(self.pause) #contact time
@@ -574,7 +575,7 @@ class ForceAnal(Plotting):
         # deform_index1 = self.deform_tol #index of point of contact
         # deform_index2 = max([self.force_vert1.index(a) for a in self.forceDict["force_min1"]]) #point of contact loss
         # deform_index2 = len(self.force_vert1)-1 if deform_index2 <= deform_index1 else deform_index2
-        print("deform index", deform_limits[0], deform_limits[1])
+        logging.debug('%s, %s, %s', "deform index", deform_limits[0], deform_limits[1])
         self.deform_init = dist_vert1[deform_limits[0]]#piezo value at contact loss
         self.fileDataDict["Deformation"] = [dist_vert1[i] - self.deform_init - \
                             ((force_vert1[i] - zero1)/float(kBeam.split(',')[0])) \
@@ -592,7 +593,7 @@ class ForceAnal(Plotting):
         self.energy_slice = slice(zero_index, deform_limits[1] + 1)
         self.energy_adhesion = integrate.simps(force_shifted[self.energy_slice],
                                                self.fileDataDict["Deformation"][self.energy_slice])
-        print("energy", self.energy_adhesion, pulloff_index, zero_index)
+        logging.debug('%s, %s, %s, %s', "energy", self.energy_adhesion, pulloff_index, zero_index)
         self.zero_array =zero1*np.ones(len(force_vert1))
         
         # self.fileDataDict2["Initial Deformation"] = self.deform_init
@@ -607,7 +608,7 @@ class ForceAnal(Plotting):
         
     def getArea(self, time, dataDict): #get contact area/lenghths at pulloff etc
     #area data (2)
-        print("Get area begin")
+        logging.debug("Get area begin")
         self.dataDict = dataDict #data dictionary from videos
         
         time1 = self.fileDataDict["Time"]
@@ -648,7 +649,7 @@ class ForceAnal(Plotting):
         self.plot_slice2 = slice(self.time2.index(time2_start),
                                 self.time2.index(time2_end) + 1)         
         i = 0
-        print(dataDict.keys())
+        logging.debug('%s', dataDict.keys())
         self.areaDict = {}
         self.lengthDict = {}
         # self.ellipDict = {}
@@ -662,7 +663,7 @@ class ForceAnal(Plotting):
         for k in self.dataDict.keys():
             if len(self.dataDict.keys()) > 1 and k == "Default":
                 continue
-            print(k)
+            logging.debug('%s', k)
             self.areaDict[k] = {}
             self.lengthDict[k] = {}
             self.summaryDataDict['Contact area'][k] = {}
@@ -701,7 +702,7 @@ class ForceAnal(Plotting):
             roilen_max = max(roilen)
             time2_max = sorted([[abs(a - self.indDict[k]["time1_max"]), a] \
                                      for a in self.time2], key=lambda l:l[0])[:2]
-            print(time2_max)
+            logging.debug('%s', time2_max)
 
             wt_sum = time2_max[0][0] + time2_max[1][0] #take weighted avg
             wt = [time2_max[1][0]/wt_sum, time2_max[0][0]/wt_sum]
@@ -728,7 +729,7 @@ class ForceAnal(Plotting):
                 area2_residue = area2[sum(self.frame_num[:int(self.force_min_index/
                                                               self.ptsperstep)+1])-1]
             except Exception as e:
-                print(e)
+                logging.error(str(e))
                 root = tk.Tk()
                 root.withdraw()
                 messagebox.showinfo("Analysis Error!", "Check force file/video file\n" +
@@ -737,8 +738,8 @@ class ForceAnal(Plotting):
                 area2_pulloff = 0
                 return
                      
-            print("adhesion calc", area2_max,
-                  self.indDict[k]["time1_max"], time2_max, area2_pulloff)
+            logging.debug('%s, %s, %s, %s, %s', "adhesion calc", area2_max,
+                          self.indDict[k]["time1_max"], time2_max, area2_pulloff)
 
 ##            if self.flag_lf == True or self.flag_lf_filter == True:
             force_lat_avg_index = int(mean([self.indDict[k]["force_lat_max_index"],
@@ -753,7 +754,7 @@ class ForceAnal(Plotting):
                     time2_lat_avg[0][1])],area2[self.time2.index(time2_lat_avg[1][1])]],
                                                 weights = wt2)
             except Exception as e:
-                print(e)
+                logging.error(str(e))
                 root = tk.Tk()
                 root.withdraw()
                 messagebox.showinfo("Analysis Error!", "Check force file/video file\n" +
@@ -761,7 +762,7 @@ class ForceAnal(Plotting):
                 root.destroy()
                 area_friction = 0
                 return
-            print("friction calc", area_friction, time1_lat_avg)
+            logging.debug('%s, %s, %s', "friction calc", area_friction, time1_lat_avg)
 ##            else:
 ##                area_friction = area2_init #zero
 ##                time1_lat_avg = 0
@@ -837,7 +838,7 @@ class ForceAnal(Plotting):
             k_size = window_length+1 if window_length % 2 == 0 else window_length
             self.stress_filtered = medfilt(self.stress, kernel_size=k_size).tolist()
         
-        print("get area finished")
+        logging.debug("get area finished")
 
 
 #     def polyfitData(self, xdata, ydata, ax, x_plot, unit,
@@ -1246,7 +1247,7 @@ class ForceAnal(Plotting):
     
     def saveSummaryData(self, videofile1, videofile2, zeroforcefile, imageDataUnitDict, 
                         msrmnt_num, summary_filepath): #save and append data
-        print("save summary")
+        logging.debug("save summary")
 ##        self.summary_filepath = os.path.dirname(os.path.dirname(
 ##            self.force_filepath))+ "/Analysis/Summary/summary data.txt"
 #         if os.path.exists(summary_filepath) == False:

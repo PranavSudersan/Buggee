@@ -9,11 +9,12 @@ import cv2
 from tkinter import messagebox, Tk
 from PIL import ImageFont, ImageDraw, Image
 from PyQt5.QtGui import QIcon
+import logging
 
 class MainRecordFunctions:
     
     def recordVideo(self, frame1, frame2):
-        print("recordvideo")
+        logging.debug("recordvideo")
         if self.forceData.force_filepath == "":
             start_framenum = -1
             end_framenum = -1
@@ -59,7 +60,7 @@ class MainRecordFunctions:
                     #only record till plot range. continue playing to get all data
                     if int(self.framePos) == end_framenum:
                     # if ret == False: #video at end
-                        print("2nd video end")
+                        logging.debug("2nd video end")
                         self.cap2.release()
                         self.cap2 = None
                         self.record_frame() #finish recording
@@ -75,7 +76,7 @@ class MainRecordFunctions:
                                                               (w, h), interpolation = cv2.INTER_AREA)
                         framenumber1 = self.cap.get(cv2.CAP_PROP_POS_FRAMES)
                         framenumber2 = self.cap2.get(cv2.CAP_PROP_POS_FRAMES)
-                        print("position", framenumber1, framenumber2)
+                        logging.debug('%s, %s, %s', "position", framenumber1, framenumber2)
                         if framenumber1 != framenumber2: #check both videos are in sync
                             root = Tk()
                             root.withdraw()
@@ -86,8 +87,8 @@ class MainRecordFunctions:
                             self.record_frame() #finish recording
                             self.playStatus = False #pause video
                             return
-                        print("position", self.cap.get(cv2.CAP_PROP_POS_FRAMES),
-                              self.cap2.get(cv2.CAP_PROP_POS_FRAMES))
+                        logging.debug('%s, %s, %s', "position", self.cap.get(cv2.CAP_PROP_POS_FRAMES),
+                                      self.cap2.get(cv2.CAP_PROP_POS_FRAMES))
                         
                         self.merged_frame[:h, w:], r = self.image_resize(frame3, w, h,
                                                                   inter = cv2.INTER_AREA)
@@ -137,14 +138,14 @@ class MainRecordFunctions:
                 fontColor = (0,200,200)
                 thickness = 10
                 lineType = 2
-                print(self.frameTime.item(int(self.framePos-1)), bottomLeftCornerOfText)
+                logging.debug('%s, %s', self.frameTime.item(int(self.framePos-1)), bottomLeftCornerOfText)
                 text = 'Time: ' + "{0:.3f}".format(self.frameTime.item(int(self.framePos-1))) + ' s'
                 cv2.putText(self.merged_frame, text, 
                             bottomLeftCornerOfText, font,fontScale,
                             fontColor,thickness, lineType)
                 
                 #Draw scale bar
-                print(scaleFactor, "scalef")
+                logging.debug('%s, %s', scaleFactor, "scalef")
                 pixLength = scaleFactor * self.pixelValue.value()
                 scalepos1 = (int(0.8*w), int(0.95*h))
                 scalepos2 = (int(scalepos1[0] + pixLength), scalepos1[1])
@@ -163,7 +164,7 @@ class MainRecordFunctions:
                 draw.text(scalelabelpos, text, font = font, fill = color)
                 self.merged_frame = np.array(img_pil)
     
-                print(self.merged_frame.shape, w, h)
+                logging.debug('%s, %s, %s', self.merged_frame.shape, w, h)
                 self.out.write(self.merged_frame)
                 cv2.namedWindow("Recording Preview", cv2.WINDOW_KEEPRATIO)
                 cv2.imshow("Recording Preview", self.merged_frame)
@@ -172,7 +173,7 @@ class MainRecordFunctions:
                 ret, frame3 = self.cap2.read()
 
     def record_frame(self):
-        print("record_frame")
+        logging.debug("record_frame")
         if self.recordStatus == True:
             self.out.release()
             self.recordBtn.setIcon(QIcon('images/record.png'))
@@ -235,7 +236,7 @@ class MainRecordFunctions:
         resized[hdiff:(hdiff + dim[1]),
                 wdiff:(wdiff + dim[0])] = cv2.resize(image, dim,
                                                      interpolation = inter)
-        print(dim, resized.shape)
+        logging.debug('%s, %s', dim, resized.shape)
 
         return resized, r
 
@@ -247,7 +248,7 @@ class MainRecordFunctions:
             self.w = self.roiBound[2] - self.roiBound[0]
             self.h = self.roiBound[3] - self.roiBound[1]
                    
-            print("configurerecord", self.w, self.h)
+            logging.debug('%s, %s, %s', "configurerecord", self.w, self.h)
             self.codecChoices = {'DIVX': cv2.VideoWriter_fourcc(*'DIVX'),
                                  'MJPG': cv2.VideoWriter_fourcc('M','J','P','G'),
                                       'FFV1': cv2.VideoWriter_fourcc('F','F','V','1')}
@@ -265,11 +266,11 @@ class MainRecordFunctions:
             self.out = cv2.VideoWriter(self.recordingPath, fourcc, fps, size)
 
             self.merged_frame = np.empty([h, w, 3], dtype = np.uint8)
-            print(self.recordingPath, self.merged_frame.shape)
+            logging.debug('%s, %s', self.recordingPath, self.merged_frame.shape)
             self.recordBtn.setEnabled(True)
 
         videofile2 = self.configRecWindow.videoTextbox.toPlainText() #second video
-        print(videofile2)
+        logging.debug(videofile2)
         if videofile2 != "":
             self.cap2 = cv2.VideoCapture(videofile2)
         self.configRecWindow.close()

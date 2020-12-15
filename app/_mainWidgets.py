@@ -17,14 +17,16 @@ from PyQt5.QtWidgets import QSlider, QCheckBox, QLabel, QPushButton, \
      QGroupBox, QGridLayout, QWidget, \
      QTabWidget
 from source.app.myqgraphicsview import MyQGraphicsView
+import logging
 
 class MainWidgets:
     
     def home(self):
-
+        
+        logging.info('Loading widgets')
+        
         self.blankPixmap = QPixmap('images/blank.png')
-        
-        
+                
         self.rawScene = QGraphicsScene(self) #raw video feed
         self.rawPixmapItem = QGraphicsPixmapItem(self.blankPixmap)
         self.rawScene.addItem(self.rawPixmapItem)

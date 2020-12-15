@@ -6,18 +6,19 @@ Created on Wed Jun 24 23:24:56 2020
 """
 import numpy as np
 import source.app.drawroi as drawroi
+import logging
 
 class MainRoiFunctions:
 
     def roiDraw(self): #draw roi
         if len(self.frame) != 0:
-            print(self.frame.shape)
+            logging.debug('%s', self.frame.shape)
 ##            self.roiCorners = np.array([],np.int32)
             frame_dup = self.frame_current.copy()
 ##            cv2.polylines(frame_dup, [self.roiCorners],
 ##                      True, (0,0,255), 2) #final polygon roi
             roiCorners = drawroi.roi_dry("Frame", frame_dup)
-            print("roiCorners")
+            logging.debug("roiCorners")
             roiBound = self.roiBoundingRectangle(roiCorners) #(xmin, ymin, xmax, ymax)
 ##            roiCorners = roiCorners - [roiBound[0],
 ##                                                 roiBound[1]]
@@ -165,7 +166,7 @@ class MainRoiFunctions:
         self.video_analysis()
 
     def closeROIWindow(self): #close roi window
-        print("close roi window")
+        logging.debug("close roi window")
         
         self.update_roi()
         # self.analyzeDataWindow.roiChoice.blockSignals(True)

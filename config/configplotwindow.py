@@ -611,7 +611,7 @@ class ConfigPlotWindow(QWidget):
 
     
     def disableAxisSettings(self, source, category):
-        print(category)
+        # print(category)
         state = not self.plotDict[source][category]['combine'].isChecked()
         curves = list(self.plotDict[source][category]['curves'].keys())[1:]
         for curve in curves:

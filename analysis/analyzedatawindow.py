@@ -4,6 +4,7 @@ Created on Sat Jun  6 22:29:38 2020
 
 @author: adwait
 """
+import logging
 from PyQt5.QtWidgets import QCheckBox, QLabel, QPushButton, \
      QComboBox, QLineEdit, QSpinBox, QDoubleSpinBox, \
      QGroupBox, QGridLayout, QWidget
@@ -608,7 +609,7 @@ class AnalyizeDataWindow(QWidget):
         #                                                  self.prl2Range2.value()],
         #                                                 [self.zero2Range1.value(),
         #                                                    self.zero2Range2.value()]]
-        print(self.dataAnalDict)
+        logging.debug('%s', self.dataAnalDict)
     def show_window(self): #show window
         # self.update_range()
         self.update_dict()

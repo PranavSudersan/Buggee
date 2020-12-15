@@ -6,11 +6,12 @@ Created on Sat Jun 27 21:30:37 2020
 """
 import cv2
 import numpy as np
+import logging
 
 # class ImageTransform:
 
 def backgroundSubtract(frame, frame_bg, alpha, inv = False): #subtract background
-    print(frame.shape)
+    logging.debug('%s', frame.shape)
     if alpha == 1: #direct subtraction if alpha is one
         frame_fg = cv2.subtract(255-frame,255-frame_bg)
         frame_fg_scaled = 255 - frame_fg
@@ -19,7 +20,7 @@ def backgroundSubtract(frame, frame_bg, alpha, inv = False): #subtract backgroun
         frame_fg_scaled  = cv2.addWeighted(frame, 1 - alpha, 255 - frame_bg,
                                           alpha, 0.0)
     frame_subtracted = 255 - frame_fg_scaled if inv == True else frame_fg_scaled
-    print("bgSubtract")
+    logging.debug("bgSubtract")
     return frame_subtracted
 
 def applyBrightnessContrast(brightness, contrast, frame):
@@ -44,7 +45,7 @@ def applyBrightnessContrast(brightness, contrast, frame):
         gamma_c = 127*(1-f)
         buf = cv2.addWeighted(buf, alpha_c, buf, 0, gamma_c)
     
-    print("brightness")
+    logging.debug("brightness")
     return buf
     
 #histogram correction
@@ -58,7 +59,7 @@ def histogramCorrection(frame, correction_type = 'None', clip_lim = 2, tile_size
                                                                   tile_size))
         frame_corrected = clahe.apply(frame)
 
-    print("histogram correct")
+    logging.debug("histogram correct")
     return frame_corrected
 
 ##    def window_show(window_name, frame, posx, posy, resize_fraction):
@@ -114,10 +115,10 @@ def dftFilter(r_lp, r_hp, frame_gray): #DFT Filter (Gaussian Bandpass)
     # roi = self.roiBound
     # print("roi")
     # frame1 = frame[roi[1]:roi[3], roi[0]:roi[2]].copy()
-    print("dft")
+    logging.debug("dft")
     # frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     # del frame
-    print(frame_gray.shape)
+    logging.debug('%s', frame_gray.shape)
 
     dft = cv2.dft(np.float32(frame_gray),flags = cv2.DFT_COMPLEX_OUTPUT)
     dft_shift = np.fft.fftshift(dft)
@@ -127,7 +128,7 @@ def dftFilter(r_lp, r_hp, frame_gray): #DFT Filter (Gaussian Bandpass)
                                                  dft_shift[:,:,1]))
     rows, cols = frame_gray.shape
     # crow,ccol = int(rows/2) , int(cols/2)
-    print("low pass")
+    logging.debug("low pass")
     #Low Pass
     kernal = cv2.getGaussianKernel(max(rows, cols), r_lp)
     kernal2d = kernal * kernal.transpose()
@@ -141,7 +142,7 @@ def dftFilter(r_lp, r_hp, frame_gray): #DFT Filter (Gaussian Bandpass)
             int((max(rows, cols)+cols)/2)] #image sizes must be even integer
     else:
         mask_lowpass = np.zeros((rows,cols),np.float64)
-    print("high pass")
+    logging.debug("high pass")
     #High Pass
     kernal = cv2.getGaussianKernel(max(rows, cols), r_hp)
     kernal2d = kernal * kernal.transpose()
@@ -155,7 +156,7 @@ def dftFilter(r_lp, r_hp, frame_gray): #DFT Filter (Gaussian Bandpass)
             int((max(rows, cols)+cols)/2)] #image sizes must be even integer
     else:
         mask_highpass = np.ones((rows,cols),np.float64)
-    print("band pass")
+    logging.debug("band pass")
     #Band Pass
     if r_hp <= r_lp and r_lp > 0:
         mask_gauss = mask_lowpass * mask_highpass
@@ -172,14 +173,14 @@ def dftFilter(r_lp, r_hp, frame_gray): #DFT Filter (Gaussian Bandpass)
 
     img_back = cv2.idft(f_ishift)
     img_back_gauss = cv2.magnitude(img_back[:,:,0],img_back[:,:,1])
-    print("img_back_gauss", img_back_gauss.shape)
+    logging.debug('%s, %s', "img_back_gauss", img_back_gauss.shape)
     spectrum_masked = magnitude_spectrum * mask_gauss
 ##        img_back_scaled = None
     img_back_scaled = 255*img_back_gauss/img_back_gauss.max()
     img_filtered = img_back_scaled.astype(np.uint8)
     # img_filtered = cv2.cvtColor(img_back_scaled.astype(np.uint8),
     #                             cv2.COLOR_GRAY2BGR)
-    print("dft end")
+    logging.debug("dft end")
     # h, w, s  = frame.shape
     # l, r, t, d = roi[0], w - roi[2], roi[1], h - roi[3]
     # print(h, w, s, t, d, l, r)

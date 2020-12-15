@@ -7,6 +7,7 @@ Created on Wed Jun 24 23:15:06 2020
 from PyQt5.QtWidgets import QPushButton, \
      QGridLayout, QDialog, QListWidget
 from source.analysis.forceanalysis import ForceAnal
+import logging
      
 class MainMeasurementDialog:
 
@@ -44,13 +45,13 @@ class MainMeasurementDialog:
         self.forceData.force_filepath = self.folderPath +  \
                                         "/Force curves/" + \
                                         self.forcedataList[self.msrmnt_num_current-1]
-        print(self.forceData.force_filepath)
+        logging.debug(self.forceData.force_filepath)
         self.import_force_data()
 
         self.configRecWindow.videoTextbox.setText(self.folderPath + \
                                                   "/Imaging/Side View/" +
                                                   self.sideviewList[self.msrmnt_num_current-1])
-        print("end")
+        logging.debug("end")
         self.msrListMode = False
         self.msrmnt_num = self.msrmnt_num_current
         self.definePaths()

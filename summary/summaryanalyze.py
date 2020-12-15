@@ -9,9 +9,23 @@ import seaborn as sns
 import cv2
 import pingouin as pg
 import itertools
+import traceback
+import logging
 
 matplotlib.use('Qt5Agg')
 # import random
+
+#error handling decorator function
+def error_handle(func):
+    def inner(*args, **kwargs):
+        try:
+            ret = func(*args, **kwargs)
+        except Exception as e:
+            ret = None
+            logging.error(str(e) + '\n\n' + str(traceback.format_exc()))
+        finally:
+            return ret
+    return inner
 
 class SummaryAnal:
 
@@ -24,8 +38,8 @@ class SummaryAnal:
         # self.eq_count["All"] = [1,1,1,1]
         # self.summary_filepath = ""
 
-    def importSummary(self, summary_filepath, delim='\t'): #import summary data
-        print("import")
+    def importSummary(self, filepath, **kwargs): #import summary data
+        logging.debug("import")
         self.fig = None
 ##        self.eq_count = [1,1,1,1]
         # self.eq_count = {}
@@ -41,11 +55,26 @@ class SummaryAnal:
         #     self.summary_filepath = filepath
         
         # if self.summary_filepath != "":
-        summarydf = pd.read_table(summary_filepath,delimiter=delim)
+        #TODO: include parameter series from file (encoding option 'latin-1' add)
+        # pd.read_table(filepath, header=0, nrows=20, index_col=0, 
+        #               error_bad_lines=False,encoding='utf-8')
         
+        delimDict = {'tab': '\t', 'space': ' ', 'comma': ',', 'semicolon': ';', 
+                     'colon': ':', 'dot': '.', 'pipe': '|', 'double pipe': '||', 
+                     'backslash': '\\', 'forward slash': '/'}
+        
+        if kwargs['data_format'] == 'ASCII':
+            summarydf = pd.read_table(filepath,
+                                      delimiter = delimDict[kwargs['delimiter']],
+                                      header = kwargs['header_line'])
+        elif kwargs['data_format'] == 'Excel':
+            summarydf = pd.read_excel(filepath,
+                                      header = kwargs['header_line'])
+            
         #include paths
-        summarydf['File location'] = summary_filepath #include filepath in data
-        summarydf['File name'] = os.path.splitext(os.path.basename(summary_filepath))[0] #include filename in data
+        summarydf['File location'] = os.path.dirname(filepath) #include filepath in data
+        summarydf['File name'] = os.path.splitext(os.path.basename(filepath))[0] #include filename in data
+        summarydf['File date modified'] = pd.Timestamp(time.ctime(os.path.getmtime(filepath)))
         
         col_list = summarydf.columns
         self.unitDict = {}
@@ -280,10 +309,36 @@ class SummaryAnal:
 
     def extractUnit(self, col):
         return self.unitDict[col].split('[')[-1].split(']')[0].replace('$', '')
-
-    def filter_df(self, df, filter_dict): #filter df based on condition
-        print(filter_dict)
+    
+    #reshape data to long form
+    def melt_df(self, df, melt_dict):
         df_final = df.copy()
+                   
+        column_list = list(df_final.columns)
+        id_vars_list = [x for x in column_list if x not in melt_dict['Variable columns']]
+        df_final = pd.melt(df_final,
+                           id_vars = id_vars_list,
+                           var_name = melt_dict['Variable name'],
+                           value_name = melt_dict['Value name'])
+        
+        for var_name in [melt_dict['Variable name'], melt_dict['Value name']]:
+            unit = var_name.split('[')[-1].split(']')[0]
+            if unit == var_name:
+                self.unitDict[var_name] = ''
+            else:
+                col_clean = var_name.split('[')[0].strip()
+                df_final.rename(columns = {var_name : col_clean},
+                                inplace=True)
+                self.unitDict[col_clean] = ' [$' + unit + '$]'
+        
+        return df_final
+    
+    #filter df based on condition
+    def filter_df(self, df, filter_dict): 
+        logging.debug('%s', filter_dict)
+        df_final = df.copy()
+                
+        #filter data
         for k in filter_dict.keys():
             col = filter_dict[k][0]
             cond = filter_dict[k][1]
@@ -298,14 +353,14 @@ class SummaryAnal:
             # elif col in ["Date"]:
             #     val = datetime.strptime(filter_dict[k][2], "%d/%m/%Y").date()
             if cond == 'equal to':
-                print("equal condition")
+                logging.debug("equal condition")
                 df_final = df_final[df_final[col] == val]
             elif cond == 'not equal to':
                 df_final = df_final[df_final[col] != val]
             elif cond == 'greater than':
                 df_final = df_final[df_final[col] > val]
-                print(df_final[col].head())
-                print("greater than", val)
+                logging.debug('%s', df_final[col].head())
+                logging.debug('%s, %s', "greater than", val)
             elif cond == 'less than':
                 df_final = df_final[df_final[col] < val]
             elif cond == 'greater than or equal to':
@@ -327,6 +382,24 @@ class SummaryAnal:
                                inplace=True)
             self.unitDict[col_clean] = ' [$' + unit + '$]'
         return df
+    
+    #create pivot table
+    def create_pivot(self, df, vals, rows, cols, agg):
+        funcDict = {'sum': np.sum,
+                    'mean': np.mean,
+                    'max': max,
+                    'min': min,
+                    'count': np.size,
+                    'median': np.median,
+                    'std dev': np.std,
+                    }
+        if rows == None and cols == None:
+            return df
+        else:
+            df_pivot = pd.pivot_table(df, values=vals, index=rows,
+                                      columns=cols, aggfunc=funcDict[agg])
+            df_pivot.reset_index(inplace=True)
+            return df_pivot
             
     # def get_units(self, var, df):
     #     if var in ["Adhesion_Force", "Adhesion_Preload",
@@ -381,7 +454,8 @@ class SummaryAnal:
             error = None
         return error
     
-    def plotSummary(self, df, paramDict):
+    def plotSummary(self, datadf, paramDict):
+        df = datadf.copy()
         # if paramDict == None:
         #     paramDict = {'Plot type': 'scatter',
         #                  'X Variable': 'Measurement number',
@@ -421,8 +495,17 @@ class SummaryAnal:
             if paramDict['Size Parameter'].currentText() != 'None' else None
         color_pal = paramDict['Color palette'].currentText() \
             if paramDict['Color palette'].currentText() != 'None' else None
-
         
+        #convert date-time format
+        dt_format = paramDict['Datetime format'].currentText()
+        for var in [x_var, y_var, hue_var, row_var, col_var, style_var, size_var]:
+            if var != None:
+                if df[var].dtype.kind == 'M':
+                    if dt_format == 'Date':
+                        df[var] = df[var].dt.date
+                    elif dt_format == 'Time':
+                        df[var] = df[var].dt.time
+    
         #location dictionary
         locDict = {'best': 0,
                    'upper right': 1,
@@ -544,7 +627,10 @@ class SummaryAnal:
             sns.despine(offset=10, trim=True)
         
         self.fig.fig.canvas.set_window_title(paramDict['Title'].text())
-        self.fig.fig.canvas.mpl_connect("resize_event", self.previewPlot)
+        self.fig.fig.canvas.mpl_connect("resize_event", 
+                                        lambda event, 
+                                        show = paramDict['Preview']: 
+                                            self.previewPlot(event, show))
         
         # self.fig.fig.canvas.draw()
         
@@ -554,18 +640,18 @@ class SummaryAnal:
 
     #save plot to temporarory location and preview it. Necessary since
     #legends is outside view in plot show
-    def previewPlot(self, event = None):        
-        self.fig.fig.savefig("samples/_temp_plot.png", bbox_inches='tight', 
-                             transparent = True, dpi = 50)
-        temp_plot = cv2.imread("samples/_temp_plot.png")
-        cv2.imshow("Plot Preview", temp_plot)
+    def previewPlot(self, event, show):
+        if show.isChecked() == True:
+            self.fig.fig.savefig("samples/_temp_plot.png", bbox_inches='tight', 
+                                 transparent = True, dpi = 50)
+            temp_plot = cv2.imread("samples/_temp_plot.png")
+            cv2.imshow("Plot Preview", temp_plot)
         
     #calculate statistical comparisons (ANOVA/t-test)
     def calculateStats(self, df, paramDict):
         ##reference: https://reneshbedre.github.io/blog/anova.html
         #IMPORTANT! requirements XlsxWriter==1.3.7, statsmodels==0.12.0
-        
-        try:
+        if paramDict['Calculate stats'].isChecked() == True:
         
             #remove spaces from column names
             df_clean = df.copy()
@@ -584,11 +670,28 @@ class SummaryAnal:
             group_vars = [a for a in [x_var, hue_var, row_var, col_var]  if a != 'None']
             
             #N-way ANOVA test for equal variances
-            anovaDf = pg.anova(data = df_clean,
-                               dv = y_var,
-                               between = group_vars).round(3)
-            print('ANOVA:\n', anovaDf)
-        
+            # anovaDf = pg.anova(data = df_clean,
+            #                    dv = y_var,
+            #                    between = group_vars).round(3)
+            anovaDf = self.anova(data = df_clean,
+                                 dv = y_var,
+                                 between = group_vars)
+            logging.debug('%s, %s', 'ANOVA:\n', anovaDf)
+            
+            #Pairwise t-tests (parametric)
+            # ttestDf = pd.DataFrame()
+            # btw_permuts = itertools.permutations(group_vars, len(group_vars))
+            # for btw_cols in btw_permuts:
+            #     ttest_result = pg.pairwise_ttests(data = df_clean,
+            #                                       dv = y_var,
+            #                                       between= list(btw_cols),
+            #                                       effsize = 'r')
+            #     ttestDf = ttestDf.append(ttest_result.round(3))
+            ttestDf = self.pairwise_ttests(data = df_clean,
+                                           dv = y_var,
+                                           group_vars = group_vars,
+                                           effsize = 'r')
+            
             # perform multiple pairwise comparison (Tukey HSD)
             # for unbalanced (unequal sample size) data, pairwise_tukey uses Tukey-Kramer test
         ##    from pingouin import pairwise_tukey
@@ -626,51 +729,68 @@ class SummaryAnal:
                             replace('{','').replace('}','').replace("'",'')
                         
                         #one-way welch anova test for unequal variances
-                        welch_anova_result = pg.welch_anova(data=df_clean[cond],
-                                                            dv= y_var,
-                                                            between= between_var)
-                        welch_anova_result['Variable_Parameter'] = between_var
-                        welch_anova_result['Fixed_Parameter'] = fixed_param_string
-                        welchAnovaDf = welchAnovaDf.append(welch_anova_result.round(3))
+                        # welch_anova_result = pg.welch_anova(data=df_clean[cond],
+                        #                                     dv= y_var,
+                        #                                     between= between_var)
+                        # welch_anova_result['Variable_Parameter'] = between_var
+                        # welch_anova_result['Fixed_Parameter'] = fixed_param_string
+                        # welchAnovaDf = welchAnovaDf.append(welch_anova_result.round(3))
+                        welchAnovaDf = welchAnovaDf.append(self.welch_anova(data=df_clean[cond],
+                                                                            dv= y_var,
+                                                                            between= between_var,
+                                                                            fixed_param = fixed_param_string))
                         
                         # perform multiple pairwise comparison
                         
                         #Games-Howell test. Suitable to be used along with Welch Anova
                         #suitable for unequal variances
     
-                        gameshowell_result = pg.pairwise_gameshowell(data=df_clean[cond],
-                                                                     dv= y_var,
-                                                                     between= between_var,
-                                                                     effsize = 'r')
-                        gameshowell_result['Variable_Parameter'] = between_var
-                        gameshowell_result['Fixed_Parameter'] = fixed_param_string
-                        gameshowellDf = gameshowellDf.append(gameshowell_result.round(3))
+                        # gameshowell_result = pg.pairwise_gameshowell(data=df_clean[cond],
+                        #                                              dv= y_var,
+                        #                                              between= between_var,
+                        #                                              effsize = 'r')
+                        # gameshowell_result['Variable_Parameter'] = between_var
+                        # gameshowell_result['Fixed_Parameter'] = fixed_param_string
+                        # gameshowellDf = gameshowellDf.append(gameshowell_result.round(3))
+                        gameshowellDf = gameshowellDf.append(self.pairwise_gameshowell(data=df_clean[cond],
+                                                                                       dv= y_var,
+                                                                                       between= between_var,
+                                                                                       fixed_param = fixed_param_string))
     
                                             
                         #Tukey-HSD test for balanced group and equal variances. suitable for classic ANOVA
                         # for unbalanced (unequal sample size) data, pairwise_tukey uses Tukey-Kramer test
-                        tukey_result = pg.pairwise_tukey(data=df_clean[cond],
-                                                         dv= y_var,
-                                                         between= between_var,
-                                                         effsize = 'r')
-                        tukey_result['Variable_Parameter'] = between_var
-                        tukey_result['Fixed_Parameter'] = fixed_param_string
-                        tukeyDf = tukeyDf.append(tukey_result.round(3))
+                        # tukey_result = pg.pairwise_tukey(data=df_clean[cond],
+                        #                                  dv= y_var,
+                        #                                  between= between_var,
+                        #                                  effsize = 'r')
+                        # tukey_result['Variable_Parameter'] = between_var
+                        # tukey_result['Fixed_Parameter'] = fixed_param_string
+                        # tukeyDf = tukeyDf.append(tukey_result.round(3))
+                        tukeyDf = tukeyDf.append(self.pairwise_tukey(data=df_clean[cond],
+                                                                     dv= y_var,
+                                                                     between= between_var,
+                                                                     fixed_param = fixed_param_string))
                         
                         #univariate normality test
                         #TODO: simpligy logic. results are repetative here
                         #Shapiro-Wilk test (suitable for small sample size)
-                        norm_result_shap = pg.normality(data = df_clean[cond],
-                                                        dv = y_var,
-                                                        group = between_var,
-                                                        method = 'shapiro')
-                        norm_result_shap['Variable_Parameter'] = between_var
-                        norm_result_shap['Fixed_Parameter'] = fixed_param_string
-                        norm_result_shap['method'] = 'Shapiro-Wilk'
-                        norm_result_shap.reset_index(inplace = True)
-                        norm_result_shap.rename(columns = {'index': 'Variable_Value'}, 
-                                                inplace = True)
-                        normDf = normDf.append(norm_result_shap.round(3))
+                        # norm_result_shap = pg.normality(data = df_clean[cond],
+                        #                                 dv = y_var,
+                        #                                 group = between_var,
+                        #                                 method = 'shapiro')
+                        # norm_result_shap['Variable_Parameter'] = between_var
+                        # norm_result_shap['Fixed_Parameter'] = fixed_param_string
+                        # norm_result_shap['method'] = 'Shapiro-Wilk'
+                        # norm_result_shap.reset_index(inplace = True)
+                        # norm_result_shap.rename(columns = {'index': 'Variable_Value'}, 
+                        #                         inplace = True)
+                        # normDf = normDf.append(norm_result_shap.round(3))
+                        normDf = normDf.append(self.normality(data=df_clean[cond],
+                                                              dv= y_var,
+                                                              group= between_var,
+                                                              method = 'shapiro',
+                                                              fixed_param = fixed_param_string))
                         
                         #omnibus test (suitable for large sample sizes)
     
@@ -689,68 +809,90 @@ class SummaryAnal:
                         
                         #check equality of variance 
                         #Levene's test (more robust to departure from normality)
-                        vareq_result_lev = pg.homoscedasticity(data = df_clean[cond],
-                                                               dv = y_var,
-                                                               group = between_var,
-                                                               method = 'levene')
-                        vareq_result_lev['Variable_Parameter'] = between_var
-                        vareq_result_lev['Fixed_Parameter'] = fixed_param_string
+                        # vareq_result_lev = pg.homoscedasticity(data = df_clean[cond],
+                        #                                        dv = y_var,
+                        #                                        group = between_var,
+                        #                                        method = 'levene')
+                        # vareq_result_lev['Variable_Parameter'] = between_var
+                        # vareq_result_lev['Fixed_Parameter'] = fixed_param_string
                         
-                        #Bartlett’s Test
-                        vareq_result_bar = pg.homoscedasticity(data = df_clean[cond],
-                                                               dv = y_var,
-                                                               group = between_var,
-                                                               method = 'bartlett')
-                        vareq_result_bar['Variable_Parameter'] = between_var
-                        vareq_result_bar['Fixed_Parameter'] = fixed_param_string
+                        # #Bartlett’s Test
+                        # vareq_result_bar = pg.homoscedasticity(data = df_clean[cond],
+                        #                                        dv = y_var,
+                        #                                        group = between_var,
+                        #                                        method = 'bartlett')
+                        # vareq_result_bar['Variable_Parameter'] = between_var
+                        # vareq_result_bar['Fixed_Parameter'] = fixed_param_string
                         
-                        vareqDf = vareqDf.append(vareq_result_lev.round(3))
-                        vareqDf = vareqDf.append(vareq_result_bar.round(3))
+                        # vareqDf = vareqDf.append(vareq_result_lev.round(3))
+                        # vareqDf = vareqDf.append(vareq_result_bar.round(3))
+                        vareqDf = vareqDf.append(self.homoscedasticity(data=df_clean[cond],
+                                                                       dv= y_var,
+                                                                       group= between_var,
+                                                                       method = 'levene',
+                                                                       fixed_param = fixed_param_string))
                         
                 else:
                     #one-way welch anova test for unequal variances
-                    welch_anova_result = pg.welch_anova(data=df_clean,
-                                                        dv= y_var,
-                                                        between= between_var)
-                    welch_anova_result['Variable_Parameter'] = between_var
-                    welch_anova_result['Fixed_Parameter'] = None
-                    welchAnovaDf = welchAnovaDf.append(welch_anova_result.round(3))
+                    # welch_anova_result = pg.welch_anova(data=df_clean,
+                    #                                     dv= y_var,
+                    #                                     between= between_var)
+                    # welch_anova_result['Variable_Parameter'] = between_var
+                    # welch_anova_result['Fixed_Parameter'] = None
+                    # welchAnovaDf = welchAnovaDf.append(welch_anova_result.round(3))
+                    welchAnovaDf = welchAnovaDf.append(self.welch_anova(data=df_clean,
+                                                                        dv= y_var,
+                                                                        between= between_var,
+                                                                        fixed_param = None))
     
                     #Games-Howell test. Suitable to be used along with Welch Anova
                     #suitable for unequal variances
     
-                    gameshowell_result = pg.pairwise_gameshowell(data=df_clean,
-                                                                 dv= y_var,
-                                                                 between= between_var,
-                                                                 effsize = 'r')
-                    gameshowell_result['Variable_Parameter'] = between_var
-                    gameshowell_result['Fixed_Parameter'] = None
-                    gameshowellDf = gameshowellDf.append(gameshowell_result.round(3))
+                    # gameshowell_result = pg.pairwise_gameshowell(data=df_clean,
+                    #                                              dv= y_var,
+                    #                                              between= between_var,
+                    #                                              effsize = 'r')
+                    # gameshowell_result['Variable_Parameter'] = between_var
+                    # gameshowell_result['Fixed_Parameter'] = None
+                    # gameshowellDf = gameshowellDf.append(gameshowell_result.round(3))
+                    gameshowellDf = gameshowellDf.append(self.pairwise_gameshowell(data=df_clean,
+                                                                                   dv= y_var,
+                                                                                   between= between_var,
+                                                                                   fixed_param = None))
     
                     
                     #Tukey-HSD test
-                    tukey_result = pg.pairwise_tukey(data=df_clean,
-                                                     dv= y_var,
-                                                     between= between_var,
-                                                     effsize = 'r')
-                    tukey_result['Variable_Parameter'] = between_var
-                    tukey_result['Fixed_Parameter'] = None
-                    tukeyDf = tukeyDf.append(tukey_result.round(3))
+                    # tukey_result = pg.pairwise_tukey(data=df_clean,
+                    #                                  dv= y_var,
+                    #                                  between= between_var,
+                    #                                  effsize = 'r')
+                    # tukey_result['Variable_Parameter'] = between_var
+                    # tukey_result['Fixed_Parameter'] = None
+                    # tukeyDf = tukeyDf.append(tukey_result.round(3))
+                    tukeyDf = tukeyDf.append(self.pairwise_tukey(data=df_clean,
+                                                                 dv= y_var,
+                                                                 between= between_var,
+                                                                 fixed_param = None))
                     
                     #univariate normality test
                     #Shapiro-Wilk test (suitable for small sample size)
-                    norm_result_shap = pg.normality(data = df_clean,
-                                                    dv = y_var,
-                                                    group = between_var,
-                                                    method = 'shapiro')
-                    norm_result_shap['Variable_Parameter'] = between_var
-                    norm_result_shap['Fixed_Parameter'] = None
-                    norm_result_shap['method'] = 'Shapiro-Wilk'
-                    norm_result_shap.reset_index(inplace = True)
-                    norm_result_shap.rename(columns = {'index': 'Variable_Value'}, 
-                                            inplace = True)
-                    normDf = normDf.append(norm_result_shap.round(3))
-                    
+                    # norm_result_shap = pg.normality(data = df_clean,
+                    #                                 dv = y_var,
+                    #                                 group = between_var,
+                    #                                 method = 'shapiro')
+                    # norm_result_shap['Variable_Parameter'] = between_var
+                    # norm_result_shap['Fixed_Parameter'] = None
+                    # norm_result_shap['method'] = 'Shapiro-Wilk'
+                    # norm_result_shap.reset_index(inplace = True)
+                    # norm_result_shap.rename(columns = {'index': 'Variable_Value'}, 
+                    #                         inplace = True)
+                    # normDf = normDf.append(norm_result_shap.round(3))
+                    normDf = normDf.append(self.normality(data=df_clean,
+                                                          dv= y_var,
+                                                          group= between_var,
+                                                          method = 'shapiro',
+                                                          fixed_param = None))
+                
                     #omnibus test (suitable for large sample sizes)
     
                     # norm_result_omni = pg.normality(data = df_clean,
@@ -771,23 +913,28 @@ class SummaryAnal:
                     
                     #test equality of variances 
                     #Levene's test (more robust to departure from normality)
-                    vareq_result_lev = pg.homoscedasticity(data = df_clean,
-                                                           dv = y_var,
-                                                           group = between_var,
-                                                           method = 'levene')
-                    vareq_result_lev['Variable_Parameter'] = between_var
-                    vareq_result_lev['Fixed_Parameter'] = None
+                    # vareq_result_lev = pg.homoscedasticity(data = df_clean,
+                    #                                        dv = y_var,
+                    #                                        group = between_var,
+                    #                                        method = 'levene')
+                    # vareq_result_lev['Variable_Parameter'] = between_var
+                    # vareq_result_lev['Fixed_Parameter'] = None
                     
-                    #Bartlett’s Test
-                    vareq_result_bar = pg.homoscedasticity(data = df_clean,
-                                                           dv = y_var,
-                                                           group = between_var,
-                                                           method = 'bartlett')
-                    vareq_result_bar['Variable_Parameter'] = between_var
-                    vareq_result_bar['Fixed_Parameter'] = None
+                    # #Bartlett’s Test
+                    # vareq_result_bar = pg.homoscedasticity(data = df_clean,
+                    #                                        dv = y_var,
+                    #                                        group = between_var,
+                    #                                        method = 'bartlett')
+                    # vareq_result_bar['Variable_Parameter'] = between_var
+                    # vareq_result_bar['Fixed_Parameter'] = None
                     
-                    vareqDf = vareqDf.append(vareq_result_lev.round(3))
-                    vareqDf = vareqDf.append(vareq_result_bar.round(3))
+                    # vareqDf = vareqDf.append(vareq_result_lev.round(3))
+                    # vareqDf = vareqDf.append(vareq_result_bar.round(3))
+                    vareqDf = vareqDf.append(self.homoscedasticity(data=df_clean,
+                                                                   dv= y_var,
+                                                                   group= between_var,
+                                                                   method = 'levene',
+                                                                   fixed_param = None))
                     
             # i = 0
             # for var in group_vars:
@@ -809,23 +956,88 @@ class SummaryAnal:
             # normDf.rename(columns = {'index': 'Variable_Value'}, inplace = True)
             # normDf.sort_values('Variable', inplace = True)
             
-            vareqDf.reset_index(inplace = True)
-            vareqDf.rename(columns = {'index': 'method'}, inplace = True)
-            vareqDf.sort_values(['method', 'Fixed_Parameter'], inplace = True)
+            # vareqDf.reset_index(inplace = True)
+            # vareqDf.rename(columns = {'index': 'method'}, inplace = True)
+            # vareqDf.sort_values(['method', 'Fixed_Parameter'], inplace = True)
             
             self.statDf['anova test'] = anovaDf
+            self.statDf['t-test'] = ttestDf
             self.statDf['welch anova test'] = welchAnovaDf
             self.statDf['pairwise tukey-hsd test'] = tukeyDf
             self.statDf['pairwise games-howell test'] = gameshowellDf
             self.statDf['normality test'] = normDf
             self.statDf['variance-equality test'] = vareqDf
             
-            print(tukeyDf)
-            print(normDf)
-            print(vareqDf)
-        except Exception as e:
-            print(e)
+            #delete None tables
+            items = self.statDf.copy().items()
+            for key, val in items:
+                if val.__class__.__name__ == 'NoneType':
+                    del self.statDf[key]
+            
+            # print(tukeyDf)
+            # print(normDf)
+            # print(vareqDf)
+        else:
             self.statDf = {}
+    
+    #statistical analysis functions. kwargs same as pingouin library. 
+    #fixed_param, group_vars additional args
+    # decorated with error handler
+    
+    @error_handle
+    def anova(self, **kwargs):
+        df = pg.anova(**kwargs)
+        return df.round(3)
+    
+    @error_handle
+    def pairwise_ttests(self, group_vars = None, **kwargs):
+        df = pd.DataFrame()
+        btw_permuts = itertools.permutations(group_vars, len(group_vars))
+        for btw_cols in btw_permuts:
+            df_result = pg.pairwise_ttests(between= list(btw_cols), **kwargs)
+            df = df.append(df_result)
+        return df.round(3)
+    
+    @error_handle
+    def welch_anova(self, fixed_param = None, **kwargs):
+        df = pg.welch_anova(**kwargs)
+        df['Variable_Parameter'] = kwargs['between']
+        df['Fixed_Parameter'] = fixed_param
+        return df.round(3)
+    
+    @error_handle
+    def pairwise_gameshowell(self, fixed_param = None, **kwargs):
+        df = pg.pairwise_gameshowell(**kwargs)
+        df['Variable_Parameter'] = kwargs['between']
+        df['Fixed_Parameter'] = fixed_param
+        return df.round(3)
+    
+    @error_handle
+    def pairwise_tukey(self, fixed_param = None, **kwargs):
+        df = pg.pairwise_tukey(**kwargs)
+        df['Variable_Parameter'] = kwargs['between']
+        df['Fixed_Parameter'] = fixed_param
+        return df.round(3)
+    
+    @error_handle
+    def normality(self, fixed_param = None, **kwargs):
+        df = pg.normality(**kwargs)
+        df['Variable_Parameter'] = kwargs['group']
+        df['Fixed_Parameter'] = fixed_param
+        df['method'] = kwargs['method']
+        df.reset_index(inplace = True)
+        df.rename(columns = {'index': 'Variable_Value'}, inplace = True)
+        return df.round(3)
+    
+    @error_handle
+    def homoscedasticity(self, fixed_param = None, **kwargs):
+        df = pg.homoscedasticity(**kwargs)
+        df['Variable_Parameter'] = kwargs['group']
+        df['Fixed_Parameter'] = fixed_param
+        df.reset_index(inplace = True)
+        df.rename(columns = {'index': 'method'}, inplace = True)
+        return df.round(3)
+    
     
         #save statistics
         # if save == True:
@@ -1226,8 +1438,8 @@ class SummaryAnal:
         
 #         return fig
 
-    def showSummaryPlot(self): #show summary plots
-        print("showSummaryPlot")
+    def showSummaryPlot(self, paramDict): #show summary plots
+        logging.debug("showSummaryPlot")
         # if self.summary_filepath != "":
 #             keys = list(self.figdict.keys())
 #             for b in keys:
@@ -1256,7 +1468,7 @@ class SummaryAnal:
 # ##                        a.show()
 # ##                    for a in self.figdict[b][7].values():
 # ##                        a.show()
-        self.previewPlot()
+        self.previewPlot(event = None, show = paramDict['Preview'])
         self.fig.fig.show()
         plt.show()
 
@@ -1294,7 +1506,7 @@ class SummaryAnal:
 ##                        self.savePlot(a)
 ##                    for a in self.figdict[b][7].values():
 ##                        self.savePlot(a)
-        print("saved plot", filename)
+        logging.debug('%s, %s', "saved plot", filename)
         # self.summarydf.to_excel(os.path.dirname(summary_filepath) +
         #                        '/summary_clean_' +
         #                        time.strftime("%y%m%d%H%M%S") + '.xlsx') #export as excel 
@@ -1310,7 +1522,7 @@ class SummaryAnal:
     #     print("save plot", filename)
     
     #combine summary data from experiment list
-    def combineSummaryFromList(self, list_filepath, subfolder): 
+    def combineSummaryFromList(self, list_filepath, subfolder, **kwargs): 
         # root = tk.Tk()
         # root.withdraw()
         # self.list_filepath, _ =  QFileDialog.getOpenFileName(caption = 
@@ -1339,49 +1551,76 @@ class SummaryAnal:
         for i in explistDf.index:
             exp_data = explistDf.loc[i]
             if exp_data['Data OK?'] == 'Yes' and exp_data['Include Data?'] == 'Yes':
-                summary_folder = list_folderpath + "/" + \
-                    exp_data['Data Folder name'] + subfolder
-                with os.scandir(summary_folder) as folder:
-                    for file in folder:
-                        if file.name.endswith('.txt') and file.is_file():
-                            summarydf = self.importSummary(file.path)
-                            joinedDf = summarydf.merge(
-                                pd.DataFrame(data = [exp_data.values]*len(exp_data),
-                                             columns = exp_data.index),
-                                left_index=True, right_index=True)
-                            if fullDf.__class__.__name__ == 'NoneType':
-                                fullDf = joinedDf.copy()
-                            else:
-                                fullDf = fullDf.append(joinedDf, ignore_index=True, 
-                                                       sort=False)
+                subfolder_list = subfolder.split(',')
+                for subf in subfolder_list:
+                    if subf[0] != '*':
+                        summary_folder = list_folderpath + "/" + \
+                            exp_data['Data Folder name'] + subf
+                        with os.scandir(summary_folder) as folder:
+                            for file in folder:
+                                if file.is_file():
+                                    summarydf = self.importSummary(filepath = file.path,
+                                                                   **kwargs)
+                                    joinedDf = summarydf.merge(
+                                        pd.DataFrame(data = [exp_data.values]*len(exp_data),
+                                                     columns = exp_data.index),
+                                        left_index=True, right_index=True)
+                                    if fullDf.__class__.__name__ == 'NoneType':
+                                        fullDf = joinedDf.copy()
+                                    else:
+                                        fullDf = fullDf.append(joinedDf, ignore_index=True, 
+                                                               sort=False)
         
         self.unitDict = {**listunitDict, **self.unitDict}
         
         return fullDf
     
     #combine text files from same folder
-    def combineSummaryFromFolder(self, folderpath, subfolder):
+    #if subfolder paths specified (relative to folderpath) separated by new line,
+    #all subfolders are scanned and all files found in them are combined
+    #if * included  in subfolder beginning, all directories are scanned in folder
+    #and subfolder within them is chosen
+    def combineSummaryFromFolder(self, folderpath, subfolder, **kwargs):
         fullDf = None        
         with os.scandir(folderpath + '/') as folder:
-            for file in folder:
-                if file.name.endswith('.txt') and file.is_file() and subfolder == '':
-                    summarydf = self.importSummary(file.path)
-                    if fullDf.__class__.__name__ == 'NoneType':
-                        fullDf = summarydf.copy()
+            if subfolder == '':
+                for file in folder:
+                    if file.is_file():
+                        summarydf = self.importSummary(filepath = file.path, **kwargs)
+                        if fullDf.__class__.__name__ == 'NoneType':
+                            fullDf = summarydf.copy()
+                        else:
+                            fullDf = fullDf.append(summarydf, ignore_index=True, 
+                                                   sort=False)
+            else:
+                subfolder_list = subfolder.split('\n')
+                for subf in subfolder_list:
+                    if subf[0] == '*':
+                        for subf2 in folder:
+                            if subf2.is_dir():
+                                dir_path = subf2.path + subf[1:]
+                                with os.scandir(dir_path) as dir_inside:
+                                    for file_in in dir_inside:
+                                        if file_in.is_file():
+                                            summarydf = self.importSummary(filepath = file_in.path,
+                                                                           **kwargs)
+                                            if fullDf.__class__.__name__ == 'NoneType':
+                                                fullDf = summarydf.copy()
+                                            else:
+                                                fullDf = fullDf.append(summarydf, ignore_index=True, 
+                                                                       sort=False)     
                     else:
-                        fullDf = fullDf.append(summarydf, ignore_index=True, 
-                                               sort=False)
-                elif file.is_dir() and subfolder != '':
-                    dir_path = folderpath + '/' + file.name + '/'
-                    with os.scandir(dir_path) as dir_inside:
-                        for file_in in dir_inside:
-                            if file_in.name.endswith('.txt') and file_in.is_file():
-                                summarydf = self.importSummary(file_in.path)
-                                if fullDf.__class__.__name__ == 'NoneType':
-                                    fullDf = summarydf.copy()
-                                else:
-                                    fullDf = fullDf.append(summarydf, ignore_index=True, 
-                                                           sort=False)                    
+                        dir_path = folderpath + subf
+                        with os.scandir(dir_path) as dir_inside:
+                            for file_in in dir_inside:
+                                if file_in.is_file():
+                                    summarydf = self.importSummary(filepath = file_in.path,
+                                                                   **kwargs)
+                                    if fullDf.__class__.__name__ == 'NoneType':
+                                        fullDf = summarydf.copy()
+                                    else:
+                                        fullDf = fullDf.append(summarydf, ignore_index=True, 
+                                                               sort=False)                    
         
         return fullDf
     

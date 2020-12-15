@@ -8,7 +8,7 @@ Created on Thu Aug 13 15:15:40 2020
 import cv2
 import numpy as np
 import math, statistics
-
+import logging
 #remove comment to run the code standalone
 # sys.path.append('C:/Users/adwait/Desktop/Python/AdheSee') 
 
@@ -48,7 +48,7 @@ class TemplateMatch:
                                 minLineLength = line_length,
                                 maxLineGap = line_gap)
         if lines is None:
-            print("no line")
+            logging.debug("no line")
             return 0,[0,0,0,0],frame
         else:
             if show_lines == True:
@@ -111,7 +111,7 @@ class TemplateMatch:
             else:
                 slope = np.rad2deg(np.arctan((ay2-ay1)/(ax2-ax1)))
             
-            print(slope, line_endpoints, frame)
+            logging.debug('%s, %s, %s', slope, line_endpoints, frame)
             return slope, line_endpoints, frame
             
     def findTemplate(self, frame, gray, template, method, 

@@ -18,6 +18,7 @@ from PyQt5.QtWidgets import QWidget, QCheckBox, QLabel, QPushButton, QGroupBox,\
 from source.summary.summaryanalyze import SummaryAnal
 # from source.threads.summplotthread import 
 import pandas as pd
+import logging
      
 class SummaryWindow(QWidget):
     
@@ -532,7 +533,7 @@ class SummaryWindow(QWidget):
     
     #update tansform lists on step item delete
     def update_transform(self):
-        print('deleted')
+        logging.debug('deleted')
         stepnum = [int(self.transformSteps.item(i).text().split(':')[0]) \
                    for i in range(self.transformSteps.count())]
         list_len = len(self.transformList)
@@ -722,7 +723,7 @@ class SummaryWindow(QWidget):
             # var_eq_test.to_excel(writer, sheet_name='variance_eq_test')
             writer.save()              
 
-        print("saved data")            
+        logging.debug("saved data")            
 
     #create series of parameter values
     def make_param_series(self):
@@ -1204,7 +1205,7 @@ class SummaryWindow(QWidget):
         self.filter_dict[key][index] = val
         
     def close_filter_dialog(self):
-        print(self.filter_dict)
+        logging.debug('%s', self.filter_dict)
         datadf_filtered = self.summary.filter_df(self.dataTransformList[-1], self.filter_dict)
         self.dataTransformList.append(datadf_filtered)
         stepnum = str(len(self.transformList))

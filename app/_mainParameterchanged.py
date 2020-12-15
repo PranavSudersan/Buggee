@@ -5,6 +5,7 @@ Created on Wed Jun 24 20:46:36 2020
 @author: adwait
 """
 import numpy as np
+import logging
 
 class MainParameterChanged:
     
@@ -21,7 +22,7 @@ class MainParameterChanged:
             self.video_analysis() 
 
     def threshold_change(self): #threshold change
-        print("tresh", self.threshSlider1.value(), self.threshType)
+        logging.debug('%s, %s, %s', "tresh", self.threshSlider1.value(), self.threshType)
         if self.threshType.currentText() == "Adaptive":
             if self.threshSlider1.value() %2 == 0: #make sure its odd
                 self.threshSlider1.blockSignals(True)
@@ -155,7 +156,7 @@ class MainParameterChanged:
         self.filter_adjust()
         
         if len(self.frame) != 0:
-            print(self.frame_current.size)
+            logging.debug('%s', self.frame_current.size)
             if self.playStatus == False:
                 roi = self.roiBound
                 if self.dftGroupBox.isChecked() == True:
@@ -217,7 +218,7 @@ class MainParameterChanged:
 
     
     def bc_change(self): #brightness-contrast change
-        print("bc_change")
+        logging.debug("bc_change")
         changed_object = self.sender() #signal source
         if changed_object.__class__.__name__ == "QSlider":
             self.brightnessSpinBox.blockSignals(True)
@@ -235,7 +236,7 @@ class MainParameterChanged:
             self.contrastSlider.blockSignals(False)
         if len(self.frame) != 0:
             if self.playStatus == False:
-                print("bc anal")
+                logging.debug("bc anal")
                 roi = self.roiBound
                 self.effectChain[0] = True
                 self.video_effect(self.frame_current[roi[1]:roi[3], roi[0]:roi[2]])
@@ -379,7 +380,7 @@ class MainParameterChanged:
             self.video_analysis()        
         
     def bg_change(self): #background subtract change
-        print("bg change")
+        logging.debug("bg change")
 
         if self.backgroundCorrection.currentText() == "Gaussian Correction":
             if self.bgSlider.value() %2 == 0: #make sure its odd
@@ -444,7 +445,7 @@ class MainParameterChanged:
                     self.video_analysis()
             
     def anal_change(self): #analysis video/ contour change
-        print("anal change")
+        logging.debug("anal change")
         if len(self.frame) != 0:
             if self.analyzeVideo.isChecked() == False:
                 self.rawViewTab.setTabEnabled(1,False)
@@ -481,7 +482,7 @@ class MainParameterChanged:
     #             self.renderVideo("Effect", self.ret, self.frameEffect)
 
     def fps_change(self):#fps value change
-        print("fps change", self.frameCount)
+        logging.debug('%s, %s', "fps change", self.frameCount)
         self.frameRate = self.fpsSpinBox.value()
         self.frameTime = np.linspace(0,
                                      self.frameCount/self.frameRate,

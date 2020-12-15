@@ -8,24 +8,25 @@ from PyQt5.QtGui import QIcon
 import cv2
 import numpy as np
 import time
+import logging
 
 class MainPlaybackFunctions:
     
     def playback(self): #set video playback status, Play: True / Pause: False
         if self.videoPath != "":
-            print(self.playStatus)
+            logging.debug('%s', self.playStatus)
             self.playStatus = not self.playStatus
             self.frameAction = "Play"
             self.playBtn.setIcon(QIcon('images/pause.png'))
 
-            print("play")
+            logging.debug("play")
             while True:
-                print("Loop start", time.time())
+                logging.debug('%s, %s', "Loop start", time.time())
                 
                 self.ret, self.frame_current = self.cap.read()
-                print("try", self.ret)
+                logging.debug('%s, %s', "try", self.ret)
                 if self.ret == False: #reset video at end or at error
-                    print("if")
+                    logging.debug("if")
                     self.cap.release()
                     self.cap = cv2.VideoCapture(self.videoPath)
                     self.ret, self.frame_current = self.cap.read()
@@ -36,7 +37,7 @@ class MainPlaybackFunctions:
                         self.playStatus = True #play
                 else:
                     self.framePos = self.cap.get(cv2.CAP_PROP_POS_FRAMES)
-                    print("else", self.framePos)
+                    logging.debug('%s, %s', "else", self.framePos)
 
                 self.seekSlider.blockSignals(True)
                 self.seekSlider.setValue(int(self.framePos))
@@ -47,36 +48,38 @@ class MainPlaybackFunctions:
                                            "%)" + "\tTime: " +
                                            "{0:.2f}".format(self.frameTime[int(self.framePos-1)]) + " s")
     
-                print("frame no. get", self.framePos, self.frame_current.shape, time.time())
+                logging.debug('%s, %s, %s, %s', "frame no. get", self.framePos, 
+                              self.frame_current.shape, time.time())
 
                 
                 roi = self.roiBound
                 self.frame = self.frame_current[roi[1]:roi[3], roi[0]:roi[2]].copy() #filter inside roi
-                print("Frame copy", time.time())
+                logging.debug('%s, %s', "Frame copy", time.time())
                 self.effectChain = [True, 
                                     True if self.histogramCorrectType.currentText() != 'None' else False, 
                                     self.bgGroupBox.isChecked(), 
                                     self.dftGroupBox.isChecked()] #order: b/c, hist, bg sub, filter                
                 
                 self.video_effect(self.frame) #apply  b/c, hist, bg sub, filter effects
-                print("Video Effect", time.time())
+                logging.debug('%s, %s', "Video Effect", time.time())
                 
                 self.roi_auto = self.threshROIGroupBox.isChecked()
                 self.roi_hull = self.applyHullROI.isChecked()
                 self.combine_roi = self.combineROI.isChecked()
                 self.video_analysis() #tresholding and analysis
-                print("Video Analysis", time.time())
+                logging.debug('%s, %s', "Video Analysis", time.time())
 
 ##                if self.framePos == self.frameCount: #REMOVE -1 and CHECK
 ##                    self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
 ##                    print("reset")
-                print(self.playStatus, self.frameAction, self.framePos)
+                logging.debug('%s, %s, %s', self.playStatus, self.frameAction, 
+                              self.framePos)
 
     ##            time.sleep(1/self.fpsSlider.value()) #playback speed
                 cv2.waitKey(1)
 
                 if self.playStatus == False: #pause
-                    print("frame_urrent", self.frame_current.shape)
+                    logging.debug('%s, %s', "frame_urrent", self.frame_current.shape)
                     while True:
                         # print("x")
                         cv2.waitKey(1)
@@ -86,33 +89,33 @@ class MainPlaybackFunctions:
                             break
                         if self.frameAction == "Next": #next frame
                             self.frameAction = "Pause"
-                            print(self.cap.get(cv2.CAP_PROP_POS_FRAMES),
-                                  self.framePos)
+                            logging.debug('%s, %s', self.cap.get(cv2.CAP_PROP_POS_FRAMES),
+                                          self.framePos)
                             # self.effectChain = [1, 1, 1, 1]
                             break
                         if self.frameAction == "Previous": #previous frame
                             #change below to consider last two frames as well.CHECK
     ##                        self.framePos = self.frameCount + self.framePos - 3 \
     ##                                   if self.framePos < 2 else self.framePos - 2
-                            print(self.cap.get(cv2.CAP_PROP_POS_FRAMES),
-                                  self.framePos)
+                            logging.debug('%s, %s', self.cap.get(cv2.CAP_PROP_POS_FRAMES),
+                                          self.framePos)
                             self.framePos = self.frameCount - 1 \
                                        if self.framePos == 1 else self.framePos - 2
-                            print(self.framePos)
+                            logging.debug('%s', self.framePos)
                             self.cap.set(cv2.CAP_PROP_POS_FRAMES, self.framePos)
                             self.frameAction = "Pause"
-                            print(self.cap.get(cv2.CAP_PROP_POS_FRAMES),
-                                  self.framePos)
+                            logging.debug('%s, %s', self.cap.get(cv2.CAP_PROP_POS_FRAMES),
+                                          self.framePos)
                             # self.effectChain = [1, 1, 1, 1]
                             break
                         if self.frameAction == "Stop": #stop
-                            print("stop")
+                            logging.debug("stop")
                             break
 
                                         
                 if self.frameAction == "Stop": #stop
                     #TO DO: make a video initialize function
-                    print("stop 2")
+                    logging.debug("stop 2")
                     self.playBtn.setIcon(QIcon('images/play.png'))
                     self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
                     self.framePos = 1 #avoid array indexing issue (-1)
@@ -174,14 +177,14 @@ class MainPlaybackFunctions:
                 self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
 
             if self.ret == False: #CHECK
-                print("if")
+                logging.debug("if")
                 self.cap.release()
                 self.cap = cv2.VideoCapture(self.videoPath)
                 self.ret, self.frame_current = self.cap.read()
 ##                self.framePos = self.cap.get(cv2.CAP_PROP_POS_FRAMES)
 ##            else:
             self.framePos = self.cap.get(cv2.CAP_PROP_POS_FRAMES)
-            print("else", self.framePos)
+            logging.debug('%s, %s', "else", self.framePos)
 
             self.seekSlider.blockSignals(True)
             self.seekSlider.setValue(self.framePos)

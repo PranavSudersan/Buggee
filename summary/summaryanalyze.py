@@ -10,6 +10,7 @@ import cv2
 import pingouin as pg
 import itertools
 import traceback
+import logging
 
 matplotlib.use('Qt5Agg')
 # import random
@@ -19,9 +20,9 @@ def error_handle(func):
     def inner(*args, **kwargs):
         try:
             ret = func(*args, **kwargs)
-        except Exception:
+        except Exception as e:
             ret = None
-            print(traceback.format_exc())
+            logging.error(str(e) + '\n\n' + str(traceback.format_exc()))
         finally:
             return ret
     return inner
@@ -38,7 +39,7 @@ class SummaryAnal:
         # self.summary_filepath = ""
 
     def importSummary(self, filepath, **kwargs): #import summary data
-        print("import")
+        logging.debug("import")
         self.fig = None
 ##        self.eq_count = [1,1,1,1]
         # self.eq_count = {}
@@ -334,7 +335,7 @@ class SummaryAnal:
     
     #filter df based on condition
     def filter_df(self, df, filter_dict): 
-        print(filter_dict)
+        logging.debug('%s', filter_dict)
         df_final = df.copy()
                 
         #filter data
@@ -352,14 +353,14 @@ class SummaryAnal:
             # elif col in ["Date"]:
             #     val = datetime.strptime(filter_dict[k][2], "%d/%m/%Y").date()
             if cond == 'equal to':
-                print("equal condition")
+                logging.debug("equal condition")
                 df_final = df_final[df_final[col] == val]
             elif cond == 'not equal to':
                 df_final = df_final[df_final[col] != val]
             elif cond == 'greater than':
                 df_final = df_final[df_final[col] > val]
-                print(df_final[col].head())
-                print("greater than", val)
+                logging.debug('%s', df_final[col].head())
+                logging.debug('%s, %s', "greater than", val)
             elif cond == 'less than':
                 df_final = df_final[df_final[col] < val]
             elif cond == 'greater than or equal to':
@@ -675,7 +676,7 @@ class SummaryAnal:
             anovaDf = self.anova(data = df_clean,
                                  dv = y_var,
                                  between = group_vars)
-            print('ANOVA:\n', anovaDf)
+            logging.debug('%s, %s', 'ANOVA:\n', anovaDf)
             
             #Pairwise t-tests (parametric)
             # ttestDf = pd.DataFrame()
@@ -1438,7 +1439,7 @@ class SummaryAnal:
 #         return fig
 
     def showSummaryPlot(self, paramDict): #show summary plots
-        print("showSummaryPlot")
+        logging.debug("showSummaryPlot")
         # if self.summary_filepath != "":
 #             keys = list(self.figdict.keys())
 #             for b in keys:
@@ -1505,7 +1506,7 @@ class SummaryAnal:
 ##                        self.savePlot(a)
 ##                    for a in self.figdict[b][7].values():
 ##                        self.savePlot(a)
-        print("saved plot", filename)
+        logging.debug('%s, %s', "saved plot", filename)
         # self.summarydf.to_excel(os.path.dirname(summary_filepath) +
         #                        '/summary_clean_' +
         #                        time.strftime("%y%m%d%H%M%S") + '.xlsx') #export as excel 

@@ -10,6 +10,7 @@ import cv2
 import matplotlib.pyplot as plt
 import openpyxl
 import os.path
+import logging
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QFileDialog
 from PyQt5.QtChart import QScatterSeries
@@ -167,7 +168,7 @@ class MainImportFile:
             self.frameHeight = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
             self.frameRate = self.fpsSpinBox.value()
              
-            print(self.frameCount,self.frameWidth, self.frameRate)
+            logging.debug('%s, %s, %s', self.frameCount, self.frameWidth, self.frameRate)
             
             roiCorners = np.array([[0, 0],[self.frameWidth, 0], 
                                         [self.frameWidth, self.frameHeight], 
@@ -182,7 +183,7 @@ class MainImportFile:
             
             self.ret, self.frame = self.cap.read()
             if self.ret == False: #reset video on error
-                    print("if")
+                    logging.debug("if")
                     self.cap.release()
                     self.cap = cv2.VideoCapture(self.videoPath)
                     self.ret, self.frame = self.cap.read()
@@ -348,7 +349,7 @@ class MainImportFile:
             wb_obj.close()
             self.chooseMsrmnt.setEnabled(True)
             self.statusBar.showMessage("Loaded file list from " + self.folderPath)
-            print(self.measurmntList, self.folderPath)
+            logging.debug('%s, %s', self.measurmntList, self.folderPath)
 
     def import_force_data(self): #import force data
         # if self.msrListMode == False:
@@ -365,6 +366,7 @@ class MainImportFile:
         
         self.forceData.importData(self.msrListMode)
         if self.forceData.force_filepath != "":
+            logging.info('File loaded -> ' + self.forceData.force_filepath)
             self.forceData.calcData()
             # self.defl_vert1_raw = self.forceData.defl_vert1.copy() #copy of raw vert data
             # self.defl_vert1_actual = self.forceData.defl_vert1.copy() #copy of raw vert data
@@ -385,7 +387,7 @@ class MainImportFile:
             # self.init_plotconfig()
             # self.forceData.dataClean()
             # self.forceData.calcData()
-            print(self.frameRate)
+            logging.debug('%s', self.frameRate)
 
     def import_zero_force(self): #import zero force line
         # self.zeroForceData = ForceAnal(analyzeDataWindow = self.analyzeDataWindow)

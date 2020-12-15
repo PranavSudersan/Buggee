@@ -1,3 +1,4 @@
 __pycache__
+.pylint.d
 /samples/_temp_plot.png
 LOG.log

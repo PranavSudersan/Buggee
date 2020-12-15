@@ -258,7 +258,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         self.effectView.fitInView(self.effectPixmapItem, 0)
         
         self.show()
-        
+        logging.debug('Gui displayed')
 #     def home(self):
 
 #         self.blankPixmap = QPixmap('images/blank.png')
@@ -1782,7 +1782,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
             cv2.destroyWindow("Background")
 
     def video_effect(self, frame): #apply effects in effects chain on self.frame
-        print("video effect", self.effectChain)
+        logging.debug('%s, %s', 'video effect', self.effectChain)
         frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) 
         if self.effectChain[0] == True: #1: brightness/contrast
             frame_gray = imagetransform.applyBrightnessContrast(
@@ -1800,7 +1800,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         if self.effectChain[2] == True: #3: background subtraction
 ##                self.subtract = True #CHECK
 ##                self.frameBackground = self.frameBackground #CHECK
-            print(frame_gray.shape, self.frameBackground.shape)
+            logging.debug('%s, %s', frame_gray.shape, self.frameBackground.shape)
             if self.backgroundCorrection.currentText()== "Rolling Ball":
                 # frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 frame_gray, self.frameBackground = subtract_background_rolling_ball(frame_gray,
@@ -1845,12 +1845,12 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                                                self.highPassSlider.value(),
                                                frame_gray)
             else:
-                print("filter start", self.filterType.currentText())
+                logging.debug('%s, %s', "filter start", self.filterType.currentText())
                 frame_gray = imagetransform.imageFilter(self.filterType.currentText(),
                                               self.lowPassSlider.value(),
                                               self.highPassSlider.value(),
                                               frame_gray)
-            print("filtered", frame_gray.shape)
+            logging.debug('%s, %s', "filtered", frame_gray.shape)
             
         self.frame = cv2.cvtColor(frame_gray, cv2.COLOR_GRAY2BGR)
 ##            frame = self.frame
@@ -1873,7 +1873,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
             # self.frame_transformed = self.frame[roi[1]:roi[3], roi[0]:roi[2]].copy()            
             
             if self.analyzeVideo.isChecked() == True:
-                print("video analysis")
+                logging.debug("video analysis")
 
                 # if rawtabname == "Transformed":
                 #if self.showEffect.isChecked() == True:
@@ -1941,12 +1941,12 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                                           self.displayFeatureEdgesBottom.isChecked(),
                                           self.displayFeatureLinesBottom.isChecked())
                     
-                    print("angles", top_angle, bottom_angle)
+                    logging.debug('%s, %s, %s', "angles", top_angle, bottom_angle)
                     cont_angle = abs((top_angle-bottom_angle)/2)
 
                 #initialise dictionary
     ##            self.dataDict = {"Default" : 6 * [np.zeros(int(self.frameCount), np.float64)]}
-                print("contour data length", len(self.contour_data[0]))
+                logging.debug('%s, %s', "contour data length", len(self.contour_data[0]))
 
                 #prevent data accumulation
                 memory_max = 100000
@@ -1979,7 +1979,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                     # cpt = self.contourProperty(k, self.minAreaFilter.value(),
                     #                            self.maxAreaFilter.value())                                    
                     if self.analysisMode.currentText() == "Contact Area Analysis": #OPTIMIZE!! CHECK!
-                        print(cpt[k])
+                        logging.debug('%s', cpt[k])
                         contactArea[int(self.framePos-1)] = cpt[k][0]
                         # contactArea[int(self.framePos-1)] = np.count_nonzero(self.frame_masked==0)
                         contactLength[int(self.framePos-1)] = cpt[k][1]
@@ -2052,7 +2052,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                                       'Transformed': self.frame,
                                       'Auto ROI': self.frame_bin_roi_full}
 
-                print("effect choice")
+                logging.debug("effect choice")
 
                 if effecttabname == "Plot":
                 # if self.videoEffect.currentText() == "Force/Area Plot":
@@ -2105,8 +2105,8 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                 self.renderVideo("Effect", self.ret, self.frameEffect)
                 self.recordVideo(frame_disp, self.frameEffect)
 
-                print("Render finish", time.time())
-                print(self.framePos)
+                logging.debug('%s, %s', "Render finish", time.time())
+                logging.debug('%s', self.framePos)
 
                 self.statusBar.showMessage("Frame number: " + str(int(self.framePos)) + "\t("
                                            + str(int((self.framePos)*100/self.frameCount)) +
@@ -2642,12 +2642,12 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
             # w, h = (720, 480)
             
             if len(frame.shape) == 2: #binary image
-                print("binary")
+                logging.debug("binary")
                 byteValue = 1 * w
                 img = QImage(frame_view, w, h, byteValue,
                        QImage.Format_Grayscale8)
             else:
-                print("non-binary")
+                logging.debug("non-binary")
                 byteValue = 3 * w
                 cv2.cvtColor(frame_view, cv2.COLOR_BGR2RGB, frame_view)
 ##                cv2.polylines(frame_view, [roiCorners], True, (0,0,255), 2)          
@@ -2959,7 +2959,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         # self.fitWindow.plotSequence()
         self.zero_data_update()
         self.updatePlot()
-        print("end plot sequence")
+        logging.debug("end plot sequence")
     
     def setPlotRange(self): #set global plot range
         fig = Figure(figsize=(5, 3), dpi=100)
@@ -3203,7 +3203,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                     length = np.linalg.norm(np.array(pts[0])-np.array(pts[1]))
                     angle = np.rad2deg(np.arctan((pts[0][1] - pts[1][1])/
                                                  (pts[1][0] - pts[0][0])))
-                    print("length1", length)
+                    logging.debug('%s, %s', "length1", length)
                     font = cv2.FONT_HERSHEY_SIMPLEX
                     posx = int((pts[0][0]+pts[1][0])/2)
                     posy = int((pts[0][1]+pts[1][1])/2)
@@ -3213,7 +3213,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                 elif event == cv2.EVENT_RBUTTONDOWN:
                     pts.clear()
                     trigger = 1
-                    print("pp")
+                    logging.debug("pp")
                 else:
                     if len(pts) == 1:
                         cv2.line(img_disp, tuple(pts[0]), tuple([x,y]), 
@@ -3224,7 +3224,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
             while True:           
                 cv2.imshow(window_name,img_disp)
                 if trigger == 1:
-                    print("trigger")
+                    logging.debug("trigger")
                     img_disp_clear = self.frame.copy()
                     trigger = 0
                     
@@ -3234,10 +3234,10 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
             
                 if key == 13: #press enter to continue
                     cv2.destroyAllWindows()
-                    print("pts", pts, trigger)
+                    logging.debug('%s, %s, %s', "pts", pts, trigger)
                     if pts:
                         length = np.linalg.norm(np.array(pts[0])-np.array(pts[1]))
-                        print(length)
+                        logging.debug('%s', length)
                         self.pixelValue.setValue(round(length,2))
                     break
     ##                return pts
@@ -3397,7 +3397,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                         f.write("Frames per second\t" + str(self.fpsSpinBox.value()) + "\n")
                         f.write("ROI Label\t" + k + "\n")
                         f.write("ROI Corners \t" + str(self.roiDict[k][0].tolist()) + "\n")
-                        print("Calibration factor [" + self.lengthUnit.currentText() + "/px]\t" + str(self.calibFactor) + "\n")
+                        logging.debug("Calibration factor [" + self.lengthUnit.currentText() + "/px]\t" + str(self.calibFactor) + "\n")
                         f.write("Calibration factor [" + self.lengthUnit.currentText() + "/px]\t" +
                                     "{0:.8f}".format(self.calibFactor) + "\n")
                         f.write("BG Frame no.\t" + str(self.bgframeNumber) + "\n")
@@ -3426,7 +3426,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                         #         "Contour_Number\tROI_Area [" + self.lengthUnit.currentText() + "2]\t" +
                         #         "ROI_Length [" + self.lengthUnit.currentText() + "]\tMedian_Eccentricity\n")
                         f.write(data_string)
-                print(self.forceData)
+                logging.debug('%s', self.forceData)
             
             if self.forceData.force_filepath != "":
                 self.plotSequence()
@@ -3437,7 +3437,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                 if self.configPathWindow.summaryGroupBox.isChecked() == True:
                     videofile1 = self.videoPath.split('/')[-1][:-4]
                     videofile2 = self.configRecWindow.videoTextbox.toPlainText().split('/')[-1][:-4]
-                    print("video", videofile2, videofile1)
+                    logging.debug('%s, %s, %s', "video", videofile2, videofile1)
                     zeroforcefile = self.zeroForceData.force_filepath #if \
                                     # self.correctZeroForce.isChecked()== True else ""
                     self.forceData.saveSummaryData(videofile1, videofile2, zeroforcefile,
@@ -3510,7 +3510,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                     # col = wid.palette().setColor(1, color)
                     wid.setStyleSheet("QPushButton {background-color: %s}"
                                       % color.name()) #set background color
-                    print(color.getRgb())
+                    logging.debug('%s', color.getRgb())
                 elif widtype in ["dict"]: #dictionary self.settingsDict[key]
                     wid.update(ast.literal_eval(val))
                 elif widtype in ["list"]: #list
@@ -3589,11 +3589,11 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
             elif widtype in ["dict", 'list', 'NoneType']: #dictionary/tuple/None
                 f.write(key + "\t" + str(wid) + "\n")
             elif widtype in ["slice"]: #slice
-                print(key)
+                logging.debug('%s', key)
                 f.write(key + "\t" + str([wid.start, wid.stop]) + "\n")
                 # f.write(key + "\t" + str(wid) + "\n") 
             elif widtype in ["tuple"]: #tuple
-                print(key)
+                logging.debug('%s', key)
                 pass
             else:    
                 # print(key)                

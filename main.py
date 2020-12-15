@@ -18,9 +18,18 @@ __license__ = 'MIT'
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # configure logger
-logging.basicConfig(filename = 'LOG.log', filemode = 'w',
-                    format = '%(asctime)s <%(filename)s line %(lineno)d> %(levelname)s:: %(message)s',
-                    level = logging.INFO)
+file_handler = logging.FileHandler(filename='LOG.log', mode='w')
+file_formatter = logging.Formatter('%(asctime)s <%(filename)s line %(lineno)d> %(levelname)s:: %(message)s')
+file_handler.setFormatter(file_formatter)
+file_handler.setLevel(logging.INFO)
+
+stream_handler = logging.StreamHandler()
+stream_formatter = logging.Formatter('<%(filename)s line %(lineno)d> %(levelname)s:: %(message)s')
+stream_handler.setFormatter(stream_formatter)
+stream_handler.setLevel(logging.DEBUG)
+
+logging.basicConfig(handlers=[file_handler, stream_handler],
+                    level = logging.DEBUG)
 
 from source.app.mainwindow import MainWindow
 
@@ -29,7 +38,7 @@ def except_hook(cls, exception, traceback): #display error message/print traceba
     
     trace = 'Traceback:\n' + ''.join(tb.extract_tb(traceback).format())
     
-    logging.error(cls.__name__ + ':' + str(exception) + '\n' + trace)
+    logging.error(cls.__name__ + ':' + str(exception) + '\n\n' + trace)
     
     msgBox = QMessageBox()
     msgBox.setWindowTitle("ERROR!")
@@ -68,11 +77,12 @@ sys.excepthook = except_hook
 try:
     run()
 except Exception as e:
-    logging.exception('APP CRASHED!\n' + str(e))
+    logging.exception('APP CRASHED!\n' + str(e) + '\n\n' + str(tb.format_exc()))
 finally:
     logging.info('APP CLOSED')   
     logger = logging.getLogger()
     while logger.hasHandlers():
-        logger.handlers[0].close()
-        logger.removeHandler(logger.handlers[0])
+        for hdl in logger.handlers:
+            hdl.close()
+            logger.removeHandler(hdl)
     logging.shutdown()

@@ -6,6 +6,7 @@ Created on Sat Jun  6 22:31:37 2020
 """
 import cv2
 from PyQt5.QtCore import QThread, pyqtSignal
+import logging
 
 # %% Video frame count thread
 class CountFrameThread(QThread):
@@ -26,6 +27,6 @@ class CountFrameThread(QThread):
             i += 1
             if ret ==False:
                 self.frameCount = self.cap.get(cv2.CAP_PROP_POS_FRAMES)
-                print("framecount", self.frameCount)
+                logging.debug('%s, %s', 'framecount', self.frameCount)
 ##                self.cap.release()
                 break

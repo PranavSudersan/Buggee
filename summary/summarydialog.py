@@ -9,21 +9,23 @@ import gc
 import os
 import time
 import cv2
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSignal
 # from PyQt5.QtGui import QSizePolicy
 from PyQt5.QtWidgets import QWidget, QCheckBox, QLabel, QPushButton, QGroupBox,\
     QComboBox, QSpinBox, QGridLayout, QDialog, QLineEdit, QDoubleSpinBox,\
-        QSizePolicy, QFileDialog, QTabWidget, QTableWidgetItem, QTableWidget
+        QSizePolicy, QFileDialog, QTabWidget, QTableWidgetItem, QTableWidget,\
+            QListWidget, QAbstractItemView, QTextEdit
 from source.summary.summaryanalyze import SummaryAnal
 # from source.threads.summplotthread import 
 import pandas as pd
+import logging
      
 class SummaryWindow(QWidget):
     
     def __init__(self):
         super().__init__()
         # self.setWindowFlags(Qt.Window)
-        self.setGeometry(100, 100, 500, 500)
+        self.setGeometry(100, 100, 500, 650)
         self.setWindowTitle("Configure Summary Plots")
         self.layout = QGridLayout()
         
@@ -32,6 +34,8 @@ class SummaryWindow(QWidget):
    
         self.paramDict = {}
         self.varlist = []
+        self.dataTransformList = []
+        self.transformList = []
 
         
         self.home()
@@ -44,12 +48,28 @@ class SummaryWindow(QWidget):
         
         dataSourceLabel = QLabel("From:", self)
         dataSource = QComboBox(self)
-        dataSource.addItems(['ASCII file', 'Folder', 'File list'])
+        dataSource.addItems(['File', 'Folder', 'Filelist sheet'])
         self.paramDict['Data source'] = dataSource
         
+        dataFormatLabel = QLabel("Format:", self)
+        dataFormat = QComboBox(self)
+        dataFormat.addItems(['ASCII', 'Excel'])
+        self.paramDict['Data format'] = dataFormat
+        
+        delimLabel = QLabel("Delimiter:", self)
+        delimText =  QComboBox(self)
+        delimText.addItems(['tab', 'space', 'comma', 'semicolon', 'colon', 'dot',
+                            'pipe', 'double pipe', 'backslash', 'forward slash'])
+        self.paramDict['Delimiter'] = delimText
+        
+        headerLabel = QLabel("Header line:", self)
+        headerLine =  QSpinBox(self)
+        headerLine.setValue(0)
+        self.paramDict['Header line'] = headerLine
+        
         subfolderLabel = QLabel("Sub folder:", self)
-        self.subfolder =  QLineEdit(self)
-        self.subfolder.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
+        self.subfolder =  QTextEdit(self)
+        self.subfolder.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
         self.subfolder.setText('/Analysis/Summary/')
         self.paramDict['Subfolder'] = self.subfolder    
               
@@ -57,11 +77,38 @@ class SummaryWindow(QWidget):
         importButton = QPushButton("Select..", self)    
         importButton.clicked.connect(lambda: self.import_data(dataSource))
         
-        self.variable_dialog_init()
-        
         #create variable
+        self.variable_dialog_init()
         createVar = QPushButton("Create Variable..", self)    
         createVar.clicked.connect(self.makeVarDialog.show)
+        
+        #create pivot table
+        self.pivot_dialog_init()
+        createPivot = QPushButton("Pivot..", self)    
+        createPivot.clicked.connect(self.pivotDialog.show)
+        
+        #melt data (reshape)
+        self.melt_dialog_init()
+        meltData = QPushButton("Reshape..", self)    
+        meltData.clicked.connect(self.meltDialog.show)
+        
+        #filter data
+        self.filter_dialog_init()   
+        filterButton = QPushButton("Filter..", self)
+        filterButton.clicked.connect(self.filterDialog.show)
+        
+        transformStepsButton = QPushButton("Steps:", self)
+        transformStepsButton.clicked.connect(self.show_transform_data)
+        
+        self.transformSteps = DraggableListWidget(copyItem = True, 
+                                                  delMethod = self.update_transform)
+        self.transformSteps.setDragDropMode(QAbstractItemView.NoDragDrop)
+        self.transformSteps.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
+        # self.transformSteps.model().rowsRemoved.connect(lambda: self.update_transform)
+        
+        #TODO: assign widget to VALUES of pivot table for "groupby" function selection
+        # testBtn = QPushButton('Test')
+        # self.transformSteps.setItemWidget(self.transformSteps.item(2), testBtn)
         
         self.filenameLabel = QLabel("", self)
         self.filenameLabel.setWordWrap(True)
@@ -119,11 +166,18 @@ class SummaryWindow(QWidget):
         plotTitle.setText('Test')
         self.paramDict['Title'] = plotTitle
         
-        self.filter_dialog_init()   #initialize filter dialog
-        filterButton = QPushButton("Filter..", self)
-        filterButton.clicked.connect(self.filterDialog.show)
+        calcStats = QCheckBox('Calculate stats', self)
+        self.paramDict['Calculate stats'] = calcStats
+        
+        previewPlot = QCheckBox('Preview plot', self)
+        self.paramDict['Preview'] = previewPlot
         
         # self.calcStats = QCheckBox('Calculate Stats', self)
+        #datetime format
+        datetimeLabel = QLabel("Datetime Format", self)
+        datetimeFormat = QComboBox(self)
+        datetimeFormat.addItems(['Date', 'Time', 'Datetime'])
+        self.paramDict['Datetime format'] = datetimeFormat
         
         #plot format
         formatLabel = QLabel("Save as", self)
@@ -245,7 +299,8 @@ class SummaryWindow(QWidget):
         self.savePlot.clicked.connect(self.export_summary_plots)
         self.savePlot.setEnabled(False)
         
-        self.show_data_init()   #initialize data dialog
+        # self.show_data_init()   #initialize data dialog
+        self.dataDialog = PandasTableWidget()
         self.statsButton = QPushButton("Show Stats", self)
         self.statsButton.clicked.connect(self.show_stats)
         self.statsButton.setEnabled(False)
@@ -262,11 +317,27 @@ class SummaryWindow(QWidget):
         importGroupBox.setLayout(importLayout)
         importLayout.addWidget(dataSourceLabel, 0, 0, 1, 1)
         importLayout.addWidget(dataSource, 0, 1, 1, 1)
-        importLayout.addWidget(subfolderLabel, 1, 0, 1, 1)
-        importLayout.addWidget(self.subfolder, 1, 1, 1, 2)
-        importLayout.addWidget(createVar, 2, 0, 1, 2)
-        importLayout.addWidget(importButton, 0, 2, 1, 1)
-        importLayout.addWidget(self.filenameLabel, 0, 3, 3, 2)
+        importLayout.addWidget(dataFormatLabel, 0, 2, 1, 1)
+        importLayout.addWidget(dataFormat, 0, 3, 1, 1)
+        importLayout.addWidget(delimLabel, 1, 0, 1, 1)
+        importLayout.addWidget(delimText, 1, 1, 1, 1)
+        importLayout.addWidget(headerLabel, 1, 2, 1, 1)
+        importLayout.addWidget(headerLine, 1, 3, 1, 1)
+        importLayout.addWidget(subfolderLabel, 2, 0, 1, 1)
+        importLayout.addWidget(self.subfolder, 2, 1, 1, 3)
+        importLayout.addWidget(importButton, 3, 0, 1, 1)
+        importLayout.addWidget(self.filenameLabel, 3, 1, 1, 3)
+        
+        transformGroupBox = QGroupBox("Transform Data")
+        transformGroupBox.setStyleSheet("QGroupBox { font-weight: bold; } ")
+        transformLayout = QGridLayout()
+        transformGroupBox.setLayout(transformLayout)
+        transformLayout.addWidget(createVar, 2, 0, 1, 1)
+        transformLayout.addWidget(createPivot, 3, 0, 1, 1)
+        transformLayout.addWidget(meltData, 0, 0, 1, 1)
+        transformLayout.addWidget(filterButton, 1, 0, 1, 1)
+        transformLayout.addWidget(transformStepsButton, 0, 1, 1, 1)
+        transformLayout.addWidget(self.transformSteps, 1, 1, 3, 1)
         
         plotGroupBox = QGroupBox("Plot Data")
         plotGroupBox.setStyleSheet("QGroupBox { font-weight: bold; } ")
@@ -280,7 +351,9 @@ class SummaryWindow(QWidget):
         plotLayout.addWidget(self.yVar, 2, 1, 1, 1)
         plotLayout.addWidget(plotTitleLabel, 3, 0, 1, 1)
         plotLayout.addWidget(plotTitle, 3, 1, 1, 1)
-        plotLayout.addWidget(filterButton, 4, 0, 1, 2)
+        plotLayout.addWidget(calcStats, 4, 0, 1, 1)
+        plotLayout.addWidget(previewPlot, 5, 0, 1, 1)
+        
         # plotLayout.addWidget(self.calcStats, 5, 0, 1, 2)
         # self.summary_layout_make(1, 'Pulloff_Area', 'Adhesion_Force',
         #                          'Detachment Speed', gridLayout, 2)
@@ -319,8 +392,10 @@ class SummaryWindow(QWidget):
         plotFormatLayout.addWidget(fontScale, 3, 1, 1, 1)
         plotFormatLayout.addWidget(rotateXLabel, 4, 0, 1, 1)
         plotFormatLayout.addWidget(rotateX, 4, 1, 1, 1)
-        plotFormatLayout.addWidget(formatLabel, 5, 0, 1, 1)
-        plotFormatLayout.addWidget(self.saveFormat, 5, 1, 1, 1)
+        plotFormatLayout.addWidget(datetimeLabel, 5, 0, 1, 1)
+        plotFormatLayout.addWidget(datetimeFormat, 5, 1, 1, 1)
+        plotFormatLayout.addWidget(formatLabel, 6, 0, 1, 1)
+        plotFormatLayout.addWidget(self.saveFormat, 6, 1, 1, 1)
         plotFormatLayout.addWidget(self.showMarkers, 0, 2, 1, 1)        
         plotFormatLayout.addWidget(zeroLine, 1, 2, 1, 1)
         plotFormatLayout.addWidget(applyDespine, 0, 3, 1, 1)
@@ -335,6 +410,7 @@ class SummaryWindow(QWidget):
         
         
         buttonGroupBox = QGroupBox()
+        buttonGroupBox.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Fixed)
         buttonLayout= QGridLayout()
         buttonGroupBox.setLayout(buttonLayout)
         buttonLayout.addWidget(self.showPlot, 0, 0, 1, 1)
@@ -343,10 +419,11 @@ class SummaryWindow(QWidget):
         buttonLayout.addWidget(closeButton, 0, 3, 1, 1)
         
         
-        self.layout.addWidget(importGroupBox, 0, 0)
-        self.layout.addWidget(plotGroupBox, 1, 0)
-        self.layout.addWidget(plotFormatGroupBox, 2, 0)
-        self.layout.addWidget(buttonGroupBox, 3, 0)
+        self.layout.addWidget(importGroupBox, 0, 0, 1, 1)
+        self.layout.addWidget(transformGroupBox, 0, 1, 1, 1)
+        self.layout.addWidget(plotGroupBox, 1, 0, 1, 2)
+        self.layout.addWidget(plotFormatGroupBox, 2, 0, 1, 2)
+        self.layout.addWidget(buttonGroupBox, 3, 0, 1, 2)
         
         self.setLayout(self.layout)
         
@@ -426,15 +503,26 @@ class SummaryWindow(QWidget):
     
     #update list of variables in dropdown
     def update_dropdown_params(self):
-        self.varlist = list(self.datadf.columns)
+        # self.varlist = list(map(str,self.datadf_filtered.columns))
+        self.varlist = list(map(str,self.dataTransformList[-1].columns))
         self.varlist.sort()
         var_list = ['None'] + self.varlist
+        #combobox widgets
         combobox_wids = [self.xVar, self.yVar, self.colorVar, self.columnVar,
                          self.rowVar, self.styleVar, self.sizeVar]
         for wid in combobox_wids:
             if var_list != [wid.itemText(i) for i in range(wid.count())]:
                 wid.clear()
                 wid.addItems(var_list)
+        
+        list_wids = [self.pivotVars, self.varListWid, self.meltVars] #list widgets
+        for wid in list_wids:
+            if self.varlist != [wid.item(i).text() for i in range(wid.count())]:
+                wid.clear()
+                wid.addItems(self.varlist)
+        
+        self.transformSteps.clear()
+        self.transformSteps.addItems(self.transformList)
         # self.xVar.addItems(['None'] + self.varlist)
         # self.yVar.addItems(['None'] + self.varlist)
         # self.colorVar.addItems(['None'] + self.varlist)
@@ -443,6 +531,27 @@ class SummaryWindow(QWidget):
         # self.styleVar.addItems(['None'] + self.varlist)
         # self.sizeVar.addItems(['None'] + self.varlist)  
     
+    #update tansform lists on step item delete
+    def update_transform(self):
+        logging.debug('deleted')
+        stepnum = [int(self.transformSteps.item(i).text().split(':')[0]) \
+                   for i in range(self.transformSteps.count())]
+        list_len = len(self.transformList)
+        j = 0
+        for i in range(list_len):
+            if i not in stepnum:
+                if i != 0:
+                    del self.transformList[i-j]
+                    del self.dataTransformList[i-j]
+                    j += 1
+                else: #dont delete raw data
+                    self.transformSteps.insertItem(0, '0:Raw data')
+        #reset number order
+        for i in range(self.transformSteps.count()):
+            text = self.transformSteps.item(i).text()
+            self.transformList[i] = str(i) + ':' + text.split(':')[1]
+            self.transformSteps.item(i).setText(self.transformList[i])                
+            
     # disable/enable relevant combo boxes
     def plot_type_changed(self, plot_type):
         if plot_type in self.rel_types:
@@ -462,19 +571,30 @@ class SummaryWindow(QWidget):
 ##        legend_parameter = self.sumlistwidget.currentItem().text()
         self.reset_summary()
         self.summary = SummaryAnal()
-        if source.currentText() == 'File list':
+        if source.currentText() == 'Filelist sheet':
             self.filepath, _ =  QFileDialog.getOpenFileName(caption =
                                                             "Select experiment list file")
             if self.filepath != "":
+                self.dataTransformList = []
+                self.transformList = []
                 self.folderpath = os.path.dirname(self.filepath)
-                self.datadf = self.summary.combineSummaryFromList(self.filepath,
-                                                                  self.subfolder.text())
-                self.update_dropdown_params()
+                self.datadf = self.summary.combineSummaryFromList(list_filepath = self.filepath,
+                                                                  subfolder = self.subfolder.toPlainText(),
+                                                                  data_format = self.paramDict['Data format'].currentText(),
+                                                                  delimiter = self.paramDict['Delimiter'].currentText(),
+                                                                  header_line = self.paramDict['Header line'].value())
+                
             # if self.summary.list_filepath != "":
                 # self.comb = True
                 # self.statusBar.showMessage("Summary Data combined!")
-                self.datadf_filtered = self.summary.filter_df(self.datadf,
-                                                              self.filter_dict)
+                # self.datadf_filtered = self.summary.filter_df(self.datadf,
+                #                                               self.filter_dict)
+                self.dataTransformList.append(self.datadf)
+                stepnum = str(len(self.transformList))
+                self.transformList.append(stepnum +':Raw data')
+                
+                self.update_dropdown_params()
+                
                 self.showPlot.setEnabled(True)
                 self.savePlot.setEnabled(False)
                 self.statsButton.setEnabled(True)
@@ -488,18 +608,28 @@ class SummaryWindow(QWidget):
             #     # self.statusBar.showMessage("No file selected")
             #     # self.comb = False
             #     self.summary = None
-        elif source.currentText() == 'ASCII file':
+        elif source.currentText() == 'File':
             # self.comb = False
             self.filepath, _ = QFileDialog.getOpenFileName(caption =
                                                            "Select summary data file")            
             if self.filepath != "":
+                self.dataTransformList = []
+                self.transformList = []
                 self.folderpath = os.path.dirname(self.filepath)
-                self.datadf = self.summary.importSummary(self.filepath)
+                self.datadf = self.summary.importSummary(filepath = self.filepath,
+                                                         data_format = self.paramDict['Data format'].currentText(),
+                                                         delimiter = self.paramDict['Delimiter'].currentText(),
+                                                         header_line = self.paramDict['Header line'].value())
                 # self.create_var('test var [mPa^2]', '''['Pulloff Force']/['Pulloff Area']''') #CHECK
-                self.update_dropdown_params()
+                
             # if self.summary.summary_filepath != "":
-                self.datadf_filtered = self.summary.filter_df(self.datadf, 
-                                                              self.filter_dict)
+                # self.datadf_filtered = self.summary.filter_df(self.datadf, 
+                #                                               self.filter_dict)
+                self.dataTransformList.append(self.datadf)
+                stepnum = str(len(self.transformList))
+                self.transformList.append(stepnum +':Raw data')
+                
+                self.update_dropdown_params()
                 
                 self.showPlot.setEnabled(True)
                 self.savePlot.setEnabled(False)
@@ -516,12 +646,23 @@ class SummaryWindow(QWidget):
             self.folderpath = QFileDialog.getExistingDirectory(caption =
                                                            "Select folder")
             if self.folderpath != "":
-                self.datadf = self.summary.combineSummaryFromFolder(self.folderpath,
-                                                                    self.subfolder.text())
-                self.update_dropdown_params()
+                self.dataTransformList = []
+                self.transformList = []
+                self.datadf = self.summary.combineSummaryFromFolder(folderpath = self.folderpath,
+                                                                    subfolder = self.subfolder.toPlainText(),
+                                                                    data_format = self.paramDict['Data format'].currentText(),
+                                                                    delimiter = self.paramDict['Delimiter'].currentText(),
+                                                                    header_line = self.paramDict['Header line'].value())
+                
             # if self.summary.summary_filepath != "":
-                self.datadf_filtered = self.summary.filter_df(self.datadf, 
-                                                              self.filter_dict)
+                # self.datadf_filtered = self.summary.filter_df(self.datadf, 
+                #                                               self.filter_dict)
+                self.dataTransformList.append(self.datadf)
+                stepnum = str(len(self.transformList))
+                self.transformList.append(stepnum +':Raw data')
+                
+                self.update_dropdown_params()
+                
                 self.showPlot.setEnabled(True)
                 self.savePlot.setEnabled(False)
                 self.statsButton.setEnabled(True)
@@ -568,9 +709,9 @@ class SummaryWindow(QWidget):
                 self.paramDict['Title'].text() + '-' + \
                     time.strftime("%y%m%d%H%M%S") + '.xlsx'
             writer = pd.ExcelWriter(filepath, engine='xlsxwriter')
-            self.datadf_filtered.to_excel(writer, sheet_name='data')
+            self.dataTransformList[-1].to_excel(writer, sheet_name='data')
             #save statistics
-            self.summary.calculateStats(self.datadf_filtered, self.paramDict)
+            self.summary.calculateStats(self.dataTransformList[-1], self.paramDict)
             for key in self.summary.statDf.keys():
                 self.summary.statDf[key].to_excel(writer, sheet_name=key)
                 
@@ -582,7 +723,7 @@ class SummaryWindow(QWidget):
             # var_eq_test.to_excel(writer, sheet_name='variance_eq_test')
             writer.save()              
 
-        print("saved data")            
+        logging.debug("saved data")            
 
     #create series of parameter values
     def make_param_series(self):
@@ -639,67 +780,74 @@ class SummaryWindow(QWidget):
         #     else:
         #         self.summary = None
         if self.summary != None:
-            self.summary.plotSummary(self.datadf_filtered, self.paramDict)
+            self.summary.plotSummary(self.dataTransformList[-1], self.paramDict)
             # self.update_plot()
-            self.summary.showSummaryPlot()
+            self.summary.showSummaryPlot(self.paramDict)
             self.savePlot.setEnabled(True)
             # self.summary.showSummaryPlot()
     
     #show statistical data
     def show_stats(self):
         if self.summary != None:
-            self.summary.calculateStats(self.datadf_filtered, self.paramDict)
+            self.summary.calculateStats(self.dataTransformList[-1], self.paramDict)
             dataframes = self.summary.statDf.copy()
-            dataframes['data'] = self.datadf_filtered
+            dataframes['data'] = self.dataTransformList[-1]
             
-            # data_display = QWidget()
-            # data_display.setWindowTitle("Data")
-            # data_display.resize(100, 100)
-            
-            # layout = QGridLayout(data_display)
-            
-            # data_tabs = QTabWidget() #B&C and flitering tabs
-            self.dataTab.clear()
-            
-            for key in dataframes.keys():
-                # table = tabulate(dataframes[key], headers='keys', tablefmt = 'pretty')
-                # wid = QTextEdit()
-                # wid.setText(table)
-                df = dataframes[key]
-                table = QTableWidget()
-                # model = PandasModel(df)
-                # table.setModel(model)
-                r, c = df.shape
-                table.setColumnCount(c)
-                table.setRowCount(r)
-                for j in range(c):
-                    table.setHorizontalHeaderItem(j, QTableWidgetItem(df.columns[j]))
-                    for i in range(r):
-                        table.setItem(i, j, QTableWidgetItem(str(df.iloc[i,j])))
-                
-                self.dataTab.addTab(table,key)
-                
-            # layout.addWidget(data_tabs, 0, 0, 1, 0)  
-            
-            self.dataDialog.show()
+            self.dataDialog.show_table(dataframes)
     
-    #initialize data dialog
-    def show_data_init(self):
-        self.dataDialog = QDialog(self)
-        self.dataDialog.setWindowTitle("Data")
-        self.dataDialog.resize(600, 400)
-        
-        layout = QGridLayout(self.dataDialog)
-        
-        self.dataTab = QTabWidget() #B&C and flitering tabs
-        
-        # for key in dataframes.keys():
-        #     table = tabulate(dataframes[key], headers='keys', tablefmt = 'psql')
-        #     wid = QTextEdit()
-        #     wid.setText(table)
-        #     data_tabs.addTab(wid,key)
+    def show_transform_data(self):
+        if self.summary != None:
+            dataDict = dict(zip(self.transformList, self.dataTransformList))
+            self.dataDialog.show_table(dataDict)
             
-        layout.addWidget(self.dataTab, 0, 0, 1, 0)
+            # # data_display = QWidget()
+            # # data_display.setWindowTitle("Data")
+            # # data_display.resize(100, 100)
+            
+            # # layout = QGridLayout(data_display)
+            
+            # # data_tabs = QTabWidget() #B&C and flitering tabs
+            # self.dataTab.clear()
+            
+            # for key in dataframes.keys():
+            #     # table = tabulate(dataframes[key], headers='keys', tablefmt = 'pretty')
+            #     # wid = QTextEdit()
+            #     # wid.setText(table)
+            #     df = dataframes[key]
+            #     table = QTableWidget()
+            #     # model = PandasModel(df)
+            #     # table.setModel(model)
+            #     r, c = df.shape
+            #     table.setColumnCount(c)
+            #     table.setRowCount(r)
+            #     for j in range(c):
+            #         table.setHorizontalHeaderItem(j, QTableWidgetItem(str(df.columns[j])))
+            #         for i in range(r):
+            #             table.setItem(i, j, QTableWidgetItem(str(df.iloc[i,j])))
+                
+            #     self.dataTab.addTab(table,key)
+                
+            # # layout.addWidget(data_tabs, 0, 0, 1, 0)  
+            
+            # self.dataDialog.show()
+    
+    # #initialize data dialog
+    # def show_data_init(self):
+    #     self.dataDialog = QDialog(self)
+    #     self.dataDialog.setWindowTitle("Data")
+    #     self.dataDialog.resize(600, 400)
+        
+    #     layout = QGridLayout(self.dataDialog)
+        
+    #     self.dataTab = QTabWidget() #B&C and flitering tabs
+        
+    #     # for key in dataframes.keys():
+    #     #     table = tabulate(dataframes[key], headers='keys', tablefmt = 'psql')
+    #     #     wid = QTextEdit()
+    #     #     wid.setText(table)
+    #     #     data_tabs.addTab(wid,key)
+            
+    #     layout.addWidget(self.dataTab, 0, 0, 1, 0)
     
     #update plot data and draw canvas
     # def update_plot(self):
@@ -737,10 +885,23 @@ class SummaryWindow(QWidget):
         self.makeVarOk = QPushButton("OK")
         self.makeVarOk.clicked.connect(self.close_variable_dialog)
         
+        #variable list dialog
+        self.varListWid = DraggableListWidget(copyItem = True)
+        
+        varListDlg = QDialog(self)
+        varListDlg.setWindowTitle("Drag and drop variable")
+        varListDlg.resize(250, 400)
+        layout = QGridLayout(varListDlg)
+        layout.addWidget(self.varListWid, 0, 0, 1, 1)
+        
+        
+        self.varListBtn = QPushButton("Variables..")
+        self.varListBtn.clicked.connect(varListDlg.show)
+        
         self.makeVarLayout.addWidget(varNameLabel, 0, 0, 1, 1)
         self.makeVarLayout.addWidget(formulaLabel, 0, 1, 1, 1)
-        self.makeVarLayout.addWidget(self.makeVarAdd, 1, 0, 1, 1)
-        self.makeVarLayout.addWidget(self.makeVarOk, 1, 1, 1, 1)
+        self.makeVarLayout.addWidget(self.makeVarAdd, 1, 1, 1, 1)
+        self.makeVarLayout.addWidget(self.makeVarOk, 1, 0, 1, 1)
         
         self.newVarDict = {} #variable name and formula dictionary
         self.newVarNum = 0 #number of defined varaibles (or rows)
@@ -753,14 +914,14 @@ class SummaryWindow(QWidget):
         self.newVarDict[self.newVarNum] = ['', '']
         
         varName =  QLineEdit()
-        formula =  QLineEdit()
+        formula =  QTextEdit()
         
         varName.textChanged.connect(lambda: self.update_varname_dict(self.newVarNum,
                                                                      varName.text(),
-                                                                    formula.text()))
+                                                                    formula.toPlainText()))
         formula.textChanged.connect(lambda: self.update_varname_dict(self.newVarNum,
                                                                      varName.text(),
-                                                                    formula.text()))
+                                                                    formula.toPlainText()))
 
         varPlus = QPushButton("+")
         varMinus = QPushButton("-")
@@ -776,7 +937,8 @@ class SummaryWindow(QWidget):
         self.makeVarLayout.addWidget(formula, self.newVarNum, 1, 1, 1)
         self.makeVarLayout.addWidget(varPlus, self.newVarNum, 2, 1, 1)
         self.makeVarLayout.addWidget(varMinus, self.newVarNum, 3, 1, 1)
-        self.makeVarLayout.addWidget(self.makeVarAdd, self.newVarNum + 1, 0, 1, 1)
+        self.makeVarLayout.addWidget(self.varListBtn, self.newVarNum + 1, 0, 1, 1)
+        # self.makeVarLayout.addWidget(self.makeVarAdd, self.newVarNum + 1, 2, 1, 2)
         self.makeVarLayout.addWidget(self.makeVarOk, self.newVarNum + 1, 1, 1, 1)
         
     def add_remove_newvar(self, action, wid_list, rownum):
@@ -788,6 +950,10 @@ class SummaryWindow(QWidget):
                 wid.deleteLater()
             self.newVarNum -= 1
             del self.newVarDict[rownum]
+            if self.newVarNum == 0:
+                self.makeVarLayout.removeWidget(self.varListBtn)
+                self.makeVarLayout.addWidget(self.makeVarAdd, 1, 1, 1, 1)
+                self.makeVarLayout.addWidget(self.makeVarOk, 1, 0, 1, 1)
             self.makeVarDialog.resize(468, 69)
             
     
@@ -797,15 +963,130 @@ class SummaryWindow(QWidget):
         
     
     def close_variable_dialog(self):
+        datadf_newvar = self.dataTransformList[-1].copy()
         for key in self.newVarDict.keys():
-            self.datadf = self.summary.create_var(var_name = self.newVarDict[key][0],
-                                                  formula = self.newVarDict[key][1],
-                                                  datadf = self.datadf_filtered)
+            datadf_newvar = self.summary.create_var(var_name = self.newVarDict[key][0],
+                                                           formula = self.newVarDict[key][1],
+                                                           datadf = datadf_newvar)
+        self.dataTransformList.append(datadf_newvar)
+        stepnum = str(len(self.transformList))
+        self.transformList.append(stepnum +':Create variable')
         self.update_dropdown_params()
 
-        self.datadf_filtered = self.summary.filter_df(self.datadf, 
-                                                      self.filter_dict)
+        # self.datadf_filtered = self.summary.filter_df(self.datadf, 
+        #                                               self.filter_dict)
         self.makeVarDialog.done(0)
+
+
+    #melt dialog to reshape datafame from wide-form to long-form
+    def melt_dialog_init(self):
+        self.meltDialog = QDialog(self)
+        self.meltDialog.setWindowTitle("Reshape data")
+        self.meltDialog.resize(400, 400)
+        
+        layout = QGridLayout(self.meltDialog)
+        
+        meltVarsLabel = QLabel('VARIABLES')
+        self.meltVars = DraggableListWidget(copyItem = False)
+        
+        rowLabel = QLabel('ROWS')
+        self.meltRowVars = DraggableListWidget(copyItem = False)
+        
+        varNameLabel = QLabel('VARIABLE NAME')
+        self.meltVarName = QLineEdit()
+        
+        valueNameLabel = QLabel('VALUE NAME')
+        self.meltValueName = QLineEdit()
+        
+        okbutton = QPushButton("OK")
+        okbutton.clicked.connect(self.close_melt_dialog)
+
+        layout.addWidget(meltVarsLabel, 0, 0, 1, 1)
+        layout.addWidget(self.meltVars, 1, 0, 5, 1)
+        layout.addWidget(rowLabel, 0, 1, 1, 1)
+        layout.addWidget(self.meltRowVars, 1, 1, 1, 1)
+        layout.addWidget(varNameLabel, 2, 1, 1, 1)
+        layout.addWidget(self.meltVarName, 3, 1, 1, 1)
+        layout.addWidget(valueNameLabel, 4, 1, 1, 1)
+        layout.addWidget(self.meltValueName, 5, 1, 1, 1)
+        layout.addWidget(okbutton, 6, 0, 1, 2)
+
+    def close_melt_dialog(self):
+        row_list = [self.meltRowVars.item(i).text() for i in range(self.meltRowVars.count())]
+       
+        if row_list != []:
+            meltDict = {'Variable columns': row_list,
+                        'Variable name': self.meltVarName.text(),
+                        'Value name': self.meltValueName.text()}
+            
+            datadf_reshaped = self.summary.melt_df(df = self.dataTransformList[-1],
+                                                        melt_dict = meltDict)
+            self.dataTransformList.append(datadf_reshaped)
+            stepnum = str(len(self.transformList))
+            self.transformList.append(stepnum +':Reshape')
+            self.update_dropdown_params()
+        self.meltDialog.done(0)
+        
+    #pivot table dialog
+    def pivot_dialog_init(self):
+        self.pivotDialog = QDialog(self)
+        self.pivotDialog.setWindowTitle("Pivot data")
+        self.pivotDialog.resize(400, 400)
+        
+        layout = QGridLayout(self.pivotDialog)
+        
+        pivotVarsLabel = QLabel('VARIABLES')
+        self.pivotVars = DraggableListWidget(copyItem = False)
+        
+        rowLabel = QLabel('ROWS')
+        self.pivotRowVars = DraggableListWidget(copyItem = False)
+        
+        columnLabel = QLabel('COLUMNS')
+        self.pivotColumnVars = DraggableListWidget(copyItem = False)
+        
+        valueLabel = QLabel('VALUES')
+        self.pivotValueVars = DraggableListWidget(copyItem = False)
+        
+        groupbyLabel = QLabel('GROUP BY')
+        self.pivotGroupFuncs = QComboBox(self.pivotDialog)
+        func_list = ['sum', 'min', 'max', 'count', 'mean', 'median', 'std dev']
+        self.pivotGroupFuncs.addItems(func_list)
+        
+        okbutton = QPushButton("OK")
+        okbutton.clicked.connect(self.close_pivot_dialog)
+
+        layout.addWidget(pivotVarsLabel, 0, 0, 1, 1)
+        layout.addWidget(self.pivotVars, 1, 0, 5, 1)
+        layout.addWidget(rowLabel, 0, 1, 1, 1)
+        layout.addWidget(self.pivotRowVars, 1, 1, 1, 1)
+        layout.addWidget(columnLabel, 2, 1, 1, 1)
+        layout.addWidget(self.pivotColumnVars, 3, 1, 1, 1)
+        layout.addWidget(valueLabel, 4, 1, 1, 1)
+        layout.addWidget(self.pivotValueVars, 5, 1, 1, 1)
+        layout.addWidget(groupbyLabel, 6, 0, 1, 1)
+        layout.addWidget(self.pivotGroupFuncs, 6, 1, 1, 1)
+        layout.addWidget(okbutton, 7, 0, 1, 2)
+    
+    def close_pivot_dialog(self):
+        val_list = [self.pivotValueVars.item(i).text() for i in range(self.pivotValueVars.count())]
+        row_list = [self.pivotRowVars.item(i).text() for i in range(self.pivotRowVars.count())]
+        col_list = [self.pivotColumnVars.item(i).text() for i in range(self.pivotColumnVars.count())]
+        
+        #BUG: only first value taken
+        val_list = val_list[0] if val_list != [] else None
+        row_list = row_list if row_list != [] else None
+        col_list = col_list if col_list != [] else None
+        
+        datadf_pivot = self.summary.create_pivot(df = self.dataTransformList[-1],
+                                                          vals = val_list,
+                                                          rows = row_list,
+                                                          cols = col_list,
+                                                          agg = self.pivotGroupFuncs.currentText())
+        self.dataTransformList.append(datadf_pivot)
+        stepnum = str(len(self.transformList))
+        self.transformList.append(stepnum +':Pivot')
+        self.update_dropdown_params()
+        self.pivotDialog.done(0)
                 
     def filter_dialog_init(self):
         self.filterDialog = QDialog(self)
@@ -924,11 +1205,119 @@ class SummaryWindow(QWidget):
         self.filter_dict[key][index] = val
         
     def close_filter_dialog(self):
-        print(self.filter_dict)
-        self.datadf_filtered = self.summary.filter_df(self.datadf, self.filter_dict)
+        logging.debug('%s', self.filter_dict)
+        datadf_filtered = self.summary.filter_df(self.dataTransformList[-1], self.filter_dict)
+        self.dataTransformList.append(datadf_filtered)
+        stepnum = str(len(self.transformList))
+        self.transformList.append(stepnum +':Filter')
+        self.update_dropdown_params()
         # self.summaryDict['filter'] = self.filter_dict
         self.filterDialog.done(0)
+        
+#draggable list widget
+class DraggableTextListWidget(QListWidget):
+    def mimeData(self, items):
+        md = super().mimeData(items)
+        text = ''.join([it.text() for it in items])
+        md.setText(text)
+        return md
 
+#draggable list widget
+#copyItem set to True to copy, False to move
+class DraggableListWidget(QListWidget):
+    def __init__(self, copyItem, delMethod = None):
+        super().__init__()
+        # self.setIconSize(QtCore.QSize(124, 124))
+        self.setDragDropMode(QAbstractItemView.DragDrop)
+        if copyItem == True:
+            self.setDefaultDropAction(Qt.CopyAction)
+        else:
+            self.setDefaultDropAction(Qt.MoveAction)
+        
+        self.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.setAcceptDrops(True)
+        self.delMethod = delMethod
+
+    def mimeData(self, items):
+        md = super().mimeData(items)
+        text = "['" + ''.join([it.text() for it in items]) + "']"
+        md.setText(text)
+        return md
+
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.accept()
+        else:
+            super().dragEnterEvent(event)
+
+    def dragMoveEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.setDropAction(Qt.CopyAction)
+            event.accept()
+        else:
+            super().dragMoveEvent(event)
+
+    def dropEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.setDropAction(Qt.CopyAction)
+            event.accept()
+            links = []
+            for url in event.mimeData().urls():
+                links.append(str(url.toLocalFile()))
+            self.emit(pyqtSignal("dropped"), links)
+        else:
+            event.setDropAction(Qt.MoveAction)
+            super().dropEvent(event)
+            
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Delete:
+            for item in self.selectedItems():
+                self.takeItem(self.row(item))
+            if self.delMethod != None:
+                self.delMethod()
+
+class PandasTableWidget(QDialog):
+    #initialize data dialog
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Data")
+        self.resize(600, 400)
+        
+        self.dataTab = QTabWidget()
+        
+        layout = QGridLayout(self)               
+        layout.addWidget(self.dataTab, 0, 0, 1, 0)
+        
+    #show data
+    #input dataDict: dict with table name and dataframe
+    def show_table(self, dataDict):
+
+        self.dataTab.clear()
+        
+        for key in dataDict.keys():
+            df = dataDict[key]
+            table = QTableWidget()
+            r, c = df.shape
+            table.setColumnCount(c)
+            table.setRowCount(r)
+            for j in range(c):
+                table.setHorizontalHeaderItem(j, QTableWidgetItem(str(df.columns[j])))
+                for i in range(r):
+                    table.setItem(i, j, QTableWidgetItem(str(df.iloc[i,j])))
+            
+            self.dataTab.addTab(table,key)
+        
+        self.show()
+    
+
+        
+        # for key in dataframes.keys():
+        #     table = tabulate(dataframes[key], headers='keys', tablefmt = 'psql')
+        #     wid = QTextEdit()
+        #     wid.setText(table)
+        #     data_tabs.addTab(wid,key)
+            
+                    
 # #model for QTableView for dataframe display        
 # class PandasModel(QAbstractTableModel):
 #     """

@@ -12,6 +12,7 @@ import source.app.drawroi as drawroi
 import source.process.imagetransform as imagetransform
 import time
 import statistics
+import logging
 
 class ImageSegment:
     
@@ -20,7 +21,7 @@ class ImageSegment:
                  tresh_cst = 0, invert = False, morph = False,
                   morph_type = "Erosion", morph_size = 5, morph_iter = 1):
         # frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        print("gray", time.time() * 1000)
+        logging.debug('%s, %s', "gray", time.time() * 1000)
 
         if tresh_type == "Global":
             ret, frame_bin = cv2.threshold(frame_gray, tresh_size, 255, cv2.THRESH_BINARY)
@@ -75,11 +76,11 @@ class ImageSegment:
                     seg_fg = 3, min_area = 25, max_area = 1000000):
     #    global filename, ms_type, roi_corners
     #    frame = cv2.imread(filename)
-        print("getContours")
+        logging.debug("getContours")
         if self.frame is None:
-            print('Error loading image')
+            logging.debug('Error loading image')
             exit()
-        print("start", time.time() * 1000)
+        logging.debug('%s, %s', "start", time.time() * 1000)
         
 ##        if self.subtract == True: #bg subtract flag
 ##            self.bgSubtract()
@@ -87,16 +88,16 @@ class ImageSegment:
 ##        if self.ms_type == 'Dry':
 ##            roi = self.roiBoundingRectangle() #(xmin, ymin, xmax, ymax)
         roi = self.roiBound
-        print("roi", roi)
+        logging.debug('%s, %s', "roi", roi)
         # frame_cropped = self.frame[roi[1]:roi[3], roi[0]:roi[2]].copy()
         frame_current = self.frame_current[roi[1]:roi[3], roi[0]:roi[2]].copy()
         frame_contour = self.frame_contour.copy()
         
-        print(self.frame.shape)
+        logging.debug('%s', self.frame.shape)
 
            
         frame_gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
-        print("gray", time.time() * 1000)
+        logging.debug('%s, %s', "gray", time.time() * 1000)
 
         # if tresh_type == "Global":
         #     ret, frame_bin = cv2.threshold(frame_gray, tresh_size, 255, cv2.THRESH_BINARY)
@@ -112,12 +113,13 @@ class ImageSegment:
                                   tresh_cst, invert, morph, morph_type, 
                                   morph_size, morph_iter)
         
-        print("treshold", time.time() * 1000)
+        logging.debug('%s, %s', "treshold", time.time() * 1000)
         
         if self.roi_auto == True:
             # Detect ROI automatically
 
-            print(self.tresh_size_roi, self.tresh_cst_roi, self.roi_tresh_type)
+            logging.debug('%s, %s, %s', self.tresh_size_roi, self.tresh_cst_roi, 
+                          self.roi_tresh_type)
             frame_gray_roi = cv2.cvtColor(frame_current, cv2.COLOR_BGR2GRAY) #grayscale
 
             #bg subtract
@@ -154,13 +156,13 @@ class ImageSegment:
 
         self.frame_bin_roi_full = np.zeros(frame_bin_roi.shape, dtype=np.uint8)
 
-        print("contours", time.time() * 1000)
+        logging.debug('%s, %s', "contours", time.time() * 1000)
 
         mask1 = np.zeros(frame_bin.shape, dtype=np.uint8)
 
         
         mask_full = 255*np.ones(frame_bin.shape, dtype=np.uint8)
-        print(mask_full.shape)
+        logging.debug('%s', mask_full.shape)
         
         self.areaDict = {} #area of contours calculated by pixel counting
         cpt = {}
@@ -171,7 +173,7 @@ class ImageSegment:
             # segm = np.zeros(frame_bin.shape, dtype=np.uint8)
         
         for k in self.roiDict.keys():
-            print(k) 
+            logging.debug('%s', k) 
             if len(self.roiDict.keys()) > 1 and k == "Default": #skip full when roi added
                 continue
             mask2 = 255*np.ones(frame_bin.shape, dtype=np.uint8)
@@ -180,10 +182,10 @@ class ImageSegment:
             self.roiDict[k][4], mask_roi_auto = self.getAutoROI(frame_bin_roi,
                                                                 mask, resize_factor)
             mask3 = cv2.bitwise_or(mask, mask_roi_auto)
-            print("mask", time.time() * 1000)
+            logging.debug('%s, %s', "mask", time.time() * 1000)
             frame_masked = cv2.bitwise_or(frame_bin, mask3)
             frame_masked = cv2.bitwise_not(frame_masked)
-            print("bitwise", time.time() * 1000)
+            logging.debug('%s, %s', "bitwise", time.time() * 1000)
             mask_full = cv2.bitwise_and(mask_full, mask3)
 
             # get actual roi area by coounting pixels (contour area, roi area)
@@ -221,10 +223,10 @@ class ImageSegment:
 
                 
 ##        frame_masked = cv2.bitwise_not(frame_masked)
-        print("find contours", time.time() * 1000)
+        logging.debug('%s, %s', "find contours", time.time() * 1000)
 ##        cv2.drawContours(frame_contour, self.contours, -1, (0,255,0), 1)
 
-        print("window show", time.time() * 1000)
+        logging.debug('%s, %s', "window show", time.time() * 1000)
 
 ##        frame_masked = cv2.bitwise_not(frame_masked)
         return frame_bin, frame_masked, frame_contour, cpt, ellipse
@@ -232,7 +234,8 @@ class ImageSegment:
     def getAutoROI(self, frame_bin_roi, mask, resize_factor): #get auto roi and corresponding mask
         if self.roi_auto == True:
             # Detect ROI automatically
-            print(self.tresh_size_roi, self.tresh_cst_roi, self.roi_tresh_type)
+            logging.debug('%s, %s, %s', self.tresh_size_roi, self.tresh_cst_roi, 
+                          self.roi_tresh_type)
 
 ##            if self.roi_tresh_type == "Global":
 ##                ret, frame_bin_roi = cv2.threshold(frame_gray, self.tresh_size_roi, 255, cv2.THRESH_BINARY)
@@ -265,7 +268,7 @@ class ImageSegment:
                                                                       self.y_roi_morph)
 ##            self.roiAutoFlag = 'Auto'
 
-            print("auto roi", time.time() * 1000)
+            logging.debug('%s, %s', "auto roi", time.time() * 1000)
             mask_roi_auto = 255*np.ones(frame_bin_roi.shape, dtype=np.uint8)
             roiCornersAuto = self.resizeContour(roiCornersAuto,
                                                      resize_factor)
@@ -504,7 +507,7 @@ class ImageSegment:
         i = 0
         j = 0
         n = len(contours)
-        print("contour property", n)
+        logging.debug('%s, %s', "contour property", n)
         if len(contours) != 0:
             while i - j <= len(contours) - 1:
                 a = cv2.contourArea(contours[i-j])
@@ -539,7 +542,7 @@ class ImageSegment:
                     ecc.append(ec)
                     self.contour_data[5].append(ec) #contour eccentricity
                 i += 1
-        print(n, j, len(contours))
+        logging.debug('%s, %s, %s', n, j, len(contours))
         # self.roiDict[key][2] = contours
         if ecc == []:
             ecc = [-1] #avoid median calc error
@@ -565,6 +568,6 @@ class ImageSegment:
         # print ('Number of contours:', contourNumber)
         # print ('ROI Area:', roiArea)
         
-        print("area plot", time.time() * 1000)
+        logging.debug('%s, %s', "area plot", time.time() * 1000)
         
         return frame_contour, cpt, contours

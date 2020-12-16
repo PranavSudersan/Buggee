@@ -6,6 +6,7 @@ Created on Sat May  4 13:48:07 2019
 """
 import cv2
 import numpy as np
+import logging
 
 pts = []
 trigger = 0
@@ -17,9 +18,6 @@ def roi_dry(window_name, im_disp):
     window_name = "Left click: Drop points; Right Click: Close Polygon; Enter: Continue"
     cv2.namedWindow(window_name,cv2.WINDOW_NORMAL)
     cv2.moveWindow(window_name, 0, 0)
-    
-    print (" Left click to drop points around interested region.\n")
-    print (" After finished, right click to show polygon.\n Press Enter to continue program.")
     
     def callback(event, x, y, flags, param):
 
@@ -47,7 +45,7 @@ def roi_dry(window_name, im_disp):
     
         if key == 13: #press enter to continue
             cv2.destroyAllWindows()
-            print("pts", pts)
+            logging.debug('%s, %s', "pts", pts)
             return pts
     
     

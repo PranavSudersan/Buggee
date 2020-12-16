@@ -6,7 +6,7 @@ Created on Sat Aug 29 23:03:32 2020
 """
 
 import numpy as np
-# import matplotlib.pyplot as plt
+import logging
 import matplotlib
 matplotlib.use('Qt5Agg')
 import matplotlib.lines as lines
@@ -50,7 +50,7 @@ class Plot2Widget(FigureCanvasQTAgg):
             # del self.artistDict["cursor2"]
 
     def cursor_initialize(self, XorY, label):
-        print("XorY")
+        logging.debug("XorY")
         x = [XorY, XorY]
         y = self.axes.get_ybound()
         line = lines.Line2D(x, y, picker=5)
@@ -62,12 +62,12 @@ class Plot2Widget(FigureCanvasQTAgg):
         return line
     
     def clickonline(self, event):
-        print("click event")
+        logging.debug("click event")
         # print(event.artist)
         if self.clickState == False and event.mouseevent.button == 1:
             self.clickState = True
             self.clicked_artist = event.artist
-            print(self.clicked_artist)
+            logging.debug('%s', self.clicked_artist)
             #detect cursor
             # if self.clicked_artist in [self.cursor1, self.cursor2]:
             #     print("line selected ")
@@ -92,7 +92,7 @@ class Plot2Widget(FigureCanvasQTAgg):
             
 
     def followmouse(self, event):
-        print(event.xdata, event.ydata, self.clicked_artist)
+        logging.debug('%s, %s, %s', event.xdata, event.ydata, self.clicked_artist)
         if event.xdata != None:
             x = event.xdata
             y = event.ydata
@@ -127,7 +127,7 @@ class Plot2Widget(FigureCanvasQTAgg):
                 if line in [self.cursor1, self.cursor2]:
                     continue
                 ydata = line.get_ydata()
-                print("type", type(ydata))
+                logging.debug('%s, %s', "type", type(ydata))
                 if type(ydata) in [int, float, np.float64]:
                     ymin.append(ydata)
                     ymax.append(ydata)
@@ -137,7 +137,7 @@ class Plot2Widget(FigureCanvasQTAgg):
                 
             # yticks = self.axes.get_yaxis().get_ticklocs()
             ybound = [min(ymin), max(ymax)]
-        print("ybound", ybound)
+        logging.debug('%s, %s', "ybound", ybound)
         cursor.set_xdata([x, x])
         cursor.set_ydata(ybound)
     
@@ -153,7 +153,7 @@ class Plot2Widget(FigureCanvasQTAgg):
 ##
 ##            print (self.xval)
             self.final_pos = (event.xdata, event.ydata)
-            print(event.button)
+            logging.debug('%s', event.button)
             self.mpl_disconnect(self.follower)
             self.mpl_disconnect(self.releaser)
             self.clickState = False
@@ -170,7 +170,7 @@ class Plot2Widget(FigureCanvasQTAgg):
                 self.method()
             
     def resizeWindow(self, event):
-        print("resize")
+        logging.debug("resize")
         # self.tight_layout()
         self.draw()
         self.draw_idle()
@@ -241,10 +241,10 @@ class PlotWidget(QWidget):
         self.show()
         
     def closeEvent(self, event): #close widget
-        print("closing plot")
+        logging.debug("closing plot")
         self.fig_close = True
         
     def resizeEvent(self, event):
-        print("resizing window")
-        print(self.fig.get_size_inches())
-        print(self.geometry())
+        logging.debug("resizing window")
+        logging.debug('%s', self.fig.get_size_inches())
+        logging.debug('%s', self.geometry())

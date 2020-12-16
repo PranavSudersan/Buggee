@@ -10,6 +10,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPolygonF
 from PyQt5.QtChart import QChart, QScatterSeries
 from PyQt5.QtWidgets import QSizePolicy
+import logging
 
 class MainLivePlot:
     
@@ -22,16 +23,16 @@ class MainLivePlot:
                 self.plotWindow.liveChart = QChart() #live chart
                 self.plotWindow.liveChart.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
                 self.plotWindow.liveChart.legend().hide()
-                print(self.plotWindow.liveChartView.size())
+                logging.debug('%s', self.plotWindow.liveChartView.size())
 
                 w, h = (self.plotWindow.liveChartView.size().width(),
                                                           self.plotWindow.liveChartView.size().height())
-                print(w,h)
+                logging.debug('%s, %s', w,h)
                 self.plotWindow.liveChart.setMinimumSize(w, h)
             
                 self.curve1 = QScatterSeries()#initialise live plot curves
                 self.initialise_live_plot(self.curve1, Qt.blue) #contact area plot
-                print(self.frameTime.shape)
+                logging.debug('%s', self.frameTime.shape)
                 data_ind = "Contact angle" \
                     if self.analysisMode.currentText() == "Contact Angle Analysis" \
                         else "Contact area"
@@ -55,7 +56,7 @@ class MainLivePlot:
                 self.plotWindow.liveChart.createDefaultAxes()
                 self.plotWindow.liveChartScene.addItem(self.plotWindow.liveChart)
                 self.plotWindow.liveChartView.setScene(self.plotWindow.liveChartScene)
-                print("live plot end")
+                logging.debug("live plot end")
         elif self.forceData.plotWidget.fig_close == False: #area and force plot
             self.forceData.getArea(self.frameTime, self.dataDict)
             # self.forceData.plotData(self.lengthUnit.currentText())

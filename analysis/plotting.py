@@ -9,7 +9,7 @@ matplotlib.use('Qt5Agg')
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 import numpy as np
-# import source.analysis.fitting as fitting
+import logging
 import pickle
 
 from source.analysis.plot2widget import PlotWidget
@@ -137,14 +137,14 @@ class Plotting:
         matplotlib.rcParams.update({'font.size': self.fontSize})
         self.fig1.set_size_inches(self.fig1.get_size_inches())
 
-        print("fig resize")
+        logging.debug("fig resize")
         # self.fig1.canvas.draw()
         # self.fig1 = plt.figure(num="Force/Area vs Time", figsize = [11, 5])
         # self.fig1 = Figure(figsize=(11, 5), dpi=100)
         
         # self.fig1.canvas.mpl_connect('close_event', self.handle_close)
         
-        print("fig1")
+        logging.debug("fig1")
         
         #store cursor position values before clearing plot
         # if self.plotWidget.wid.cursor1 == None:
@@ -851,7 +851,7 @@ class Plotting:
         self.fig1.tight_layout()
         self.fig1.canvas.draw()
         
-        print("axes", self.fig1.get_axes())
+        logging.debug('%s, %s', "axes", self.fig1.get_axes())
         # self.plotWidget.__init__(fig = self.fig1,
         #                          cursor1_init=c1_init,
         #                          cursor2_init=c2_init,
@@ -875,7 +875,7 @@ class Plotting:
         # self.plotWidget.resize(self.plotWidget.minimumSizeHint())
         # self.fig1.canvas.draw()
         self.sourceLabel = None #to prevent range buttons react to cursor drag
-        print("plot finish")
+        logging.debug("plot finish")
         
         # self.plotWidget.update()
         # self.plotWidget.wid.resizeWindow(None)
@@ -900,14 +900,14 @@ class Plotting:
                 elif ind == "friction area point":
                     self.imageAxisDict[ind][i].set_ydata(self.areaDict[k]["area_friction"]-zero_val_area)
                 else:
-                    print(ind)
+                    logging.debug('%s', ind)
                     if self.zeroShiftY == True:
                         zero_val = self.dataDict[k][ind][self.plot_slice2.start]
                     else:
                         zero_val = 0
                     ydata = [x - zero_val for x in self.dataDict[k][ind][self.plot_slice2]]
                     self.imageAxisDict[ind][i].set_ydata(ydata)
-                print("out", ind, i, k)
+                logging.debug('%s, %s, %s, %s', "out", ind, i, k)
                 if self.fixYLimits == True:
                     # redraw just the current rectangle
                     self.imageAxisDict[ind][i].axes.draw_artist(self.imageAxisDict[ind][i])
@@ -1056,15 +1056,15 @@ class Plotting:
     
     #update y bounds
     def updateYBounds(self):
-        print('clicked')
+        logging.debug('clicked')
         source = 'image'
         for category in self.configPlotWindow.plotDict[source].keys():
             category_dict = self.configPlotWindow.plotDict[source][category]
             for curve in category_dict['curves'].keys():
                 if curve in self.imageAxisDict.keys():
-                    print(curve)
+                    logging.debug('%s', curve)
                     y_bounds = ','.join(map(str,self.plotAxisDict[curve].get_ybound()))
-                    print(y_bounds)
+                    logging.debug('%s', y_bounds)
                     category_dict['curves'][curve]['y bounds'].setText(y_bounds)
             
     
@@ -1144,7 +1144,7 @@ class Plotting:
             if self.plotWidget.wid.cursor2 != None:
                 self.plotWidget.wid.cursor2.set_xdata([])
                 self.plotWidget.wid.cursor2.set_ydata([])
-        print(cursor_range)
+        logging.debug('%s', cursor_range)
         # self.fig1.canvas.draw()
         self.plotWidget.wid.draw_idle()
         # self.plotWidget.wid.updateBackground()
@@ -1224,7 +1224,7 @@ class Plotting:
         return data
 
     def savePlot(self, filepath): #save force plots
-        print("save plot")
+        logging.debug("save plot")
         self.toggleCursorVisibility(False)     
         self.fig1.savefig(filepath, orientation='landscape',
                           transparent = True)

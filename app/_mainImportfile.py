@@ -4,7 +4,7 @@ Created on Fri Jun 19 12:10:12 2020
 
 @author: adwait
 """
-
+import pims
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
@@ -14,7 +14,7 @@ import logging
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QFileDialog
 from PyQt5.QtChart import QScatterSeries
-from source.analysis.forceanalysis import ForceAnal
+# from source.analysis.forceanalysis import ForceAnal
 from source.threads.countframethread import CountFrameThread
 
 class MainImportFile:
@@ -23,7 +23,7 @@ class MainImportFile:
         self.videoPath, _ = QFileDialog.getOpenFileName(self, "Open Image File")
         if self.videoPath != "":
             self.frame = cv2.imread(self.videoPath)
-            self.ret = True
+            # self.ret = True
             self.playStatus = False
             self.recordStatus = False
             self.frameCount = 1
@@ -35,7 +35,7 @@ class MainImportFile:
             self.roiDict = {"Default": [roiCorners, self.roiBound, [], roiCorners, roiCorners]}
             self.frameBackground = 255 * np.ones((self.frameHeight,
                                                 self.frameWidth, 3),dtype=np.uint8)
-            self.renderVideo("Raw", self.ret, self.frame)
+            self.renderVideo("Raw", self.frame)
             self.frame_current = self.frame.copy()
             #Frame no. ROI label, contour id, area, length, ecc, array
             self.contour_data = [[], [], [], [], [], [], [], []] 
@@ -149,25 +149,33 @@ class MainImportFile:
             self.videoPath, _ = QFileDialog.getOpenFileName(self, "Open Video File")
         if self.videoPath != "":
 ##            self.statusBar.showMessage("Loading...")
-            self.cap = cv2.VideoCapture(self.videoPath)
+            # self.cap = cv2.VideoCapture(self.videoPath)
+            self.cap = pims.Video(self.videoPath)
             self.playStatus = False
             self.frameAction = "Play"
             self.recordStatus = False
+            # self.setVideoParam()
 ##            self.frameCount = self.cap.get(cv2.CAP_PROP_FRAME_COUNT)
-
-            self.countThread = CountFrameThread(self.cap) #count frames in separate thread
+            #BUG: frame number count calculation is dirty. fix it.
+            self.countThread = CountFrameThread(cv2.VideoCapture(self.videoPath)) #count frames in separate thread
             self.countThread.output.connect(self.loading_indicate)
             self.countThread.finished.connect(self.setVideoParam)
             self.countThread.start()
 
     def setVideoParam(self): #set video parameters
 ##            self.count_frames() #count number of frames by loop
-            self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            # self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
             self.frameCount = self.countThread.frameCount
-            self.frameWidth = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-            self.frameHeight = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-            self.frameRate = self.fpsSpinBox.value()
-             
+            # self.frameWidth = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            # self.frameHeight = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+   
+            # self.frameCount = len(self.cap)
+            self.frameHeight, self.frameWidth, _ = self.cap.frame_shape
+            self.framePos = 1
+            try:
+                self.fpsSpinBox.setValue(self.cap.frame_rate)
+            except Exception as e:
+                logging.warning(f'{e}')   
             logging.debug('%s, %s, %s', self.frameCount, self.frameWidth, self.frameRate)
             
             roiCorners = np.array([[0, 0],[self.frameWidth, 0], 
@@ -181,19 +189,20 @@ class MainImportFile:
                                                 self.frameWidth, 3),dtype=np.uint8)
             self.bgframeNumber = None
             
-            self.ret, self.frame = self.cap.read()
-            if self.ret == False: #reset video on error
-                    logging.debug("if")
-                    self.cap.release()
-                    self.cap = cv2.VideoCapture(self.videoPath)
-                    self.ret, self.frame = self.cap.read()
-            self.renderVideo("Raw", self.ret, self.frame)
+            # self.ret, self.frame = self.cap.read()
+            # if self.ret == False: #reset video on error
+            #         logging.debug("if")
+            #         self.cap.release()
+            #         self.cap = cv2.VideoCapture(self.videoPath)
+            #         self.ret, self.frame = self.cap.read()
+            self.frame = self.cap[0]
+            self.renderVideo("Raw", self.frame)
 
             self.effectScene.removeItem(self.effectPixmapItem)
             self.effectPixmapItem = self.effectScene.addPixmap(self.blankPixmap)
             self.effectView.fitInView(self.effectPixmapItem, 1)
                 
-            self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            # self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
             self.frame_current = self.frame.copy()
             #Frame no. ROI label, contour id, area, length, ecc, array
             self.contour_data = [[], [], [], [], [], [], [], []]
@@ -230,7 +239,7 @@ class MainImportFile:
             self.bg_roi_apply = self.applybgROI.isChecked()
             self.bg_blur_size_roi = self.bgblurROISpinBox.value()
             self.bg_blend_roi = self.bgblendROISpinBox.value()
-            self.framePos = 0
+            # self.framePos = 0
             self.roi_min_area = self.roiMinSpinBox.value()
             self.epsilon_fraction = 10**(self.epsilonSpinBox.value())
             self.roi_morph = self.morphROI.isChecked()
@@ -241,7 +250,7 @@ class MainImportFile:
             self.definePaths()
             
             self.seekSlider.blockSignals(True)
-            self.seekSlider.setValue(0)
+            self.seekSlider.setValue(1)
             self.seekSlider.setTickInterval(int(0.2 *self.frameCount))
             self.seekSlider.setSingleStep(int(0.1 *self.frameCount))
             self.seekSlider.setMaximum(int(self.frameCount))
@@ -310,7 +319,7 @@ class MainImportFile:
 
             self.init_dict() #initialise dictionaries
             
-            self.framePos = 1 #avoid array indexing issue
+            # self.framePos = 1 #avoid array indexing issue
             self.frame_bin_roi_full = None
 
             self.curve1 = QScatterSeries()#initialise live plot curves

@@ -2101,8 +2101,8 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
     #                 else:
     #                     frame_disp = self.frame_current[roi[1]:roi[3], roi[0]:roi[2]].copy()
 
-                self.renderVideo("Raw", self.ret, frame_disp)
-                self.renderVideo("Effect", self.ret, self.frameEffect)
+                self.renderVideo("Raw", frame_disp)
+                self.renderVideo("Effect", self.frameEffect)
                 self.recordVideo(frame_disp, self.frameEffect)
 
                 logging.debug('%s, %s', "Render finish", time.time())
@@ -2121,7 +2121,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                                                              roi[0]:roi[2]].copy(),
                               'Transformed': self.frame}
                 frame_disp = rawChoices.get(rawtabname)                
-                self.renderVideo("Raw", self.ret, frame_disp)
+                self.renderVideo("Raw", frame_disp)
                 self.effectScene.removeItem(self.effectPixmapItem)
                 self.effectPixmapItem = self.effectScene.addPixmap(self.blankPixmap)
                 self.effectView.fitInView(self.effectPixmapItem, 1)
@@ -2629,9 +2629,9 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         self.configPathWindow.close()
             
     #render video frame
-    def renderVideo(self, view, ret, frame, roiCorners = np.array([],np.int32)): 
+    def renderVideo(self, view, frame, roiCorners = np.array([],np.int32)): 
 
-        if ret == True and self.recordStatus == False:
+        if self.recordStatus == False:
             
 ##            if view == "Raw" and self.analyzeVideo.isChecked() == False:
 ##                roi = self.roiBound

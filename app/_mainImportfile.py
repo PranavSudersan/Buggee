@@ -22,8 +22,9 @@ class MainImportFile:
     def load_image(self): #load image file
         self.videoPath, _ = QFileDialog.getOpenFileName(self, "Open Image File")
         if self.videoPath != "":
-            self.frame = cv2.imread(self.videoPath)
-            # self.ret = True
+            self.cap = pims.open(self.videoPath)
+            # self.frame = cv2.imread(self.videoPath)
+            self.frame = self.cap[0]
             self.playStatus = False
             self.recordStatus = False
             self.frameCount = 1
@@ -135,8 +136,8 @@ class MainImportFile:
             # self.effectViewTab.setTabEnabled(6,True)
             
             self.videoFileNameLabel.setText("<b>Video file:</b>\n" + self.videoPath) #video path
-            self.forceFileNameLabel.setText("Select force data from file menu")
-            self.zeroForceFileNameLabel.setText("Select zero-force data from file menu")
+            # self.forceFileNameLabel.setText("Select force data from file menu")
+            # self.zeroForceFileNameLabel.setText("Select zero-force data from file menu")
             self.statusBar.showMessage("Frame number: " + str(int(self.framePos)))
             
             self.frame_bin_roi_full = None
@@ -309,8 +310,8 @@ class MainImportFile:
             # self.effectViewTab.setTabEnabled(6,True)
 
             self.videoFileNameLabel.setText("<b>Video file:</b>\n" + self.videoPath) #video path
-            self.forceFileNameLabel.setText("Select force data from file menu")
-            self.zeroForceFileNameLabel.setText("Select zero-force data from file menu")
+            # self.forceFileNameLabel.setText("Select force data from file menu")
+            # self.zeroForceFileNameLabel.setText("Select zero-force data from file menu")
 ##            self.statusBar.showMessage("Frame number: " + str(int(self.framePos)) + "\t("
 ##                                       + str(int((self.framePos)*100/self.frameCount)) +
 ##                                       "%)")

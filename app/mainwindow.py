@@ -234,7 +234,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         self.statusBar = QStatusBar() #status bar
         self.setStatusBar(self.statusBar)
 
-        #initialize parameters
+        #initialize essential parameters
         self.frame = []
         self.frameAction = "Stop"
         self.videoPath = ""
@@ -242,6 +242,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         self.msrmnt_num = None
         # self.comb = False
         self.bgframeNumber = 0
+        self.frameCount = 0
         
         self.home()
         
@@ -2938,7 +2939,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         self.configPlotWindow.close()
 
     def updatePlot(self): #update plot
-        if self.videoPath != "":
+        if self.videoPath != "" and self.frameCount != 1:
             if self.forceData.force_filepath != "":
                 # self.init_plotconfig()
                 if self.forceData.ptsnumber != 0: #when no force file loaded
@@ -3180,62 +3181,95 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         if len(self.frame) != 0:
             window_name = "Drag left mouse key and release. Right click: delete. Enter: Continue"
             img_disp = self.frame.copy()
-            img_disp_clear = self.frame.copy()
+            # img_disp_clear = self.frame.copy()
             cv2.namedWindow(window_name,cv2.WINDOW_KEEPRATIO)
             cv2.moveWindow(window_name, 0, 0)
-            global trigger, click
-            pts = []
+            global trigger, click, pts, pt_id
+            pts = [None, None]
             trigger = 0
             click = 0
             
             def callback(event, x, y, flags, param):
 
-                global trigger, click
-
+                global trigger, click, pts, pt_id
+                rad = 5 #endpoint radius
+                img_disp_clear = self.frame.copy()
                 if  event == cv2.EVENT_LBUTTONDOWN:
-                    pts.append([x,y])
-                    click = 1
+                    if trigger == 0:
+                        # pts.append([x,y])
+                        pts[0] = [x,y]
+                        pt_id = 0
+                        click = 1
+                        trigger = 1
+                    else:
+                        if np.linalg.norm(np.array(pts[0])-np.array([x,y])) <= rad:
+                            pt_id = 1
+                            click = 1
+                        elif np.linalg.norm(np.array(pts[1])-np.array([x,y])) <= rad:
+                            pt_id = 0
+                            click = 1
                 elif event == cv2.EVENT_LBUTTONUP and click == 1:
                     click = 0
-                    pts.append([x,y])
+                    # pts.append([x,y])
+                    pts[abs(pt_id-1)] = [x,y]
                     cv2.line(img_disp_clear, tuple(pts[0]),tuple(pts[1]), 
                                                (0,0,255), 2)
+                    cv2.circle(img_disp_clear, tuple(pts[0]), rad, (0,0,255), -1)
+                    cv2.circle(img_disp_clear, tuple(pts[1]), rad, (0,0,255), -1)
+                    
                     length = np.linalg.norm(np.array(pts[0])-np.array(pts[1]))
-                    angle = np.rad2deg(np.arctan((pts[0][1] - pts[1][1])/
-                                                 (pts[1][0] - pts[0][0])))
+                    try:
+                        angle = abs(np.rad2deg(np.arctan((pts[0][1] - pts[1][1])/
+                                                     (pts[1][0] - pts[0][0]))))
+                    except ZeroDivisionError:
+                        angle = 90
                     logging.debug('%s, %s', "length1", length)
                     font = cv2.FONT_HERSHEY_SIMPLEX
-                    posx = int((pts[0][0]+pts[1][0])/2)
-                    posy = int((pts[0][1]+pts[1][1])/2)
-                    cv2.putText(img_disp_clear, "{0:.2f}".format(length) + ' px  '
-                                + "{0:.2f}".format(angle) +' deg', (posx, posy), font,
-                                1,(0,255,0),2)
+                    font_scale = 0.5
+                    # posx = int((pts[0][0]+pts[1][0])/2)
+                    # posy = int((pts[0][1]+pts[1][1])/2)
+                    w, h, _ = img_disp_clear.shape
+                    logging.debug('%s, %s', w, h)
+                    pos1 = (int(0.05*w), int(0.05*h))
+                    pos2 = (int(0.05*w), pos1[1] + 20)
+                    # cv2.putText(img_disp_clear, "{0:.2f}".format(length) + ' px  '
+                    #             + "{0:.2f}".format(angle) +' deg', (posx, posy), font,
+                    #             1,(0,255,0),2)
+                    cv2.putText(img_disp_clear, "{0:.2f}".format(length) + ' px', 
+                                pos1, font, font_scale, (0,255,0), 2)
+                    cv2.putText(img_disp_clear, "{0:.2f}".format(angle) +' deg', 
+                                pos2, font, font_scale, (0,255,0), 2)
+                    cv2.imshow(window_name,img_disp_clear)
                 elif event == cv2.EVENT_RBUTTONDOWN:
-                    pts.clear()
-                    trigger = 1
+                    # pts.clear()
+                    pts = [None, None]
+                    trigger = 0
+                    cv2.imshow(window_name,img_disp_clear)
                     logging.debug("pp")
-                else:
-                    if len(pts) == 1:
-                        cv2.line(img_disp, tuple(pts[0]), tuple([x,y]), 
-                                               (0,0,255), 1)
+                elif click == 1 and pts[pt_id] != None:
+                    # if len(pts) != 0:
+                    cv2.line(img_disp_clear, tuple(pts[pt_id]), tuple([x,y]),
+                             (0,0,255), 1)
+                    cv2.imshow(window_name,img_disp_clear)
                     
             cv2.setMouseCallback(window_name, callback)
-            
-            while True:           
-                cv2.imshow(window_name,img_disp)
-                if trigger == 1:
-                    logging.debug("trigger")
-                    img_disp_clear = self.frame.copy()
-                    trigger = 0
+            cv2.imshow(window_name,img_disp)
+            #exit loop on window close
+            while cv2.getWindowProperty(window_name, 0) >= 0:           
+                # cv2.imshow(window_name,img_disp)
+                # if trigger == 1:
+                #     logging.debug("trigger")
+                #     # img_disp_clear = self.frame.copy()
+                #     trigger = 0
                     
-                img_disp = img_disp_clear.copy()
+                # img_disp = img_disp_clear.copy()
                 
                 key = cv2.waitKey(10) & 0xFF
-            
-                if key == 13: #press enter to continue
+                #press enter or close window to continue
+                if key == 13: 
                     cv2.destroyAllWindows()
                     logging.debug('%s, %s, %s', "pts", pts, trigger)
-                    if pts:
+                    if None not in pts:
                         length = np.linalg.norm(np.array(pts[0])-np.array(pts[1]))
                         logging.debug('%s', length)
                         self.pixelValue.setValue(round(length,2))

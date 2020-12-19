@@ -23,21 +23,31 @@ class MainPlaybackFunctions:
             while True:
                 logging.debug('%s, %s', "Loop start", time.time())
                 
-                self.ret, self.frame_current = self.cap.read()
-                logging.debug('%s, %s', "try", self.ret)
-                if self.ret == False: #reset video at end or at error
-                    logging.debug("if")
-                    self.cap.release()
-                    self.cap = cv2.VideoCapture(self.videoPath)
-                    self.ret, self.frame_current = self.cap.read()
-                    self.framePos = self.cap.get(cv2.CAP_PROP_POS_FRAMES)
+                if self.framePos > self.frameCount: #reset at end
+                    self.framePos = 1
                     if self.repeatBtn.isChecked()==False:
                         self.playStatus = False #pause
-                    else:
-                        self.playStatus = True #play
-                else:
-                    self.framePos = self.cap.get(cv2.CAP_PROP_POS_FRAMES)
-                    logging.debug('%s, %s', "else", self.framePos)
+                    # else:
+                    #     self.playStatus = True #play
+                        
+                    # self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                    print("reset")
+                # self.ret, self.frame_current = self.cap.read()
+                self.frame_current = self.cap[self.framePos-1]
+                # logging.debug('%s, %s', "try", self.ret)
+                # if self.ret == False: #reset video at end or at error
+                #     logging.debug("if")
+                #     self.cap.release()
+                #     self.cap = cv2.VideoCapture(self.videoPath)
+                #     self.ret, self.frame_current = self.cap.read()
+                #     self.framePos = self.cap.get(cv2.CAP_PROP_POS_FRAMES)
+                #     if self.repeatBtn.isChecked()==False:
+                #         self.playStatus = False #pause
+                #     else:
+                #         self.playStatus = True #play
+                # else:
+                #     self.framePos = self.cap.get(cv2.CAP_PROP_POS_FRAMES)
+                logging.debug('%s, %s', "else", self.framePos)
 
                 self.seekSlider.blockSignals(True)
                 self.seekSlider.setValue(int(self.framePos))
@@ -89,23 +99,20 @@ class MainPlaybackFunctions:
                             break
                         if self.frameAction == "Next": #next frame
                             self.frameAction = "Pause"
-                            logging.debug('%s, %s', self.cap.get(cv2.CAP_PROP_POS_FRAMES),
-                                          self.framePos)
+                            logging.debug('%s', self.framePos)
                             # self.effectChain = [1, 1, 1, 1]
                             break
                         if self.frameAction == "Previous": #previous frame
                             #change below to consider last two frames as well.CHECK
     ##                        self.framePos = self.frameCount + self.framePos - 3 \
     ##                                   if self.framePos < 2 else self.framePos - 2
-                            logging.debug('%s, %s', self.cap.get(cv2.CAP_PROP_POS_FRAMES),
-                                          self.framePos)
+                            logging.debug('%s', self.framePos)
                             self.framePos = self.frameCount - 1 \
                                        if self.framePos == 1 else self.framePos - 2
                             logging.debug('%s', self.framePos)
-                            self.cap.set(cv2.CAP_PROP_POS_FRAMES, self.framePos)
+                            # self.cap.set(cv2.CAP_PROP_POS_FRAMES, self.framePos)
                             self.frameAction = "Pause"
-                            logging.debug('%s, %s', self.cap.get(cv2.CAP_PROP_POS_FRAMES),
-                                          self.framePos)
+                            logging.debug('%s', self.framePos)
                             # self.effectChain = [1, 1, 1, 1]
                             break
                         if self.frameAction == "Stop": #stop
@@ -117,12 +124,13 @@ class MainPlaybackFunctions:
                     #TO DO: make a video initialize function
                     logging.debug("stop 2")
                     self.playBtn.setIcon(QIcon('images/play.png'))
-                    self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                    # self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
                     self.framePos = 1 #avoid array indexing issue (-1)
                     self.seekSlider.blockSignals(True)
-                    self.seekSlider.setValue(0)
+                    self.seekSlider.setValue(1)
                     self.seekSlider.blockSignals(False)
-                    self.ret, self.frame_current = self.cap.read()
+                    # self.ret, self.frame_current = self.cap.read()
+                    self.frame_current = self.cap[0]
                     self.frame = self.frame_current.copy()
 ##                    self.roiBound = [0, 0, self.frameWidth, self.frameHeight]
 ##                    self.video_effect(self.frame)
@@ -131,8 +139,8 @@ class MainPlaybackFunctions:
                     self.combine_roi = self.combineROI.isChecked()
 ##                    self.video_analysis() #tresholding and analysis
                     
-                    self.renderVideo("Raw", self.ret, self.frame)
-                    self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                    self.renderVideo("Raw", self.frame)
+                    # self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
                     self.playStatus = False
                     # self.frame_current = self.frame.copy()
                     # self.effectChain = [1, 1, 1, 1]
@@ -145,6 +153,7 @@ class MainPlaybackFunctions:
                     break
 
                 self.frame = None
+                self.framePos += 1
 
     def stop_video(self):
         if self.videoPath != "":
@@ -167,28 +176,33 @@ class MainPlaybackFunctions:
 
     def seek_video(self):
         if self.videoPath != "":
-            self.cap.set(cv2.CAP_PROP_POS_FRAMES, self.seekSlider.value())
+            # self.cap.set(cv2.CAP_PROP_POS_FRAMES, self.seekSlider.value())
 ##            self.framePos = self.seekSlider.value()
 ##            if self.framePos == self.frameCount-1: #REMOVE -1 and CHECK
 ##                self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
 
-            self.ret, self.frame_current = self.cap.read()
-            if self.seekSlider.value() == 0:
-                self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            # self.ret, self.frame_current = self.cap.read()
+            
+            # if self.seekSlider.value() == 0:
+                # self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            # else:
+            self.framePos = self.seekSlider.value()
+            
+            self.frame_current = self.cap[self.framePos-1]
 
-            if self.ret == False: #CHECK
-                logging.debug("if")
-                self.cap.release()
-                self.cap = cv2.VideoCapture(self.videoPath)
-                self.ret, self.frame_current = self.cap.read()
+            # if self.ret == False: #CHECK
+            #     logging.debug("if")
+            #     self.cap.release()
+            #     self.cap = cv2.VideoCapture(self.videoPath)
+            #     self.ret, self.frame_current = self.cap.read()
 ##                self.framePos = self.cap.get(cv2.CAP_PROP_POS_FRAMES)
 ##            else:
-            self.framePos = self.cap.get(cv2.CAP_PROP_POS_FRAMES)
+            # self.framePos = self.cap.get(cv2.CAP_PROP_POS_FRAMES)
             logging.debug('%s, %s', "else", self.framePos)
 
-            self.seekSlider.blockSignals(True)
-            self.seekSlider.setValue(self.framePos)
-            self.seekSlider.blockSignals(False)
+            # self.seekSlider.blockSignals(True)
+            # self.seekSlider.setValue(self.framePos)
+            # self.seekSlider.blockSignals(False)
 
             self.statusBar.showMessage("Frame number: " + str(int(self.framePos)) + "\t("
                                            + str(int((self.framePos)*100/self.frameCount)) +

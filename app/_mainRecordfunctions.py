@@ -6,6 +6,7 @@ Created on Wed Jun 24 21:46:56 2020
 """
 import numpy as np
 import cv2
+import pims
 from tkinter import messagebox, Tk
 from PIL import ImageFont, ImageDraw, Image
 from PyQt5.QtGui import QIcon
@@ -61,34 +62,34 @@ class MainRecordFunctions:
                     if int(self.framePos) == end_framenum:
                     # if ret == False: #video at end
                         logging.debug("2nd video end")
-                        self.cap2.release()
+                        # self.cap2.release()
                         self.cap2 = None
                         self.record_frame() #finish recording
                         self.playStatus = True
                         return
                     else:
                         frame2 = self.frame_contour.copy()
-                        ret, frame3 = self.cap2.read()
+                        ret, frame3 = self.cap2[self.framePos-1]#self.cap2.read()
                         self.forceData.getArea(self.frameTime, self.dataDict)
                         # self.forceData.plotData(self.imageDataUnitDict) #prepare plot
                         self.forceData.plotImageAnimate(int(self.framePos))
                         frame4 = cv2.resize(cv2.cvtColor(self.forceData.convertPlot(), cv2.COLOR_RGB2BGR),
                                                               (w, h), interpolation = cv2.INTER_AREA)
-                        framenumber1 = self.cap.get(cv2.CAP_PROP_POS_FRAMES)
-                        framenumber2 = self.cap2.get(cv2.CAP_PROP_POS_FRAMES)
-                        logging.debug('%s, %s, %s', "position", framenumber1, framenumber2)
-                        if framenumber1 != framenumber2: #check both videos are in sync
-                            root = Tk()
-                            root.withdraw()
-                            messagebox.showinfo("Error!", "Video frame numbers dont match!\n" +
-                                                "Video-1 frame:\t" + str(framenumber1) + "\n" +
-                                                "Video-2 frame:\t" + str(framenumber2))
-                            root.destroy()
-                            self.record_frame() #finish recording
-                            self.playStatus = False #pause video
-                            return
-                        logging.debug('%s, %s, %s', "position", self.cap.get(cv2.CAP_PROP_POS_FRAMES),
-                                      self.cap2.get(cv2.CAP_PROP_POS_FRAMES))
+                        # framenumber1 = self.cap.get(cv2.CAP_PROP_POS_FRAMES)
+                        # framenumber2 = self.cap2.get(cv2.CAP_PROP_POS_FRAMES)
+                        # logging.debug('%s, %s, %s', "position", framenumber1, framenumber2)
+                        # if framenumber1 != framenumber2: #check both videos are in sync
+                        #     root = Tk()
+                        #     root.withdraw()
+                        #     messagebox.showinfo("Error!", "Video frame numbers dont match!\n" +
+                        #                         "Video-1 frame:\t" + str(framenumber1) + "\n" +
+                        #                         "Video-2 frame:\t" + str(framenumber2))
+                        #     root.destroy()
+                        #     self.record_frame() #finish recording
+                        #     self.playStatus = False #pause video
+                        #     return
+                        # logging.debug('%s, %s, %s', "position", self.cap.get(cv2.CAP_PROP_POS_FRAMES),
+                        #               self.cap2.get(cv2.CAP_PROP_POS_FRAMES))
                         
                         self.merged_frame[:h, w:], r = self.image_resize(frame3, w, h,
                                                                   inter = cv2.INTER_AREA)
@@ -169,8 +170,8 @@ class MainRecordFunctions:
                 cv2.namedWindow("Recording Preview", cv2.WINDOW_KEEPRATIO)
                 cv2.imshow("Recording Preview", self.merged_frame)
                 cv2.resizeWindow("Recording Preview", 800, 400)
-            elif self.configRecWindow.fourRec.isChecked() == True:
-                ret, frame3 = self.cap2.read()
+            # elif self.configRecWindow.fourRec.isChecked() == True:
+            #     ret, frame3 = self.cap2.read()
 
     def record_frame(self):
         logging.debug("record_frame")
@@ -272,8 +273,9 @@ class MainRecordFunctions:
         videofile2 = self.configRecWindow.videoTextbox.toPlainText() #second video
         logging.debug(videofile2)
         if videofile2 != "":
-            self.cap2 = cv2.VideoCapture(videofile2)
+            # self.cap2 = cv2.VideoCapture(videofile2)
+            self.cap2 = pims.Video(videofile2)
         self.configRecWindow.close()
-        self.seekSlider.setValue(0) #reset to beginning
+        self.seekSlider.setValue(1) #reset to beginning
         # self.showContours.setChecked(False) #uncheck show contours
         self.clear_data() #clear data

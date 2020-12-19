@@ -123,7 +123,7 @@ class MainWidgets:
 ##        self.nextBtn.move(250,500)
 
         self.repeatBtn = QPushButton("", self) #Repeat playback
-        self.repeatBtn.clicked.connect(self.next_frame)
+        # self.repeatBtn.clicked.connect(self.next_frame)
         self.repeatBtn.setIcon(QIcon('images/repeat.png'))
         self.repeatBtn.setCheckable(True)
         
@@ -136,9 +136,9 @@ class MainWidgets:
         
         self.seekSlider = QSlider(Qt.Horizontal, self) #seek bar
 ##        self.seekSlider.setGeometry(30, 60, 200, 30)
-        self.seekSlider.setMinimum(0)
+        self.seekSlider.setMinimum(1)
         self.seekSlider.setMaximum(100)
-        self.seekSlider.setValue(0)
+        self.seekSlider.setValue(1)
         self.seekSlider.setTickInterval(10)
         self.seekSlider.setSingleStep(2)
         self.seekSlider.setTickPosition(QSlider.TicksBelow)

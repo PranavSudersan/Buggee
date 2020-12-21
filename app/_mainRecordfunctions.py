@@ -69,7 +69,7 @@ class MainRecordFunctions:
                         return
                     else:
                         frame2 = self.frame_contour.copy()
-                        ret, frame3 = self.cap2[self.framePos-1]#self.cap2.read()
+                        frame3 = self.cap2[self.framePos-1]#self.cap2.read()
                         self.forceData.getArea(self.frameTime, self.dataDict)
                         # self.forceData.plotData(self.imageDataUnitDict) #prepare plot
                         self.forceData.plotImageAnimate(int(self.framePos))

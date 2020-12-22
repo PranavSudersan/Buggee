@@ -154,8 +154,12 @@ class MainWidgets:
 ##        self.roiBtn.move(375,500)
 
         self.measureBtn = QPushButton("Measure", self) #Measure pixel length
-        self.measureBtn.clicked.connect(self.measureScale)
+        self.measureBtn.clicked.connect(lambda: self.measureScale(measure=True))
         self.measureBtn.setStyleSheet("QPushButton { font-weight: bold; font-size: 18px;} ")
+        
+        self.calibBtn = QPushButton("Calibrate", self) #Calibrate pixel length
+        self.calibBtn.clicked.connect(lambda: self.measureScale(measure=False))
+        self.calibBtn.setStyleSheet("QPushButton { font-weight: bold; font-size: 18px;} ")
 ##        self.measureBtn.resize(self.measureBtn.minimumSizeHint())
 ##        self.measureBtn.move(375,575)
 
@@ -931,7 +935,8 @@ class MainWidgets:
         measureVbox.addWidget(self.pixelLabel, 0, 1, 1, 1)
         measureVbox.addWidget(self.lengthValue, 0, 2, 1, 1)
         measureVbox.addWidget(self.lengthUnit, 0, 3, 1, 1)
-        measureVbox.addWidget(self.measureBtn, 1, 1, 1, 2)
+        measureVbox.addWidget(self.calibBtn, 1, 0, 1, 2)
+        measureVbox.addWidget(self.measureBtn, 1, 2, 1, 2)
 
         fpsGroupBox = QGroupBox("Adjust")
         # fpsGroupBox.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)

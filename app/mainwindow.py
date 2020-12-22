@@ -12,7 +12,7 @@ import time
 import os.path
 # from tkinter import messagebox, Tk
 import pandas as pd
-# from PIL import ImageFont, ImageDraw, Image
+from PIL import ImageFont, ImageDraw, Image
 # import openpyxl
 import copy
 import ast
@@ -2060,13 +2060,13 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                     self.forceData.getArea(self.frameTime, self.dataDict)
                     # self.forceData.plotData(self.imageDataUnitDict) #prepare plot
                     self.forceData.plotImageAnimate(int(self.framePos))
-                    self.w = self.roiBound[2] - self.roiBound[0]
-                    self.h = self.roiBound[3] - self.roiBound[1]
+                    # self.w = self.roiBound[2] - self.roiBound[0]
+                    # self.h = self.roiBound[3] - self.roiBound[1]
                     # dim = (1280, 1024) #CHECK!
                     dim = self.rawView.width(), self.rawView.height()
-    ##                dim = (2560, 1440)
+    ##                dim = (2560, 1440)image_resize
                     self.frameEffect = cv2.resize(cv2.cvtColor(self.forceData.convertPlot(), cv2.COLOR_RGB2BGR),
-                                                  dim, interpolation = cv2.INTER_AREA) 
+                                                  dim, interpolation = cv2.INTER_AREA)
                 else:
                     self.frameEffect = self.effectChoices.get(effecttabname)
                     # self.frameEffect = self.effectChoices.get(self.videoEffect. \
@@ -2951,6 +2951,14 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
             # self.plot_live_data() #CHECK!
                     # if self.forceData.plotWidget.fig_close == False: #area and force plot
                     self.forceData.plotData(self.imageDataUnitDict)
+                    #render plot on view port
+                    if self.effectViewTab.tabText(self.effectViewTab.currentIndex()) == 'Plot':
+                        self.frameEffect = cv2.resize(cv2.cvtColor(self.forceData.convertPlot(), 
+                                                                   cv2.COLOR_RGB2BGR),
+                                                      (self.rawView.width(), self.rawView.height()), 
+                                                      interpolation = cv2.INTER_AREA)
+                        self.renderVideo("Effect", self.frameEffect)
+                        
 
     def plotSequence(self): #sequence of plot calculations
         # if self.forceData.force_filepath != "":
@@ -3177,21 +3185,22 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
 #         self.configROIWindow.roiLabel.blockSignals(False)
 
         
-    def measureScale(self): #measure length in pixels
+    def measureScale(self, measure = False): #measure length in pixels
         if len(self.frame) != 0:
             window_name = "Drag left mouse key and release. Right click: delete. Enter: Continue"
             img_disp = self.frame.copy()
             # img_disp_clear = self.frame.copy()
             cv2.namedWindow(window_name,cv2.WINDOW_KEEPRATIO)
             cv2.moveWindow(window_name, 0, 0)
-            global trigger, click, pts, pt_id
+            global trigger, click, pts, pt_id, msr
+            msr = measure
             pts = [None, None]
             trigger = 0
             click = 0
             
             def callback(event, x, y, flags, param):
 
-                global trigger, click, pts, pt_id
+                global trigger, click, pts, pt_id, msr
                 rad = 5 #endpoint radius
                 img_disp_clear = self.frame.copy()
                 if  event == cv2.EVENT_LBUTTONDOWN:
@@ -3218,28 +3227,41 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                     cv2.circle(img_disp_clear, tuple(pts[1]), rad, (0,0,255), -1)
                     
                     length = np.linalg.norm(np.array(pts[0])-np.array(pts[1]))
+                    if msr == True: # calculate length in units
+                        length *= self.calibFactor
+                        unit = self.lengthUnit.currentText()
+                    else:
+                        unit = 'px'
+                    
                     try:
                         angle = abs(np.rad2deg(np.arctan((pts[0][1] - pts[1][1])/
                                                      (pts[1][0] - pts[0][0]))))
                     except ZeroDivisionError:
                         angle = 90
                     logging.debug('%s, %s', "length1", length)
-                    font = cv2.FONT_HERSHEY_SIMPLEX
-                    font_scale = 0.5
+                    # font = cv2.FONT_HERSHEY_SIMPLEX
+                    # font_scale = 0.5
                     # posx = int((pts[0][0]+pts[1][0])/2)
                     # posy = int((pts[0][1]+pts[1][1])/2)
                     w, h, _ = img_disp_clear.shape
                     logging.debug('%s, %s', w, h)
                     pos1 = (int(0.05*w), int(0.05*h))
-                    pos2 = (int(0.05*w), pos1[1] + 20)
+                    # pos2 = (int(0.05*w), pos1[1] + 20)
+                    text = "L: {0:.2f} ".format(length) + unit + "\n" + \
+                        "A: {0:.2f}°".format(angle)
                     # cv2.putText(img_disp_clear, "{0:.2f}".format(length) + ' px  '
                     #             + "{0:.2f}".format(angle) +' deg', (posx, posy), font,
                     #             1,(0,255,0),2)
-                    cv2.putText(img_disp_clear, "{0:.2f}".format(length) + ' px', 
-                                pos1, font, font_scale, (0,255,0), 2)
-                    cv2.putText(img_disp_clear, "{0:.2f}".format(angle) +' deg', 
-                                pos2, font, font_scale, (0,255,0), 2)
-                    cv2.imshow(window_name,img_disp_clear)
+                    # cv2.putText(img_disp_clear, "{0:.2f} ".format(length) + unit, 
+                    #             pos1, font, font_scale, (0,255,0), 2)
+                    # cv2.putText(img_disp_clear, "{0:.2f} deg".format(angle), 
+                    #             pos2, font, font_scale, (0,255,0), 2)
+                    font = ImageFont.truetype("arial.ttf", 28, encoding="unic")
+                    img_pil = Image.fromarray(img_disp_clear)
+                    draw = ImageDraw.Draw(img_pil)
+                    draw.text(pos1, text, font = font, fill = (0,255,0,0))
+                    # self.merged_frame = np.array(img_pil)                    
+                    cv2.imshow(window_name, np.array(img_pil))
                 elif event == cv2.EVENT_RBUTTONDOWN:
                     # pts.clear()
                     pts = [None, None]
@@ -3269,7 +3291,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
                 if key == 13: 
                     cv2.destroyAllWindows()
                     logging.debug('%s, %s, %s', "pts", pts, trigger)
-                    if None not in pts:
+                    if None not in pts and  msr == False:
                         length = np.linalg.norm(np.array(pts[0])-np.array(pts[1]))
                         logging.debug('%s', length)
                         self.pixelValue.setValue(round(length,2))

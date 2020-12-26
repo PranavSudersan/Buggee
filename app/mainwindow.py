@@ -54,6 +54,7 @@ from source.app._mainImportfile import MainImportFile
 from source.app._mainMeasurementdialog import MainMeasurementDialog
 from source.app._mainRoifunctions import MainRoiFunctions
 from source.app._mainLiveplot import MainLivePlot
+from source.app.filelistdialog import FileListDialog
 
 from source.process.imagesegment import ImageSegment
 from source.process import imagetransform
@@ -81,6 +82,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         self.layout.setColumnMinimumWidth(1,650)
         self.layout.setRowMinimumHeight(0,285)
         
+        self.filelistDlg = FileListDialog()
         self.configROIWindow = ConfigROIWindow() #ROI config
         self.configPathWindow = ConfigPathWindow() #path window
         self.configRecWindow = ConfigRecWindow() #record configuration window
@@ -124,6 +126,11 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         openFileList.setStatusTip("Select file list spreadhsheet")
         openFileList.triggered.connect(self.import_file_list)
 
+        createFileList = QAction("&Create File List...", self) #create file list spreadhsheet
+##        openFileList.setShortcut("Ctrl+O")
+        createFileList.setStatusTip("create file list spreadhsheet")
+        createFileList.triggered.connect(self.filelistDlg.show)
+        
         self.chooseMsrmnt = QAction("&Choose Measurement...", self) #choose measurement from file list
 ##        self.chooseMsrmnt.setShortcut("Ctrl+M")
         self.chooseMsrmnt.setStatusTip("Select measurement from list")
@@ -206,6 +213,7 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         fileMenu.addAction(openForceFile)
         fileMenu.addAction(self.openZeroForceFile)
         fileMenu.addAction(openFileList)
+        fileMenu.addAction(createFileList)
         fileMenu.addAction(self.chooseMsrmnt)
         fileMenu.addAction(opensettings)
         fileMenu.addAction(savesettings)

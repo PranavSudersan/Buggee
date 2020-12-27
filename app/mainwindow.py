@@ -161,6 +161,9 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
         paths.setStatusTip("Configure Filepaths")
         paths.triggered.connect(self.showPathWindow)
         self.configPathWindow.okBtn.clicked.connect(self.setPaths)
+        self.configPathWindow.rootFolder.textChanged.connect(lambda: 
+                                                             self.setPathFromFolder(
+                                                                 self.configPathWindow.rootFolder.toPlainText()))
         
         analyzeData = QAction("&Datafile..", self) #datafile analyze
         analyzeData.setStatusTip("Analyze datafile")
@@ -2603,30 +2606,40 @@ class MainWindow(QMainWindow, MainWidgets, MainPlaybackFunctions,
             self.recordingPath = ""
             self.summaryPath = ""
             self.contourDataPath = ""
+            self.updatePathWidgets()
         else:
-            if self.msrmnt_num != None:
-                    msrmnt_string = "Measurement-" + str(self.msrmnt_num) + " "
-            else:
-                msrmnt_string = ""
             analPath = os.path.dirname(os.path.dirname(os.path.dirname(self.videoPath))) \
                        + "/Analysis"
-            self.dataPath = analPath + "/Data/" + msrmnt_string + \
-                            self.videoPath.split('/')[-1][:-4] \
-                            + "-data.txt"
-            self.plotPath = analPath + "/Plots/" + msrmnt_string + \
-                            self.videoPath.split('/')[-1][:-4] + "-plot.svg"
-            self.recordingPath = analPath + "/Recording/" + msrmnt_string + \
-                                 self.videoPath.split('/')[-1][:-4] + "-recording.avi"
-            self.summaryPath = analPath + "/Summary/summary data.txt"
-            self.contourDataPath = analPath + "/Contours/" + msrmnt_string + \
-                            self.videoPath.split('/')[-1][:-4] + "-contour data.xlsx"
+            self.configPathWindow.rootFolder.setText(analPath)
 
-    def showPathWindow(self): #open path config window
+    
+    #set analysis output paths from folder
+    def setPathFromFolder(self, folderpath):
+        if self.msrmnt_num != None:
+                msrmnt_string = "Measurement-" + str(self.msrmnt_num) + " "
+        else:
+            msrmnt_string = ""            
+        self.dataPath = folderpath + "/Data/" + msrmnt_string + \
+                        self.videoPath.split('/')[-1][:-4] \
+                        + "-data.txt"
+        self.plotPath = folderpath + "/Plots/" + msrmnt_string + \
+                        self.videoPath.split('/')[-1][:-4] + "-plot.svg"
+        self.recordingPath = folderpath + "/Recording/" + msrmnt_string + \
+                             self.videoPath.split('/')[-1][:-4] + "-recording.avi"
+        self.summaryPath = folderpath + "/Summary/summary data.txt"
+        self.contourDataPath = folderpath + "/Contours/" + msrmnt_string + \
+                        self.videoPath.split('/')[-1][:-4] + "-contour data.xlsx"
+        self.updatePathWidgets()
+    
+    def updatePathWidgets(self):
         self.configPathWindow.dataPath.setText(self.dataPath)
         self.configPathWindow.plotPath.setText(self.plotPath)
         self.configPathWindow.recordingPath.setText(self.recordingPath)
         self.configPathWindow.summaryPath.setText(self.summaryPath)
         self.configPathWindow.contourDataPath.setText(self.contourDataPath)
+        
+    def showPathWindow(self): #open path config window
+        self.updatePathWidgets()
         self.configPathWindow.showWindow()
 
     def setPaths(self): #set filepaths

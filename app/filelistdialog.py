@@ -36,9 +36,8 @@ class FileListDialog(QDialog):
         self.createBtn = QPushButton("Create list")
         self.createBtn.clicked.connect(self.create_list)
         
-        self.loadBtn = QPushButton("Load list")
-        self.loadBtn.clicked.connect(self.close_dialog)
-        self.loadBtn.setEnabled(False)
+        self.closeBtn = QPushButton("Close")
+        self.closeBtn.clicked.connect(self.close_dialog)
 
         
         self.layout.addWidget(folderLabel, 0, 1, 1, 1)
@@ -46,7 +45,7 @@ class FileListDialog(QDialog):
         self.layout.addWidget(self.sortLabel, 1, 1, 1, 1)
         self.layout.addWidget(self.sortComboBox, 1, 0, 1, 1)
         self.layout.addWidget(self.createBtn, 1, 0, 1, 1)
-        self.layout.addWidget(self.loadBtn, 1, 0, 1, 1)
+        self.layout.addWidget(self.closeBtn, 1, 0, 1, 1)
         
         #filename dictionary. keys: file_type::file number, vals: [folder_path, format_string]
         self.filename_dict = {'Video': {}, 'Data': {}} 
@@ -59,6 +58,7 @@ class FileListDialog(QDialog):
     def add_widgets(self, file_type):
         self.num_dict[file_type] += 1
         self.filename_dict[file_type][self.num_dict[file_type]] = ['', '']
+        format_example = '.avi' if file_type == 'Video' else '.txt'
         
         label = f'{file_type} {self.num_dict[file_type]}'
         fileLabel = QLabel(label)
@@ -68,6 +68,7 @@ class FileListDialog(QDialog):
         
         formatLine =  QLineEdit()
         formatLine.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
+        formatLine.setToolTip(f'Leave blank to consider all files.\nEx: {format_example}')
         
         browseBtn = QPushButton("Browse..")
         browseBtn.clicked.connect(lambda: self.open_directory(folderPathText, label))
@@ -107,7 +108,7 @@ class FileListDialog(QDialog):
         self.layout.addWidget(self.sortLabel, row_num + 1, 0, 1, 1)
         self.layout.addWidget(self.sortComboBox, row_num + 1, 1, 1, 1)
         self.layout.addWidget(self.createBtn, row_num + 1, 3, 1, 1)
-        self.layout.addWidget(self.loadBtn, row_num + 1, 4, 1, 2)
+        self.layout.addWidget(self.closeBtn, row_num + 1, 4, 1, 2)
         
     def add_or_remove(self, action, wid_list, rownum, file_type):
         if action == '+':
@@ -137,6 +138,7 @@ class FileListDialog(QDialog):
     #create file list
     def create_list(self):
         df = pd.DataFrame()
+        file_num = {} #number of files in each folder
         for key1 in self.filename_dict.keys():
             for key2 in self.filename_dict[key1].keys():
                 colname = f'{key1} {key2}'
@@ -157,30 +159,23 @@ class FileListDialog(QDialog):
                         df_file.sort_values(by = self.sortComboBox.currentText(), inplace = True)
                         df_file.reset_index(inplace = True)
                         df = df.join(df_file[colname], how = 'outer')
-        df['Data OK?'] = ''
-        df['Comments'] = ''
-        #rename indices to start from 1
-        df.rename(index = dict(zip(range(0, df.shape[0]), range(1, df.shape[0]+1))),
-                  inplace = True)
-        list_path, _ = QFileDialog.getSaveFileName(caption = 'Save file list as..')
-        if list_path[-5:] != '.xlsx':
-            list_path += '.xlsx'
-        df.to_excel(list_path, index_label = 'Measurement number')
-        logging.info(f'File list saved in {list_path}')
-        self.loadBtn.setEnabled(True)
+                        file_num[colname] = df_file.shape[0]
+                        
+        if min(file_num.values()) != max(file_num.values()):
+            raise Exception(f'Number of files are different!\n{file_num}')
+        else:
+            df['Data OK?'] = ''
+            df['Comments'] = ''
+            #rename indices to start from 1
+            df.rename(index = dict(zip(range(0, df.shape[0]), range(1, df.shape[0]+1))),
+                      inplace = True)
+            list_path, _ = QFileDialog.getSaveFileName(caption = 'Save file list as..')
+            if list_path != '':
+                if list_path[-5:] != '.xlsx':
+                    list_path += '.xlsx'
+                df.to_excel(list_path, index_label = 'Measurement number')
+                logging.info(f'File list saved in {list_path}')
                     
     
     def close_dialog(self):
-        # datadf_newvar = self.dataTransformList[-1].copy()
-        # for key in self.filename_dict.keys():
-        #     datadf_newvar = self.summary.create_var(var_name = self.filename_dict[key][0],
-        #                                                    formula = self.filename_dict[key][1],
-        #                                                    datadf = datadf_newvar)
-        # self.dataTransformList.append(datadf_newvar)
-        # stepnum = str(len(self.transformList))
-        # self.transformList.append(stepnum +':Create variable')
-        # self.update_dropdown_params()
-
-        # self.datadf_filtered = self.summary.filter_df(self.datadf, 
-        #                                               self.filter_dict)
         self.done(0)

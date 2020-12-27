@@ -8,7 +8,8 @@ import pims
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
-import openpyxl
+# import openpyxl
+import pandas as pd
 import os.path
 import logging
 from PyQt5.QtCore import Qt
@@ -339,27 +340,33 @@ class MainImportFile:
 
         if fileListPath != "":
             self.folderPath = os.path.dirname(fileListPath)
-            wb_obj = openpyxl.load_workbook(filename = fileListPath,
-                                            read_only = True)# workbook object is created  
-            sheet_obj = wb_obj.active
+            # wb_obj = openpyxl.load_workbook(filename = fileListPath,
+            #                                 read_only = True)# workbook object is created  
+            # sheet_obj = wb_obj.active
 
-            m_row = sheet_obj.max_row
+            # m_row = sheet_obj.max_row
 
-            self.measurmntList = []
-            self.bottomviewList = []
-            self.sideviewList = []
-            self.forcedataList = []
+            # self.measurmntList = []
+            # self.bottomviewList = []
+            # self.sideviewList = []
+            # self.forcedataList = []
              
-            for i in range(2, m_row + 1): #save filename lists
-                self.measurmntList.append(sheet_obj.cell(row = i, column = 1).value)
-                self.bottomviewList.append(sheet_obj.cell(row = i, column = 2).value)
-                self.sideviewList.append(sheet_obj.cell(row = i, column = 3).value)
-                self.forcedataList.append(sheet_obj.cell(row = i, column = 4).value)
+            # for i in range(2, m_row + 1): #save filename lists
+            #     self.measurmntList.append(sheet_obj.cell(row = i, column = 1).value)
+            #     self.bottomviewList.append(sheet_obj.cell(row = i, column = 2).value)
+            #     self.sideviewList.append(sheet_obj.cell(row = i, column = 3).value)
+            #     self.forcedataList.append(sheet_obj.cell(row = i, column = 4).value)
 
-            wb_obj.close()
+            # wb_obj.close()
+            self.fileListDf = pd.read_excel(fileListPath, index_col = 0, engine='openpyxl')
+            #remove unecessary columns
+            cols = self.fileListDf.columns
+            for c in ['Data OK?', 'Comments']:
+                if c in cols:
+                    self.fileListDf.drop(columns = [c], inplace = True)
             self.chooseMsrmnt.setEnabled(True)
             self.statusBar.showMessage("Loaded file list from " + self.folderPath)
-            logging.debug('%s, %s', self.measurmntList, self.folderPath)
+            logging.debug('%s', self.fileListDf)
 
     def import_force_data(self): #import force data
         # if self.msrListMode == False:

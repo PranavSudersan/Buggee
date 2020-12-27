@@ -74,8 +74,9 @@ class SummaryWindow(QWidget):
         self.paramDict['Subfolder'] = self.subfolder    
               
         #import data
-        importButton = QPushButton("Select..", self)    
+        importButton = QPushButton("Browse..", self)    
         importButton.clicked.connect(lambda: self.import_data(dataSource))
+        importButton.setStyleSheet("QPushButton { font-weight: bold;} ")
         
         #create variable
         self.variable_dialog_init()

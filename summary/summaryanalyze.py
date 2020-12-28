@@ -69,7 +69,8 @@ class SummaryAnal:
                                       header = kwargs['header_line'])
         elif kwargs['data_format'] == 'Excel':
             summarydf = pd.read_excel(filepath,
-                                      header = kwargs['header_line'])
+                                      header = kwargs['header_line'],
+                                      engine='openpyxl')
             
         #include paths
         summarydf['File location'] = os.path.dirname(filepath) #include filepath in data
@@ -1530,7 +1531,7 @@ class SummaryAnal:
         # if self.list_filepath != "":
         list_folderpath = os.path.dirname(list_filepath)
         
-        explistDf = pd.read_excel(list_filepath) #experiment list
+        explistDf = pd.read_excel(list_filepath, engine='openpyxl') #experiment list
         
         col_list = explistDf.columns
         listunitDict = {}

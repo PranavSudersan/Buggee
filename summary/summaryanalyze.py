@@ -1551,26 +1551,26 @@ class SummaryAnal:
         
         for i in explistDf.index:
             exp_data = explistDf.loc[i]
-            if exp_data['Data OK?'] == 'Yes' and exp_data['Include Data?'] == 'Yes':
-                subfolder_list = subfolder.split(',')
-                for subf in subfolder_list:
-                    if subf[0] != '*':
-                        summary_folder = list_folderpath + "/" + \
-                            exp_data['Data Folder name'] + subf
-                        with os.scandir(summary_folder) as folder:
-                            for file in folder:
-                                if file.is_file():
-                                    summarydf = self.importSummary(filepath = file.path,
-                                                                   **kwargs)
-                                    joinedDf = summarydf.merge(
-                                        pd.DataFrame(data = [exp_data.values]*len(exp_data),
-                                                     columns = exp_data.index),
-                                        left_index=True, right_index=True)
-                                    if fullDf.__class__.__name__ == 'NoneType':
-                                        fullDf = joinedDf.copy()
-                                    else:
-                                        fullDf = fullDf.append(joinedDf, ignore_index=True, 
-                                                               sort=False)
+            # if exp_data['Data OK?'] == 'Yes' and exp_data['Include Data?'] == 'Yes':
+            subfolder_list = subfolder.split(',')
+            for subf in subfolder_list:
+                if subf[0] != '*':
+                    summary_folder = list_folderpath + "/" + \
+                        exp_data['Data Folder name'] + subf
+                    with os.scandir(summary_folder) as folder:
+                        for file in folder:
+                            if file.is_file():
+                                summarydf = self.importSummary(filepath = file.path,
+                                                               **kwargs)
+                                joinedDf = summarydf.merge(
+                                    pd.DataFrame(data = [exp_data.values]*len(exp_data),
+                                                 columns = exp_data.index),
+                                    left_index=True, right_index=True)
+                                if fullDf.__class__.__name__ == 'NoneType':
+                                    fullDf = joinedDf.copy()
+                                else:
+                                    fullDf = fullDf.append(joinedDf, ignore_index=True, 
+                                                           sort=False)
         
         self.unitDict = {**listunitDict, **self.unitDict}
         

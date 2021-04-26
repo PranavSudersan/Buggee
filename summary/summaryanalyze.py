@@ -538,7 +538,7 @@ class SummaryAnal:
         # col_param_order = None
         #set to None if dont want to group and find Max
         # color_list = None#['g', 'b', 'r', 'c'] #corresponding colors
-        fix_marker = 'o' if style_var == None else None #set to 'o' if style_param is None else set as None
+        fix_marker = None #if style_var == None else None #set to 'o' if style_param is None else set as None
         # line_styles = None#[(1, 0), (1, 1)]
         ##group_param = ['Model', 'Contact Angle', 'θ-fa', 'θ-fw',
         ##               'D_p/D_h', 'a_b', 'a_f', 'Fluid data file',

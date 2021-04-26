@@ -156,19 +156,20 @@ class ForceAnal(Plotting):
             logging.debug('%s', self.waveform)
 
             if self.waveform == 'custom': #index adjust for force data
-                ir = 1
+                ir = 2
                 ic = 1
             else:
                 ir = 0
                 ic = 0
                 
-            #collect force data 
+            #collect force data
+            header_row = 23 #change!
             self.fileDataDict["Vertical piezo"] = [(float(y.split('\t')[0]))/1000 \
-                                                   for y in x1[23+ir:]] #nm to μm units
+                                                   for y in x1[header_row+ir:]] #nm to μm units
             self.ptsnumber = int(float((x1[11+ir].split('\t')[1])))
             if ic == 1:
                 self.fileDataDict["Lateral piezo"] = [(float(y.split('\t')[ic])/1000) \
-                                                      for y in x1[23+ir:]] #nm to μm units
+                                                      for y in x1[header_row+ir:]] #nm to μm units
                 speed1 = [int(float(y)) for y in x1[8].split('\t')[1:]]
                 self.steps = [y for y in x1[7].split('\t')[1:]]
                 logging.debug('%s', self.steps)
@@ -182,11 +183,11 @@ class ForceAnal(Plotting):
                 self.pause = [0]
             self.fps = float((x1[20+ir].split('\t')[1]))
             self.frame_num = [int(float(y)) for y in (x1[21+ir].split('\t')[1:])]
-            self.fileDataDict["Time"] = [float(y.split('\t')[1+ic]) for y in x1[23+ir:]]
+            self.fileDataDict["Time"] = [float(y.split('\t')[1+ic]) for y in x1[header_row+ir:]]
             self.fileDataDict["Vertical Deflection Raw"] = [float(y.split('\t')[2+ic]) \
-                                                        for y in x1[23+ir:]]
+                                                        for y in x1[header_row+ir:]]
             self.fileDataDict["Lateral Deflection Raw"] = [float(y.split('\t')[3+ic])\
-                                                       for y in x1[23+ir:]]
+                                                       for y in x1[header_row+ir:]]
             self.calib_vert1 = x1[19+ir].split('\t')[1].replace("^", "**")
             #make 'Back' speeds negative
             # self.speed = [-speed1[self.steps.index(a)] if a == 'Back' \

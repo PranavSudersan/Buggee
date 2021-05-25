@@ -26,7 +26,7 @@ class MainRecordFunctions:
         
         if self.recordStatus == True:
             if int(self.framePos) >= start_framenum:
-                h , w = 1024, 1280
+                h , w = 512, 512 #TODO: include this gui
                 # dim = (w, h)
                 if frame2.ndim == 2:
                     frame2 = cv2.cvtColor(frame2, cv2.COLOR_GRAY2BGR)
@@ -259,8 +259,8 @@ class MainRecordFunctions:
                 i = 2
             else:
                 i = 1
-            w = 2560
-            h = i * 1024
+            w = 2 * 512 #TODO: include this in gui (check above)
+            h = i * 512
             size = (w, h)
 ##            fps = self.frameRate
             fps = self.configRecWindow.fps.value() #fixed playback fps
